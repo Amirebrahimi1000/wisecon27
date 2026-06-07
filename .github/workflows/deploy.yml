@@ -39,6 +39,10 @@ jobs:
           VITE_BASE: /${{ github.event.repository.name }}/
 
       - uses: actions/configure-pages@v5
+        with:
+          # auto-enable Pages (build via Actions) so this works without
+          # first toggling Settings → Pages manually
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
