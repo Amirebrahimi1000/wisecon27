@@ -1,0 +1,168 @@
+/* ─────────────────────────────────────────────────────────────────
+   WISEcon27 — WISEflow design tokens + base + app utilities.
+   Tokens ported from the WISEflow design system (colors_and_type.css).
+   Components consume these CSS custom properties via the `T` shorthand
+   in theme.ts, exactly as the prototype did.
+   ───────────────────────────────────────────────────────────────── */
+
+@import url("https://fonts.googleapis.com/css2?family=Signika:wght@400;500;700&family=Onest:wght@400;500;700&display=swap");
+
+:root {
+  /* ── WISEflow green — primary brand accent ── */
+  --wf-green-1:  #f0f5ea;
+  --wf-green-2:  #e3edd0;
+  --wf-green-3:  #d4e3b6;
+  --wf-green-4:  #c0d690;
+  --wf-green-5:  #aac86b;
+  --wf-green-6:  #96bb4a;
+  --wf-green-7:  #82ae40;   /* brand mark tile */
+  --wf-green-8:  #769b08;   /* brand solid */
+  --wf-green-9:  #628010;   /* primary button */
+  --wf-green-10: #4e6712;
+  --wf-green-11: #3a4e10;
+  --wf-green-12: #1f2a08;
+
+  /* ── WISEflow blue ── */
+  --wf-blue-1:  #ecf3f8;
+  --wf-blue-9:  #3d75a0;
+  --wf-blue-10: #305e81;
+  --wf-blue-11: #234560;
+
+  /* ── Originality purple ── */
+  --wf-purple-2:  #eaedff;
+  --wf-purple-8:  #4e35f2;   /* brand solid */
+  --wf-purple-10: #2d1d96;
+
+  /* ── Neutral grey ramp ── */
+  --wf-grey-1:  #fcfcfc;
+  --wf-grey-2:  #f8f8f8;
+  --wf-grey-3:  #f2f2f2;
+  --wf-grey-4:  #ebebeb;
+  --wf-grey-5:  #e6e6e6;
+  --wf-grey-6:  #d7d7d8;
+  --wf-grey-7:  #cacacb;
+  --wf-grey-8:  #bdbdbe;
+  --wf-grey-9:  #8c8c8c;
+  --wf-grey-10: #747475;
+  --wf-grey-11: #474748;
+  --wf-grey-12: #1a1a1a;
+
+  /* ── Track / category accents ── */
+  --wf-orange-2:  #fff7ed;
+  --wf-orange-9:  #f76b15;
+  --wf-orange-10: #ef5f00;
+  --wf-orange-11: #cc4e00;
+
+  --wf-teal-3:  #e7f9f3;
+  --wf-teal-9:  #12a594;
+  --wf-teal-11: #067a68;
+
+  /* ── Semantic ── */
+  --wf-tomato-2:  #fff8f7;
+  --wf-tomato-9:  #e54d2e;
+  --wf-tomato-11: #ca3214;
+  --wf-grass-10:  #3d9a50;
+  --wf-grass-11:  #297c3b;
+  --wf-yellow-8:  #d4b51b;
+  --wf-negative-9: #942626;
+
+  /* live dot on dark hero */
+  --wf-lime-9:  #bdee63;
+
+  /* ── Radii ── */
+  --radius-2: 4.5px;
+  --radius-3: 6px;
+  --radius-4: 10px;
+  --radius-5: 15.5px;
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.05);
+  --shadow-card:  0 0 0 1px rgba(78,53,242,0.05),
+                  0 12px 60px 0  rgba(0,0,0,0.05),
+                  0 16px 64px 0  rgba(78,53,242,0.05),
+                  0 16px 36px -9px rgba(0,0,0,0.10);
+
+  /* ── Motion ── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 80ms; --dur-2: 150ms; --dur-3: 240ms; --dur-4: 320ms;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Signika", "Onest", ui-sans-serif, system-ui, sans-serif;
+  color: var(--wf-grey-11);
+  background: #1c1c1e;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
+}
+
+h1, h2, h3, p { margin: 0; }
+button { font-family: inherit; }
+
+/* ── Phone stage: center a phone-width column on larger screens,
+      full-bleed on actual phones. The iOS bezel from the prototype is
+      intentionally NOT ported (prototype-only chrome). ── */
+.wc-stage {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(120% 80% at 50% -10%, #2c2c2e 0%, #161617 60%, #0e0e0f 100%);
+}
+.wc-device {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  max-height: 932px;
+  background: #fff;
+  overflow: hidden;
+}
+@media (min-width: 460px) {
+  .wc-device {
+    border-radius: 44px;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.55), 0 0 0 11px #0a0a0b, 0 0 0 12px #2a2a2c;
+  }
+}
+
+/* ── press feedback on all tappable surfaces ── */
+.wc-press {
+  transition: transform var(--dur-1) var(--ease-out), opacity var(--dur-1) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.wc-press:active { transform: scale(0.975); opacity: 0.92; }
+
+/* ── hide scrollbars on horizontal chip rows ── */
+.wc-noscroll { scrollbar-width: none; -ms-overflow-style: none; }
+.wc-noscroll::-webkit-scrollbar { display: none; }
+
+/* ── live dot pulse ── */
+@keyframes wc-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.82); }
+}
+.wc-pulse { animation: wc-pulse 1.8s var(--ease-out) infinite; }
+
+/* ── toast entrance ── */
+@keyframes wc-toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+.wc-toast { animation: wc-toast-in var(--dur-3) var(--ease-out); }
+
+/* keep content visible by default; animate transforms only (per handoff) */
+.wc-screen { min-height: 100%; }
+
+input, textarea { font-family: inherit; }
+::placeholder { color: var(--wf-grey-9); }

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="wiseflow">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WISEcon27 — Event app</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(1200px 700px at 70% -10%, #f3f3f4, transparent),
+      radial-gradient(900px 600px at 10% 110%, #eef1ea, transparent),
+      #e8e8ea;
+    font-family: var(--font-wiseflow);
+    -webkit-font-smoothing: antialiased;
+  }
+  #root { height: 100%; }
+
+  /* press feedback */
+  .wc-press { transition: transform .08s var(--ease-out), opacity .12s; -webkit-user-select: none; user-select: none; }
+  .wc-press:active { transform: scale(0.975); opacity: 0.92; }
+
+  /* hide scrollbars on horizontal rails / device */
+  .wc-noscroll { scrollbar-width: none; -ms-overflow-style: none; }
+  .wc-noscroll::-webkit-scrollbar { display: none; }
+  .wc-device-scroll, .wc-device-scroll * { scrollbar-width: none; }
+  .wc-device-scroll::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  /* live dot pulse */
+  @keyframes wcPulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: .45; transform: scale(.82);} }
+  .wc-pulse { animation: wcPulse 1.8s var(--ease-in-out) infinite; }
+
+  /* toast */
+  @keyframes wcToastIn { from { opacity: 0; transform: translate(-50%, 8px);} to { opacity: 1; transform: translate(-50%, 0);} }
+  .wc-toast { animation: wcToastIn .22s var(--ease-out); }
+
+  /* screen enter (kept subtle; no opacity to stay capture/PDF-safe) */
+  .wc-screen { }
+
+  textarea::placeholder, input::placeholder { color: var(--wf-grey-9); }
+
+  /* ── Accent override: Originality purple swap ── */
+  .accent-purple {
+    --wf-green-1: var(--wf-purple-2);
+    --wf-green-2: var(--wf-purple-3);
+    --wf-green-7: var(--wf-purple-7);
+    --wf-green-8: var(--wf-purple-8);
+    --wf-green-9: var(--wf-purple-8);
+    --wf-green-10: var(--wf-purple-10);
+    --wf-green-11: var(--wf-purple-11);
+    --wf-green-12: var(--wf-purple-12);
+  }
+
+  /* toolbar */
+  .bar { position: sticky; top: 0; z-index: 100; height: 58px; display: flex; align-items: center; gap: 14px;
+    padding: 0 18px; background: rgba(255,255,255,0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--wf-grey-5); }
+  .bar .brand { display: flex; align-items: center; gap: 10px; }
+  .bar .brand img { width: 30px; height: 30px; border-radius: 7px; box-shadow: var(--shadow-sm); }
+  .bar .brand .tt { font-family: var(--font-wiseflow); font-weight: 700; font-size: 16px; color: #000; letter-spacing: -0.01em; }
+  .bar .brand .sub { font-family: var(--font-originality); font-size: 11px; color: var(--wf-grey-10); letter-spacing: .02em; }
+  .seg { display: inline-flex; background: var(--wf-grey-3); border-radius: 999px; padding: 3px; box-shadow: inset 0 0 0 1px var(--wf-grey-5); }
+  .seg button { border: 0; background: transparent; font-family: var(--font-wiseflow); font-weight: 600; font-size: 13px; color: var(--wf-grey-10);
+    padding: 7px 16px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: all .15s; }
+  .seg button.on { background: #fff; color: #000; box-shadow: var(--shadow-sm); }
+  .hint { font-family: var(--font-originality); font-size: 11.5px; color: var(--wf-grey-10); }
+</style>
+</head>
+<body data-theme="wiseflow">
+  <div id="root"></div>
+
+  <template id="__bundler_thumbnail">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#628010"/><rect x="34" y="22" width="32" height="56" rx="7" fill="#fff"/><circle cx="50" cy="68" r="3" fill="#628010"/></svg>
+  </template>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script src="app/data.js"></script>
+  <script type="text/babel" src="app/icons.jsx"></script>
+  <script type="text/babel" src="app/components.jsx"></script>
+  <script type="text/babel" src="app/screens-core.jsx"></script>
+  <script type="text/babel" src="app/screens-more.jsx"></script>
+  <script type="text/babel" src="app/home.jsx"></script>
+  <script type="text/babel" src="app/app.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    (function () {
+    const { useState, useEffect, useRef } = React;
+    const { ConferenceApp, IOSDevice, useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakColor } = window;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "homeDirection": "Bold",
+      "accent": "#628010"
+    }/*EDITMODE-END*/;
+
+    const VARIANT_KEY = { Classic: 'classic', Cards: 'cards', Bold: 'bold' };
+    const DIRECTIONS = [
+      { key: 'classic', label: 'Classic', note: 'safe' },
+      { key: 'cards', label: 'Cards', note: 'balanced' },
+      { key: 'bold', label: 'Bold', note: 'energetic' },
+    ];
+
+    function useFit(ref, w, h, pad) {
+      const [scale, setScale] = useState(0.7);
+      useEffect(() => {
+        const el = ref.current; if (!el) return;
+        const measure = () => {
+          const aw = el.clientWidth - pad * 2, ah = el.clientHeight - pad * 2;
+          setScale(Math.max(0.2, Math.min(aw / w, ah / h, 1)));
+        };
+        measure();
+        const ro = new ResizeObserver(measure); ro.observe(el);
+        return () => ro.disconnect();
+      }, [w, h, pad]);
+      return scale;
+    }
+
+    function Phone({ variant, accentClass }) {
+      return (
+        <div className={accentClass} style={{ width: 402, height: 874 }}>
+          <IOSDevice>
+            <div className="wc-device-scroll" style={{ height: '100%' }}>
+              <ConferenceApp homeVariant={variant} />
+            </div>
+          </IOSDevice>
+        </div>
+      );
+    }
+
+    function Stage() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      const [mode, setMode] = useState('prototype');
+      const stageRef = useRef(null);
+
+      const accentClass = t.accent === '#4e35f2' ? 'accent-purple' : '';
+      const variant = VARIANT_KEY[t.homeDirection] || 'cards';
+
+      const COMPARE_W = 402 * 3 + 48 * 2;
+      const COMPARE_H = 874 + 44;
+      const fitOne = useFit(stageRef, 402, 874, 28);
+      const fitAll = useFit(stageRef, COMPARE_W, COMPARE_H, 28);
+      const scale = mode === 'prototype' ? fitOne : fitAll;
+
+      return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {/* toolbar */}
+          <div className="bar">
+            <div className="brand">
+              <img src="assets/logo-icon.svg" alt="WISEflow" />
+              <div>
+                <div className="tt">WISEcon27 · Event app</div>
+                <div className="sub">WISEflow design system</div>
+              </div>
+            </div>
+            <div style={{ flex: 1 }} />
+            <span className="hint">
+              {mode === 'prototype' ? 'Toggle Tweaks to switch the home layout' : 'Three home directions, side by side'}
+            </span>
+            <div className="seg">
+              <button className={mode === 'prototype' ? 'on' : ''} onClick={() => setMode('prototype')}>Prototype</button>
+              <button className={mode === 'compare' ? 'on' : ''} onClick={() => setMode('compare')}>Compare homes</button>
+            </div>
+          </div>
+
+          {/* stage */}
+          <div ref={stageRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'grid', placeItems: 'center' }}>
+            {mode === 'prototype' ? (
+              <div style={{ width: 402, height: 874, transform: `scale(${scale})`, transformOrigin: 'center' }}>
+                <Phone variant={variant} accentClass={accentClass} />
+              </div>
+            ) : (
+              <div style={{ width: COMPARE_W, height: COMPARE_H, transform: `scale(${scale})`, transformOrigin: 'center', display: 'flex', gap: 48, alignItems: 'flex-end' }}>
+                {DIRECTIONS.map((d, i) => (
+                  <div key={d.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                      <span style={{ fontFamily: 'var(--font-originality)', fontWeight: 700, fontSize: 15, color: 'var(--wf-grey-10)' }}>0{i + 1}</span>
+                      <span style={{ fontFamily: 'var(--font-wiseflow)', fontWeight: 700, fontSize: 19, color: '#000' }}>{d.label}</span>
+                      <span style={{ fontFamily: 'var(--font-originality)', fontSize: 13, color: 'var(--wf-grey-10)' }}>· {d.note}</span>
+                    </div>
+                    <Phone variant={d.key} accentClass={accentClass} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* tweaks */}
+          <TweaksPanel>
+            <TweakSection label="Home layout" />
+            <TweakRadio label="Direction" value={t.homeDirection} options={['Classic', 'Cards', 'Bold']} onChange={(v) => setTweak('homeDirection', v)} />
+            <TweakSection label="Brand accent" />
+            <TweakColor label="Accent" value={t.accent} options={['#628010', '#4e35f2']} onChange={(v) => setTweak('accent', v)} />
+          </TweaksPanel>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Stage />);
+    })();
+  </script>
+</body>
+</html>

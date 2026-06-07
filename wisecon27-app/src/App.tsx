@@ -1,0 +1,129 @@
+// WISEcon27 — app shell: tab bar, navigation stack, toast.
+// The iOS bezel, desktop stage toolbar, "Compare homes" mode and Tweaks panel
+// from the prototype are intentionally NOT ported (prototype-only chrome).
+import { useEffect, useRef } from 'react'
+import { T, TABBAR_H } from './theme'
+import { useAppState, type AppCtx, type PushScreen, type TabId } from './store'
+import { Icon, type IconName } from './components/Icon'
+import { Press } from './components/primitives'
+
+import { Home } from './screens/Home'
+import { Agenda } from './screens/Agenda'
+import { Speakers } from './screens/Speakers'
+import { Connect } from './screens/Connect'
+import { Profile } from './screens/Profile'
+import { SessionDetail } from './screens/SessionDetail'
+import { SpeakerProfile } from './screens/SpeakerProfile'
+import { MySchedule } from './screens/MySchedule'
+import { Notifications } from './screens/Notifications'
+import { Sponsors } from './screens/Sponsors'
+import { Ticket } from './screens/Ticket'
+import { Feedback } from './screens/Feedback'
+import { Info } from './screens/Info'
+import { Settings } from './screens/Settings'
+
+const TABS: { id: TabId; icon: IconName; label: string }[] = [
+  { id: 'home', icon: 'home', label: 'Home' },
+  { id: 'agenda', icon: 'calendar', label: 'Agenda' },
+  { id: 'speakers', icon: 'speakers', label: 'Speakers' },
+  { id: 'connect', icon: 'connect', label: 'Connect' },
+  { id: 'profile', icon: 'user', label: 'Profile' },
+]
+
+const PUSH_SCREENS: Record<PushScreen, (p: { ctx: AppCtx }) => JSX.Element> = {
+  session: SessionDetail,
+  speaker: SpeakerProfile,
+  myschedule: MySchedule,
+  notifications: Notifications,
+  sponsors: Sponsors,
+  ticket: Ticket,
+  feedback: Feedback,
+  info: Info,
+  settings: Settings,
+}
+
+const TAB_SCREENS: Record<Exclude<TabId, 'home'>, (p: { ctx: AppCtx }) => JSX.Element> = {
+  agenda: Agenda,
+  speakers: Speakers,
+  connect: Connect,
+  profile: Profile,
+}
+
+function BottomNav({ active, onSelect, unread }: { active: TabId; onSelect: (t: TabId) => void; unread: number }) {
+  return (
+    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 40, paddingBottom: 22, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', borderTop: '1px solid ' + T.line, display: 'flex' }}>
+      {TABS.map((t) => {
+        const on = active === t.id
+        return (
+          <Press key={t.id} onClick={() => onSelect(t.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '9px 0 4px', position: 'relative' }}>
+            <div style={{ position: 'relative', color: on ? T.green9 : T.muted }}>
+              <Icon name={t.icon} size={25} stroke={on ? 2.2 : 1.8} />
+              {t.id === 'profile' && unread > 0 && (
+                <span style={{ position: 'absolute', top: -1, right: -3, width: 8, height: 8, borderRadius: 999, background: 'var(--wf-tomato-9)', boxShadow: '0 0 0 2px #fff' }} />
+              )}
+            </div>
+            <span style={{ fontFamily: T.sig, fontWeight: on ? 700 : 500, fontSize: 10.5, color: on ? T.green10 : T.muted, letterSpacing: '0.01em' }}>{t.label}</span>
+          </Press>
+        )
+      })}
+    </div>
+  )
+}
+
+function Toast({ msg }: { msg: string | null }) {
+  if (!msg) return null
+  return (
+    <div
+      className="wc-toast"
+      style={{ position: 'absolute', bottom: TABBAR_H + 14, left: '50%', transform: 'translateX(-50%)', zIndex: 80, background: 'rgba(17,17,17,0.94)', color: '#fff', fontFamily: T.sig, fontWeight: 500, fontSize: 13.5, padding: '10px 18px', borderRadius: 999, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', whiteSpace: 'nowrap', maxWidth: '86%', overflow: 'hidden', textOverflow: 'ellipsis' }}
+    >
+      {msg}
+    </div>
+  )
+}
+
+export default function App() {
+  const ctx = useAppState()
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  const top = ctx.stack[ctx.stack.length - 1] || null
+  const screenKey = ctx.tab + '·' + ctx.stack.length + '·' + (top ? top.screen : '')
+
+  // reset scroll on every navigation
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0
+  }, [screenKey])
+
+  // map the hardware/browser Back button to popping the nav stack
+  const depth = ctx.stack.length
+  useEffect(() => {
+    window.history.pushState({ depth }, '')
+    const onPop = () => {
+      if (ctx.stack.length > 0) ctx.back()
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [depth])
+
+  let ScreenEl: ((p: { ctx: AppCtx }) => JSX.Element) | null = null
+  if (top) ScreenEl = PUSH_SCREENS[top.screen]
+  else if (ctx.tab === 'home') ScreenEl = Home
+  else ScreenEl = TAB_SCREENS[ctx.tab]
+
+  return (
+    <div className="wc-stage">
+      <div className="wc-device">
+        <div style={{ height: '100%', position: 'relative', background: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+            <div key={screenKey} className="wc-screen">
+              {ScreenEl ? <ScreenEl ctx={ctx} /> : null}
+            </div>
+          </div>
+          <Toast msg={ctx.toastMsg} />
+          <BottomNav active={ctx.tab} onSelect={ctx.setTab} unread={ctx.unread} />
+        </div>
+      </div>
+    </div>
+  )
+}
