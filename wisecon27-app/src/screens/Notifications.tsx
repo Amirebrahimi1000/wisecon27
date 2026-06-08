@@ -1,6 +1,6 @@
 // WISEcon27 — Notifications (pushed): typed icons, unread highlight, mark read.
 import { T, TABBAR_H } from '../theme'
-import type { AppCtx } from '../store'
+import type { AppCtx } from '../appState'
 import type { NotificationType } from '../types'
 import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'

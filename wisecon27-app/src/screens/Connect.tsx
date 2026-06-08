@@ -1,8 +1,8 @@
 // WISEcon27 — Connect (networking): your badge card + Discover/Requests/Messages.
+// Attendees and connection statuses are live from Supabase.
 import { useState } from 'react'
-import { ATTENDEES, ME } from '../data'
 import { T, TABBAR_H } from '../theme'
-import type { AppCtx } from '../store'
+import type { AppCtx } from '../appState'
 import type { Attendee, ConnectStatus } from '../types'
 import { AppHeader, Avatar, Btn, Divider, Empty, IconBtn, Press } from '../components/primitives'
 import { QR } from '../components/QR'
@@ -11,8 +11,7 @@ const LABEL: Record<ConnectStatus, string> = { connect: 'Connect', pending: 'Pen
 
 export function Connect({ ctx }: { ctx: AppCtx }) {
   const [tab, setTab] = useState<'discover' | 'requests' | 'messages'>('discover')
-  // merge seed attendees with persisted connection statuses
-  const people: Attendee[] = ATTENDEES.map((a) => ({ ...a, status: ctx.connections[a.id] ?? a.status }))
+  const people = ctx.attendees
 
   const toggle = (p: Attendee) => {
     const next: ConnectStatus =
@@ -30,13 +29,13 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
       {/* your badge card */}
       <div style={{ padding: '12px 16px 0' }}>
         <Press onClick={() => ctx.push('ticket', {})} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'linear-gradient(135deg, var(--wf-green-9), var(--wf-green-11))', borderRadius: 'var(--radius-5)', padding: 16, color: '#fff' }}>
-          <Avatar initials={ME.initials} color="rgba(255,255,255,0.2)" size={48} style={{ boxShadow: '0 0 0 2px rgba(255,255,255,0.4)' }} />
+          <Avatar initials={ctx.me.initials} color="rgba(255,255,255,0.2)" size={48} style={{ boxShadow: '0 0 0 2px rgba(255,255,255,0.4)' }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16 }}>{ME.name}</div>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16 }}>{ctx.me.name}</div>
             <div style={{ fontFamily: T.onest, fontSize: 12.5, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>Tap to share your badge</div>
           </div>
           <div style={{ background: '#fff', borderRadius: 'var(--radius-3)', padding: 5 }}>
-            <QR value={ME.badgeId} size={44} />
+            <QR value={ctx.me.badgeId} size={44} />
           </div>
         </Press>
       </div>
@@ -49,14 +48,16 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
       <Divider />
       <div style={{ padding: '12px 12px ' + (TABBAR_H + 16) + 'px' }}>
         {tab === 'messages' ? (
-          <MessagesList ctx={ctx} people={people} />
+          <Empty icon="message" text="Direct messages are coming soon." />
+        ) : shown.length === 0 ? (
+          <Empty icon="connect" text={tab === 'requests' ? 'No pending requests.' : 'No other delegates yet — check back soon.'} />
         ) : (
           shown.map((p) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 6px', borderBottom: '1px solid ' + T.line }}>
               <Avatar initials={p.initials} color={p.color} size={46} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{p.name}</div>
-                <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.role} · {p.org}</div>
+                <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.role}{p.org ? ' · ' + p.org : ''}</div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 5 }}>
                   {p.mutual > 0 && (
                     <span style={{ fontFamily: T.onest, fontSize: 11, color: T.green10, background: T.green1, borderRadius: 999, padding: '2px 8px' }}>{p.mutual} shared interests</span>
@@ -74,36 +75,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
             </div>
           ))
         )}
-        {tab === 'requests' && requests.length === 0 && <Empty icon="connect" text="No pending requests." />}
       </div>
-    </div>
-  )
-}
-
-function MessagesList({ ctx, people }: { ctx: AppCtx; people: Attendee[] }) {
-  const threads = [
-    { p: people.find((x) => x.id === 'a6')!, last: 'See you at the reception tonight!', time: '14:02', unread: 0 },
-    { p: people.find((x) => x.id === 'a3')!, last: 'Thanks — really enjoyed your question.', time: '11:20', unread: 2 },
-  ]
-  return (
-    <div>
-      {threads.map((t, i) => (
-        <Press key={i} onClick={() => ctx.toast('Chat coming soon')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 6px', borderBottom: '1px solid ' + T.line }}>
-          <Avatar initials={t.p.initials} color={t.p.color} size={46} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{t.p.name}</span>
-              <span style={{ fontFamily: T.onest, fontSize: 11, color: T.muted }}>{t.time}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.last}</span>
-              {t.unread > 0 && (
-                <span style={{ background: T.green9, color: '#fff', fontFamily: T.onest, fontWeight: 700, fontSize: 11, minWidth: 18, height: 18, borderRadius: 999, display: 'grid', placeItems: 'center', padding: '0 5px' }}>{t.unread}</span>
-              )}
-            </div>
-          </div>
-        </Press>
-      ))}
     </div>
   )
 }

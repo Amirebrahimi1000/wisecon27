@@ -1,12 +1,11 @@
 // WISEcon27 — Speaker Profile (pushed): hero, connect/message, bio, sessions.
-import { SESSIONS } from '../data'
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
-import type { AppCtx } from '../store'
+import type { AppCtx } from '../appState'
 import { Avatar, Btn, Eyebrow, IconBtn, SessionRow } from '../components/primitives'
 
 export function SpeakerProfile({ ctx }: { ctx: AppCtx }) {
   const p = ctx.params.speaker!
-  const sessions = SESSIONS.filter((s) => (s.speakers || []).includes(p.id))
+  const sessions = ctx.sessions.filter((s) => (s.speakers || []).includes(p.id))
   return (
     <div style={{ paddingBottom: TABBAR_H + 16 }}>
       <div

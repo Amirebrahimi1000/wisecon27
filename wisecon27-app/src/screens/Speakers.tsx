@@ -1,17 +1,16 @@
 // WISEcon27 — Speakers list with live search (name / role / org).
 import { useState } from 'react'
-import { SPEAKERS } from '../data'
 import { T, TABBAR_H } from '../theme'
-import type { AppCtx } from '../store'
+import type { AppCtx } from '../appState'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Press } from '../components/primitives'
 
 export function Speakers({ ctx }: { ctx: AppCtx }) {
   const [q, setQ] = useState('')
-  const list = SPEAKERS.filter((s) => (s.name + s.org + s.role).toLowerCase().includes(q.toLowerCase()))
+  const list = ctx.speakers.filter((s) => (s.name + s.org + s.role).toLowerCase().includes(q.toLowerCase()))
   return (
     <div>
-      <AppHeader title="Speakers" sub={`${SPEAKERS.length} speakers`} />
+      <AppHeader title="Speakers" sub={`${ctx.speakers.length} speakers`} />
       <div style={{ padding: '12px 16px 4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 'var(--radius-4)', padding: '0 12px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}>
           <Icon name="search" size={18} style={{ color: T.muted }} />

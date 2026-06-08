@@ -1,16 +1,15 @@
 // WISEcon27 — My Schedule (pushed): bookmarked sessions grouped by day.
-import { DAYS, SESSIONS } from '../data'
 import { T, TABBAR_H } from '../theme'
-import type { AppCtx } from '../store'
+import type { AppCtx } from '../appState'
 import { AppHeader, Empty, Eyebrow, SessionRow } from '../components/primitives'
 
 export function MySchedule({ ctx }: { ctx: AppCtx }) {
-  const mine = SESSIONS.filter((s) => ctx.isBookmarked(s.id))
+  const mine = ctx.sessions.filter((s) => ctx.isBookmarked(s.id))
   return (
     <div>
       <AppHeader title="My schedule" sub={`${mine.length} saved sessions`} onBack={ctx.params._fromTab ? null : ctx.back} />
       <div style={{ padding: '8px 12px ' + (TABBAR_H + 16) + 'px' }}>
-        {DAYS.map((d) => {
+        {ctx.days.map((d) => {
           const day = mine.filter((s) => s.day === d.id).sort((a, b) => a.start.localeCompare(b.start))
           if (day.length === 0) return null
           return (

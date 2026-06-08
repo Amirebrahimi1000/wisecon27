@@ -1,7 +1,6 @@
 // WISEcon27 — Sponsors (pushed): grouped by tier (Host/Platinum big, Gold/Silver 2-col).
-import { SPONSORS } from '../data'
 import { T, TABBAR_H } from '../theme'
-import type { AppCtx } from '../store'
+import type { AppCtx } from '../appState'
 import type { SponsorTier } from '../types'
 import { AppHeader, Eyebrow, Press } from '../components/primitives'
 
@@ -13,7 +12,7 @@ export function Sponsors({ ctx }: { ctx: AppCtx }) {
       <AppHeader title="Sponsors" sub="With thanks to our partners" onBack={ctx.back} />
       <div style={{ padding: '12px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {TIERS.map((tier) => {
-          const list = SPONSORS.filter((s) => s.tier === tier)
+          const list = ctx.sponsors.filter((s) => s.tier === tier)
           if (!list.length) return null
           const big = tier === 'Host' || tier === 'Platinum'
           return (

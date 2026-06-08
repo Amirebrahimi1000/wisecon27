@@ -1,8 +1,8 @@
 // WISEcon27 — Home, three directions: Classic · Cards · Bold (default).
 // Ported from prototype/app/home.jsx.
-import { CLOCK, ME, SESSIONS, SPEAKERS, TRACKS } from '../data'
+import { CLOCK, TRACKS } from '../data'
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
-import type { AppCtx, HomeVariant } from '../store'
+import type { AppCtx, HomeVariant } from '../appState'
 import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
 import { Avatar, BookmarkBtn, Eyebrow, IconBtn, Press, SessionRow, TrackTag } from '../components/primitives'
@@ -10,7 +10,7 @@ import type { Session } from '../types'
 
 function planForHome(ctx: AppCtx) {
   const { today, now } = CLOCK
-  const mine = SESSIONS.filter((s) => ctx.isBookmarked(s.id) && s.day === today).sort((a, b) =>
+  const mine = ctx.sessions.filter((s) => ctx.isBookmarked(s.id) && s.day === today).sort((a, b) =>
     a.start.localeCompare(b.start),
   )
   const upNext = mine.find((s) => s.start >= now) || mine[0]
@@ -77,7 +77,7 @@ function HomeClassic({ ctx }: { ctx: AppCtx }) {
         </div>
         <div style={{ marginTop: 22 }}>
           <div style={{ fontFamily: T.onest, fontSize: 13, color: T.muted }}>Good morning</div>
-          <h1 style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 28, color: T.ink, lineHeight: 1.1, marginTop: 2 }}>{ME.name.split(' ')[0]}</h1>
+          <h1 style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 28, color: T.ink, lineHeight: 1.1, marginTop: 2 }}>{ctx.me.name.split(' ')[0]}</h1>
           <div style={{ fontFamily: T.sig, fontSize: 14, color: T.body, marginTop: 6 }}>Tuesday, 14 September · Day 1 of 3</div>
         </div>
       </div>
@@ -135,12 +135,12 @@ function HomeCards({ ctx }: { ctx: AppCtx }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
           <div>
             <div style={{ fontFamily: T.onest, fontSize: 12.5, color: T.muted }}>Good morning</div>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 24, color: T.ink, lineHeight: 1.1 }}>Hello, {ME.name.split(' ')[0]}</div>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 24, color: T.ink, lineHeight: 1.1 }}>Hello, {ctx.me.name.split(' ')[0]}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} />
             <Press onClick={() => ctx.setTab('profile')}>
-              <Avatar initials={ME.initials} color={ME.color} size={38} />
+              <Avatar initials={ctx.me.initials} color={ctx.me.color} size={38} />
             </Press>
           </div>
         </div>
@@ -219,7 +219,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
             <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} color="#fff" bg="rgba(255,255,255,0.16)" />
           </div>
           <div style={{ marginTop: 26 }}>
-            <div style={{ fontFamily: T.onest, fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>Good morning, {ME.name.split(' ')[0]}</div>
+            <div style={{ fontFamily: T.onest, fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>Good morning, {ctx.me.name.split(' ')[0]}</div>
             <h1 style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 40, color: '#fff', lineHeight: 1.0, letterSpacing: '-0.02em', marginTop: 8 }}>
               Assessment,
               <br />
@@ -227,9 +227,9 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
             </h1>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-            <HeroStat n={SESSIONS.filter((s) => s.day === 'd1' && s.type !== 'break').length} label="sessions today" />
+            <HeroStat n={ctx.sessions.filter((s) => s.day === CLOCK.today && s.type !== 'break').length} label="sessions today" />
             <HeroStat n={mine.length} label="in your plan" />
-            <HeroStat n={SPEAKERS.length} label="speakers" />
+            <HeroStat n={ctx.speakers.length} label="speakers" />
           </div>
         </div>
       </div>

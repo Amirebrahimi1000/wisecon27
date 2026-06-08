@@ -3,12 +3,13 @@
 // from the prototype are intentionally NOT ported (prototype-only chrome).
 import { useEffect, useRef } from 'react'
 import { T, TABBAR_H } from './theme'
-import { useAppState, type AppCtx, type PushScreen, type TabId } from './store'
+import { useAppState, type AppCtx, type PushScreen, type TabId } from './appState'
 import { useAuth } from './auth'
 import { isSupabaseConfigured } from './lib/supabase'
 import { Icon, type IconName } from './components/Icon'
 import { Press } from './components/primitives'
 import { SignIn } from './screens/SignIn'
+import { ProfileSetup } from './screens/ProfileSetup'
 
 import { Home } from './screens/Home'
 import { Agenda } from './screens/Agenda'
@@ -89,6 +90,7 @@ function AuthedApp() {
   const ctx = useAppState()
   const scrollRef = useRef<HTMLDivElement>(null)
 
+
   const top = ctx.stack[ctx.stack.length - 1] || null
   const screenKey = ctx.tab + '·' + ctx.stack.length + '·' + (top ? top.screen : '')
 
@@ -113,6 +115,10 @@ function AuthedApp() {
   if (top) ScreenEl = PUSH_SCREENS[top.screen]
   else if (ctx.tab === 'home') ScreenEl = Home
   else ScreenEl = TAB_SCREENS[ctx.tab]
+
+  // gate on live content + first-time profile completion (after all hooks)
+  if (ctx.loading) return <Splash />
+  if (!ctx.me.name.trim()) return <ProfileSetup ctx={ctx} />
 
   return (
     <div style={{ height: '100%', position: 'relative', background: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>

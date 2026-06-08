@@ -1,11 +1,11 @@
 // WISEcon27 — Ticket / Badge (pushed): full green screen, perforated card, QR.
-import { ME } from '../data'
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
-import type { AppCtx } from '../store'
+import type { AppCtx } from '../appState'
 import { Eyebrow, IconBtn } from '../components/primitives'
 import { QR } from '../components/QR'
 
 export function Ticket({ ctx }: { ctx: AppCtx }) {
+  const ME = ctx.me
   return (
     <div style={{ minHeight: '100%', background: 'linear-gradient(160deg, var(--wf-green-9), var(--wf-green-11))', paddingBottom: TABBAR_H + 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: STATUS_INSET + 6 + 'px 14px 6px' }}>

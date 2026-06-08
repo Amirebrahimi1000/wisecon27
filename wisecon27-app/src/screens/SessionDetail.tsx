@@ -1,8 +1,8 @@
 // WISEcon27 — Session Detail: hero, action bar, Details / Q&A / Live poll tabs.
 import { useState } from 'react'
-import { DAYS, TRACKS, speakersOf } from '../data'
+import { TRACKS } from '../data'
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
-import type { AppCtx } from '../store'
+import type { AppCtx } from '../appState'
 import type { Session, Speaker } from '../types'
 import { Icon } from '../components/Icon'
 import { Avatar, Btn, Eyebrow, IconBtn, Press, TYPE_META } from '../components/primitives'
@@ -10,11 +10,11 @@ import { Avatar, Btn, Eyebrow, IconBtn, Press, TYPE_META } from '../components/p
 export function SessionDetail({ ctx }: { ctx: AppCtx }) {
   const s = ctx.params.session!
   const t = TRACKS[s.track]
-  const sp = speakersOf(s)
+  const sp = ctx.speakersOf(s)
   const isBreak = s.type === 'break' || s.type === 'social'
   const [tab, setTab] = useState<'details' | 'qa' | 'poll'>('details')
   const bm = ctx.isBookmarked(s.id)
-  const day = DAYS.find((d) => d.id === s.day)!
+  const day = ctx.days.find((d) => d.id === s.day)!
 
   return (
     <div style={{ paddingBottom: TABBAR_H + 16 }}>

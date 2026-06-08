@@ -2,7 +2,7 @@
 // The product decision is "Bold" (default); Classic and Cards are exposed here
 // per the handoff, which documents them as a possible setting / A/B.
 import { T, TABBAR_H } from '../theme'
-import type { AppCtx, HomeVariant } from '../store'
+import type { AppCtx, HomeVariant } from '../appState'
 import { Icon } from '../components/Icon'
 import { AppHeader, Eyebrow, Press } from '../components/primitives'
 

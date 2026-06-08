@@ -1,7 +1,6 @@
 // WISEcon27 — Profile: identity, badge card, list menu, sign out.
-import { ME, SESSIONS } from '../data'
 import { T, TABBAR_H } from '../theme'
-import type { AppCtx, PushScreen, TabId } from '../store'
+import type { AppCtx, PushScreen, TabId } from '../appState'
 import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Eyebrow, IconBtn, Press } from '../components/primitives'
@@ -10,8 +9,9 @@ import { useAuth } from '../auth'
 
 export function Profile({ ctx }: { ctx: AppCtx }) {
   const { signOut } = useAuth()
-  const count = SESSIONS.filter((s) => ctx.isBookmarked(s.id)).length
-  const connectedCount = Object.values(ctx.connections).filter((s) => s === 'connected').length
+  const me = ctx.me
+  const count = ctx.sessions.filter((s) => ctx.isBookmarked(s.id)).length
+  const connectedCount = ctx.attendees.filter((a) => a.status === 'connected').length
 
   interface Row { icon: IconName; label: string; detail?: string; to: () => void }
   const rows: Row[] = [
@@ -30,22 +30,22 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
       <div style={{ padding: '8px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {/* identity */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '8px 4px 18px' }}>
-          <Avatar initials={ME.initials} color={ME.color} size={64} />
+          <Avatar initials={me.initials} color={me.color} size={64} />
           <div>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 20, color: T.ink }}>{ME.name}</div>
-            <div style={{ fontFamily: T.sig, fontSize: 14, color: T.body }}>{ME.role}</div>
-            <div style={{ fontFamily: T.onest, fontSize: 12.5, color: T.muted, marginTop: 1 }}>{ME.org}</div>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 20, color: T.ink }}>{me.name}</div>
+            <div style={{ fontFamily: T.sig, fontSize: 14, color: T.body }}>{me.role}</div>
+            <div style={{ fontFamily: T.onest, fontSize: 12.5, color: T.muted, marginTop: 1 }}>{me.org}</div>
           </div>
         </div>
         {/* badge */}
         <Press onClick={() => ctx.push('ticket', {})} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'linear-gradient(135deg, #111, #2a2a2a)', borderRadius: 'var(--radius-5)', padding: 16, color: '#fff', marginBottom: 18 }}>
           <div style={{ background: '#fff', borderRadius: 'var(--radius-3)', padding: 6 }}>
-            <QR value={ME.badgeId} size={56} />
+            <QR value={me.badgeId} size={56} />
           </div>
           <div style={{ flex: 1 }}>
             <Eyebrow color="rgba(255,255,255,0.6)">My badge</Eyebrow>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16, marginTop: 3 }}>{ME.ticket}</div>
-            <div style={{ fontFamily: T.onest, fontSize: 12.5, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{ME.badgeId}</div>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16, marginTop: 3 }}>{me.ticket}</div>
+            <div style={{ fontFamily: T.onest, fontSize: 12.5, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{me.badgeId}</div>
           </div>
           <Icon name="qr" size={22} style={{ color: 'rgba(255,255,255,0.7)' }} />
         </Press>

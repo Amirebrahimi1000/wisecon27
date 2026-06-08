@@ -1,15 +1,15 @@
 // WISEcon27 — Agenda. Day selector + track filter chips + session list.
 import { useState } from 'react'
-import { DAYS, SESSIONS, TRACKS } from '../data'
+import { TRACKS } from '../data'
 import { T, TABBAR_H } from '../theme'
-import type { AppCtx } from '../store'
+import type { AppCtx } from '../appState'
 import type { TrackId } from '../types'
 import { AppHeader, ChipRow, Chip, IconBtn, Press, SessionRow } from '../components/primitives'
 
 export function Agenda({ ctx }: { ctx: AppCtx }) {
   const [day, setDay] = useState<string>(ctx.params.day || 'd1')
   const [track, setTrack] = useState<'all' | TrackId>('all')
-  const list = SESSIONS.filter((s) => s.day === day && (track === 'all' || s.track === track)).sort((a, b) =>
+  const list = ctx.sessions.filter((s) => s.day === day && (track === 'all' || s.track === track)).sort((a, b) =>
     a.start.localeCompare(b.start),
   )
   return (
@@ -17,7 +17,7 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
       <AppHeader title="Agenda" sub="14–16 September · Aarhus" right={<IconBtn name="search" onClick={() => ctx.toast('Search coming soon')} />} />
       {/* day selector */}
       <div style={{ display: 'flex', gap: 8, padding: '14px 16px 4px' }}>
-        {DAYS.map((d) => {
+        {ctx.days.map((d) => {
           const on = day === d.id
           return (
             <Press key={d.id} onClick={() => setDay(d.id)} style={{ flex: 1, padding: '9px 4px', borderRadius: 'var(--radius-4)', textAlign: 'center', background: on ? T.green9 : '#fff', color: on ? '#fff' : T.body, boxShadow: on ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>

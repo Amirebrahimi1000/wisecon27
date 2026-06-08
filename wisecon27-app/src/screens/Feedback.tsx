@@ -1,7 +1,7 @@
 // WISEcon27 — Feedback (pushed): star rating, chips, textarea, success state.
 import { useState } from 'react'
 import { T, TABBAR_H } from '../theme'
-import type { AppCtx } from '../store'
+import type { AppCtx } from '../appState'
 import { Icon } from '../components/Icon'
 import { AppHeader, Btn, Eyebrow, Press } from '../components/primitives'
 
