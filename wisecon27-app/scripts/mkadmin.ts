@@ -14,7 +14,12 @@ const email = process.argv[2]
 if (!email) { console.error('Pass an email.'); process.exit(1) }
 
 const { data: list } = await db.auth.admin.listUsers()
-const user = list.users.find((u) => u.email === email)
-if (!user) { console.error('No user with email ' + email); process.exit(1) }
+let user = list.users.find((u) => u.email === email)
+if (!user) {
+  const { data: created, error: cerr } = await db.auth.admin.createUser({ email, email_confirm: true })
+  if (cerr || !created.user) { console.error('Could not create user: ' + cerr?.message); process.exit(1) }
+  user = created.user
+  console.log(`• created account for ${email}`)
+}
 const { error } = await db.from('profiles').update({ is_admin: true }).eq('id', user.id)
 console.log(error ? '✗ ' + error.message : `✓ ${email} is now an admin`)

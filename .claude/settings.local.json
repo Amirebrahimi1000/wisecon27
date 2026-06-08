@@ -25,7 +25,8 @@
       "Bash(pkill -f vite)",
       "Bash(npx tsx *)",
       "Bash(npm pkg *)",
-      "Bash(npx --yes web-push generate-vapid-keys --json)"
+      "Bash(npx --yes web-push generate-vapid-keys --json)",
+      "Bash(pbcopy)"
     ]
   }
 }
