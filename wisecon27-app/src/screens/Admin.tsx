@@ -2,12 +2,13 @@
 // Broadcast announcements and manage sessions / speakers / sponsors. All writes
 // go through Supabase under the "admin write" RLS policy; realtime + refreshContent
 // propagate changes to every delegate.
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { supabase } from '../lib/supabase'
 import { TRACKS } from '../data'
 import { T, TABBAR_H } from '../theme'
-import type { AppCtx } from '../appState'
+import type { AppCtx, EventInfoItem } from '../appState'
 import type { Session, Speaker, Sponsor, SponsorTier, TrackId, SessionType, NotificationType } from '../types'
+import { Icon, type IconName } from '../components/Icon'
 import { AppHeader, Btn, Eyebrow, Press } from '../components/primitives'
 
 /* ── small field helpers ── */
@@ -39,11 +40,11 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   )
 }
 
-type AdminTab = 'announce' | 'sessions' | 'speakers' | 'sponsors'
+type AdminTab = 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'info'
 
 export function Admin({ ctx }: { ctx: AppCtx }) {
   const [tab, setTab] = useState<AdminTab>('announce')
-  const TABS: [AdminTab, string][] = [['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors']]
+  const TABS: [AdminTab, string][] = [['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['info', 'Info']]
   return (
     <div>
       <AppHeader title="Admin" sub="Organiser tools" onBack={ctx.back} />
@@ -57,6 +58,7 @@ export function Admin({ ctx }: { ctx: AppCtx }) {
         {tab === 'sessions' && <Sessions ctx={ctx} />}
         {tab === 'speakers' && <Speakers ctx={ctx} />}
         {tab === 'sponsors' && <Sponsors ctx={ctx} />}
+        {tab === 'info' && <EventInfo ctx={ctx} />}
       </div>
     </div>
   )
@@ -101,6 +103,56 @@ function Announce({ ctx }: { ctx: AppCtx }) {
   )
 }
 
+/* ════════ Event info & Wi-Fi ════════ */
+const INFO_ICONS: IconName[] = ['wifi', 'shield', 'pin', 'clock', 'coffee', 'info', 'map', 'ticket', 'star', 'heart']
+function EventInfo({ ctx }: { ctx: AppCtx }) {
+  const [editing, setEditing] = useState<(Partial<EventInfoItem> & { id?: string }) | null>(null)
+  if (editing) return <EventInfoEditor ctx={ctx} initial={editing} onDone={() => setEditing(null)} />
+  return (
+    <div>
+      <Btn kind="primary" full icon="plus" onClick={() => setEditing({ icon: 'info', label: '', detail: '' })} style={{ marginBottom: 14 }}>New info item</Btn>
+      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+        {ctx.eventInfo.map((it, i) => (
+          <Press key={it.id} onClick={() => setEditing(it)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: i === ctx.eventInfo.length - 1 ? 'none' : '1px solid ' + T.line }}>
+            <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-3)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}><Icon name={it.icon as IconName} size={16} /></div>
+            <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{it.label}</span>
+            <span style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.detail}</span>
+          </Press>
+        ))}
+      </div>
+    </div>
+  )
+}
+function EventInfoEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial<EventInfoItem> & { id?: string }; onDone: () => void }) {
+  const [it, setIt] = useState(initial)
+  const [saving, setSaving] = useState(false)
+  const set = (patch: Partial<EventInfoItem>) => setIt((x) => ({ ...x, ...patch }))
+  const save = async () => {
+    if (!it.label?.trim() || saving) return
+    setSaving(true)
+    const row = {
+      id: it.id ?? 'ei-' + Date.now(),
+      icon: it.icon || 'info', label: it.label?.trim(), detail: it.detail ?? '',
+      sort: ctx.eventInfo.length,
+    }
+    const { error } = await supabase.from('event_info').upsert(row)
+    setSaving(false)
+    if (error) return ctx.toast(error.message)
+    await ctx.refreshContent()
+    ctx.toast('Info saved')
+    onDone()
+  }
+  return (
+    <div>
+      <Press onClick={onDone} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.green10, marginBottom: 12 }}>‹ Back to list</Press>
+      <Field label="Icon"><Select value={it.icon ?? 'info'} onChange={(v) => set({ icon: v })} options={INFO_ICONS.map((i) => [i, i])} /></Field>
+      <Field label="Label"><Text value={it.label ?? ''} onChange={(v) => set({ label: v })} placeholder="e.g. Wi-Fi password" /></Field>
+      <Field label="Detail"><Text value={it.detail ?? ''} onChange={(v) => set({ detail: v })} placeholder="e.g. assessment27" /></Field>
+      <Btn kind="primary" full size="lg" onClick={save} disabled={!it.label?.trim() || saving}>{saving ? 'Saving…' : 'Save'}</Btn>
+    </div>
+  )
+}
+
 /* ════════ Sessions ════════ */
 const blankSession = (dayId: string): Partial<Session> & { id?: string } => ({
   title: '', day: dayId, start: '09:00', end: '09:45', type: 'talk', track: 'pedagogy', room: '', desc: '', tags: [],
@@ -132,25 +184,76 @@ function Sessions({ ctx }: { ctx: AppCtx }) {
     </div>
   )
 }
+interface PollOptRow { id?: string; label: string }
 function SessionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial<Session> & { id?: string }; onDone: () => void }) {
   const [s, setS] = useState(initial)
   const [saving, setSaving] = useState(false)
   const set = (patch: Partial<Session>) => setS((p) => ({ ...p, ...patch }))
+  // fixed id for this editor session (so speakers/poll can reference new sessions)
+  const [sid] = useState(initial.id ?? 'sx-' + Date.now())
+
+  // speaker assignment
+  const [speakerIds, setSpeakerIds] = useState<string[]>(initial.speakers ?? [])
+  const toggleSpeaker = (id: string) =>
+    setSpeakerIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+
+  // poll builder
+  const [pollId, setPollId] = useState<string | null>(null)
+  const [pollQuestion, setPollQuestion] = useState('')
+  const [pollOpts, setPollOpts] = useState<PollOptRow[]>([{ label: '' }, { label: '' }])
+  const [removedOptIds, setRemovedOptIds] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!initial.id) return
+    ;(async () => {
+      const { data: poll } = await supabase.from('polls').select('id, question').eq('session_id', initial.id).maybeSingle()
+      if (!poll) return
+      setPollId(poll.id as string)
+      setPollQuestion(poll.question as string)
+      const { data: opts } = await supabase.from('poll_options').select('id, label, sort').eq('poll_id', poll.id).order('sort')
+      if (opts?.length) setPollOpts(opts.map((o) => ({ id: o.id as string, label: o.label as string })))
+    })()
+  }, [initial.id])
+
   const save = async () => {
     if (!s.title?.trim() || saving) return
     setSaving(true)
-    const row = {
-      id: s.id ?? 'sx-' + Date.now(),
-      day_id: s.day, start: s.start, end: s.end, title: s.title?.trim(), type: s.type,
+    const { error } = await supabase.from('sessions').upsert({
+      id: sid, day_id: s.day, start: s.start, end: s.end, title: s.title?.trim(), type: s.type,
       track: s.track, room: s.room ?? '', desc: s.desc ?? '', tags: s.tags ?? [],
+    })
+    if (error) { setSaving(false); return ctx.toast(error.message) }
+
+    // sync speaker assignments
+    await supabase.from('session_speakers').delete().eq('session_id', sid)
+    if (speakerIds.length)
+      await supabase.from('session_speakers').insert(speakerIds.map((id, ord) => ({ session_id: sid, speaker_id: id, ord })))
+
+    // sync poll (needs a question + at least 2 non-empty options)
+    const q = pollQuestion.trim()
+    const opts = pollOpts.map((o) => ({ ...o, label: o.label.trim() })).filter((o) => o.label)
+    if (q && opts.length >= 2) {
+      let pid = pollId
+      if (!pid) {
+        const { data } = await supabase.from('polls').insert({ session_id: sid, question: q, is_live: true }).select('id').single()
+        pid = (data?.id as string) ?? null
+      } else {
+        await supabase.from('polls').update({ question: q }).eq('id', pid)
+      }
+      if (pid) {
+        if (removedOptIds.length) await supabase.from('poll_options').delete().in('id', removedOptIds)
+        await supabase.from('poll_options').upsert(
+          opts.map((o, i) => (o.id ? { id: o.id, poll_id: pid, label: o.label, sort: i } : { poll_id: pid, label: o.label, sort: i })),
+        )
+      }
     }
-    const { error } = await supabase.from('sessions').upsert(row)
+
     setSaving(false)
-    if (error) return ctx.toast(error.message)
     await ctx.refreshContent()
-    ctx.toast(s.id ? 'Session updated' : 'Session added')
+    ctx.toast(initial.id ? 'Session updated' : 'Session added')
     onDone()
   }
+
   return (
     <div>
       <Press onClick={onDone} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.green10, marginBottom: 12 }}>‹ Back to list</Press>
@@ -164,6 +267,36 @@ function SessionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
       <Field label="Track"><Select value={s.track ?? 'pedagogy'} onChange={(v) => set({ track: v as TrackId })} options={(Object.keys(TRACKS) as TrackId[]).map((k) => [k, TRACKS[k].name])} /></Field>
       <Field label="Room"><Text value={s.room ?? ''} onChange={(v) => set({ room: v })} placeholder="e.g. Main Stage" /></Field>
       <Field label="Description"><Text value={s.desc ?? ''} onChange={(v) => set({ desc: v })} area /></Field>
+
+      {/* speaker assignment */}
+      <Eyebrow style={{ marginBottom: 8, marginTop: 4 }}>Speakers</Eyebrow>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+        {ctx.speakers.map((p) => {
+          const on = speakerIds.includes(p.id)
+          return (
+            <Press key={p.id} onClick={() => toggleSpeaker(p.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 999, fontFamily: T.sig, fontWeight: 600, fontSize: 13, background: on ? T.green9 : '#fff', color: on ? '#fff' : T.body, boxShadow: on ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>
+              {on && <Icon name="check" size={13} stroke={2.6} />}{p.name}
+            </Press>
+          )
+        })}
+      </div>
+
+      {/* live poll builder */}
+      <Eyebrow style={{ marginBottom: 8 }}>Live poll (optional)</Eyebrow>
+      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 18 }}>
+        <Text value={pollQuestion} onChange={setPollQuestion} placeholder="Poll question (leave blank for none)" />
+        <div style={{ height: 10 }} />
+        {pollOpts.map((o, i) => (
+          <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ flex: 1 }}><Text value={o.label} onChange={(v) => setPollOpts((prev) => prev.map((x, j) => (j === i ? { ...x, label: v } : x)))} placeholder={`Option ${i + 1}`} /></div>
+            <Press onClick={() => { if (o.id) setRemovedOptIds((r) => [...r, o.id!]); setPollOpts((prev) => prev.filter((_, j) => j !== i)) }} style={{ color: T.muted, padding: 6 }}><Icon name="close" size={18} /></Press>
+          </div>
+        ))}
+        <Press onClick={() => setPollOpts((prev) => [...prev, { label: '' }])} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: T.green10, fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, marginTop: 2 }}>
+          <Icon name="plus" size={15} stroke={2.2} />Add option
+        </Press>
+      </div>
+
       <Btn kind="primary" full size="lg" onClick={save} disabled={!s.title?.trim() || saving}>{saving ? 'Saving…' : 'Save session'}</Btn>
     </div>
   )
