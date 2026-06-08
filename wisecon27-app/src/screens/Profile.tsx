@@ -1,10 +1,12 @@
 // WISEcon27 — Profile: identity, badge card, list menu, sign out.
+import { useRef, useState } from 'react'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx, PushScreen, TabId } from '../appState'
 import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Eyebrow, IconBtn, Press } from '../components/primitives'
 import { QR } from '../components/QR'
+import { uploadAvatar } from '../lib/storage'
 import { useAuth } from '../auth'
 
 export function Profile({ ctx }: { ctx: AppCtx }) {
@@ -12,14 +14,27 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
   const me = ctx.me
   const count = ctx.sessions.filter((s) => ctx.isBookmarked(s.id)).length
   const connectedCount = ctx.attendees.filter((a) => a.status === 'connected').length
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const pickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    const { url, error } = await uploadAvatar(ctx.userId, file)
+    setUploading(false)
+    if (error) ctx.toast(error)
+    else if (url) { ctx.setAvatar(url); ctx.toast('Profile photo updated') }
+  }
 
   interface Row { icon: IconName; label: string; detail?: string; to: () => void }
   const rows: Row[] = [
     { icon: 'calendar', label: 'My schedule', detail: count + ' saved', to: () => ctx.push('myschedule', {}) },
     { icon: 'bell', label: 'Notifications', detail: ctx.unread > 0 ? ctx.unread + ' new' : '', to: () => ctx.push('notifications', {}) },
     { icon: 'connect', label: 'My connections', detail: String(connectedCount), to: () => ctx.setTab('connect' as TabId) },
+    { icon: 'sparkles', label: 'Interactive activities', to: () => ctx.push('activities', {}) },
     { icon: 'grid', label: 'Sponsors & exhibitors', to: () => ctx.push('sponsors', {}) },
     { icon: 'star', label: 'Give feedback', to: () => ctx.push('feedback', {}) },
+    { icon: 'poll', label: 'Post-conference survey', detail: ctx.surveyDone ? 'Done' : '', to: () => ctx.push('survey', {}) },
     { icon: 'info', label: 'Event info & Wi-Fi', to: () => ctx.push('info', {}) },
     { icon: 'settings', label: 'Settings', to: () => ctx.push('settings' as PushScreen, {}) },
     ...(ctx.isAdmin ? [{ icon: 'grid' as IconName, label: 'Admin tools', detail: 'Organiser', to: () => ctx.push('admin', {}) }] : []),
@@ -31,7 +46,13 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
       <div style={{ padding: '8px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {/* identity */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '8px 4px 18px' }}>
-          <Avatar initials={me.initials} color={me.color} size={64} />
+          <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto} style={{ display: 'none' }} />
+          <Press onClick={() => fileRef.current?.click()} style={{ position: 'relative' }}>
+            <Avatar initials={me.initials} color={me.color} size={64} src={me.avatarUrl} style={{ opacity: uploading ? 0.5 : 1 }} />
+            <div style={{ position: 'absolute', right: -2, bottom: -2, width: 24, height: 24, borderRadius: '50%', background: T.green9, color: '#fff', display: 'grid', placeItems: 'center', boxShadow: '0 0 0 2px #fff' }}>
+              <Icon name="plus" size={14} stroke={2.4} />
+            </div>
+          </Press>
           <div>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 20, color: T.ink }}>{me.name}</div>
             <div style={{ fontFamily: T.sig, fontSize: 14, color: T.body }}>{me.role}</div>

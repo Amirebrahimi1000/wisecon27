@@ -7,13 +7,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { useAuth } from './auth'
 import type {
-  AppNotification, Attendee, ConnectStatus, Day, Me, Session, Speaker, Sponsor,
+  Activity, AppNotification, Attendee, ConnectStatus, Day, Me, Session, Speaker, Sponsor, SurveyQuestion,
 } from './types'
 
 export type TabId = 'home' | 'agenda' | 'speakers' | 'connect' | 'profile'
 export type PushScreen =
   | 'session' | 'speaker' | 'myschedule' | 'notifications' | 'sponsors'
   | 'ticket' | 'feedback' | 'info' | 'settings' | 'admin'
+  | 'activities' | 'survey' | 'exhibitor'
 export type HomeVariant = 'classic' | 'cards' | 'bold'
 
 export interface EventInfoItem { id: string; icon: string; label: string; detail: string }
@@ -21,6 +22,7 @@ export interface EventInfoItem { id: string; icon: string; label: string; detail
 export interface NavParams {
   session?: Session
   speaker?: Speaker
+  sponsor?: Sponsor
   day?: string
   _fromTab?: boolean
 }
@@ -63,6 +65,18 @@ export interface AppCtx {
   // connections (other delegates)
   attendees: Attendee[]
   setConnection: (id: string, status: ConnectStatus) => void
+  // interactive activities (with sign-up)
+  activities: ActivityView[]
+  toggleActivitySignup: (id: string) => void
+  // per-session feedback
+  myFeedback: Record<string, { stars: number; tags: string[]; comment: string }>
+  submitSessionFeedback: (sessionId: string, stars: number, tags: string[], comment: string) => Promise<void>
+  // post-conference survey
+  surveyQuestions: SurveyQuestion[]
+  surveyDone: boolean
+  submitSurvey: (answers: Record<string, unknown>) => Promise<void>
+  // profile picture
+  setAvatar: (url: string) => void
   // toast
   toast: (msg: string) => void
   toastMsg: string | null
@@ -76,23 +90,35 @@ interface SessionRow {
   id: string; day_id: string; start: string; end: string; title: string
   type: Session['type']; track: Session['track']; room: string; desc: string
   tags: string[] | null; going: number; capacity: number | null
+  slides_path: string | null; slides_name: string | null
   session_speakers?: { speaker_id: string; ord: number }[]
 }
 const mapSession = (r: SessionRow): Session => ({
   id: r.id, day: r.day_id, start: r.start, end: r.end, title: r.title, type: r.type,
   track: r.track, room: r.room, desc: r.desc, tags: r.tags ?? [], going: r.going,
   capacity: r.capacity ?? undefined,
+  slidesPath: r.slides_path, slidesName: r.slides_name,
   speakers: (r.session_speakers ?? []).slice().sort((a, b) => a.ord - b.ord).map((x) => x.speaker_id),
 })
 
 interface ProfileRow {
   id: string; name: string; initials: string; role: string; org: string; color: string
-  ticket: string; badge_id: string; interests: string[]; is_admin: boolean
+  ticket: string; badge_id: string; interests: string[]; is_admin: boolean; avatar_url: string | null
 }
 const mapProfile = (r: ProfileRow): Me => ({
   name: r.name, initials: r.initials, role: r.role, org: r.org, color: r.color,
-  ticket: r.ticket, badgeId: r.badge_id, bookmarks: [],
+  ticket: r.ticket, badgeId: r.badge_id, bookmarks: [], avatarUrl: r.avatar_url,
 })
+
+interface ActivityRow {
+  id: string; title: string; description: string; location: string
+  day_id: string | null; start: string; end: string; capacity: number | null
+}
+export interface ActivityView extends Activity {
+  going: number
+  signedUp: boolean
+  full: boolean
+}
 
 const initialsFrom = (name: string) =>
   name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('') || '?'
@@ -131,6 +157,14 @@ export function useAppState(): AppCtx {
   const [readSet, setReadSet] = useState<Set<string>>(new Set())
   const [attendees, setAttendees] = useState<Attendee[]>([])
 
+  // features: activities, survey, per-session feedback
+  const [activitiesRaw, setActivitiesRaw] = useState<ActivityRow[]>([])
+  const [signupCounts, setSignupCounts] = useState<Record<string, number>>({})
+  const [mySignups, setMySignups] = useState<Set<string>>(new Set())
+  const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestion[]>([])
+  const [surveyDone, setSurveyDone] = useState(false)
+  const [myFeedback, setMyFeedback] = useState<Record<string, { stars: number; tags: string[]; comment: string }>>({})
+
   // ui
   const [homeVariant, setHomeVariantState] = useState<HomeVariant>(() => {
     const raw = localStorage.getItem(HOME_KEY)
@@ -150,29 +184,36 @@ export function useAppState(): AppCtx {
 
   /* ── load all content + user data ── */
   const loadContent = useCallback(async () => {
-    const [d, sp, se, so, ei] = await Promise.all([
+    const [d, sp, se, so, ei, act, sq] = await Promise.all([
       supabase.from('days').select('*').order('sort'),
       supabase.from('speakers').select('*').order('sort'),
       supabase.from('sessions').select('*, session_speakers(speaker_id, ord)'),
       supabase.from('sponsors').select('*').order('sort'),
       supabase.from('event_info').select('*').order('sort'),
+      supabase.from('activities').select('*').order('sort'),
+      supabase.from('survey_questions').select('*').eq('active', true).order('sort'),
     ])
     if (d.data) setDays(d.data as Day[])
     if (sp.data) setSpeakers(sp.data as Speaker[])
     if (se.data) setSessions((se.data as SessionRow[]).map(mapSession))
     if (so.data) setSponsors(so.data as Sponsor[])
     if (ei.data) setEventInfo(ei.data as EventInfoItem[])
+    if (act.data) setActivitiesRaw(act.data as ActivityRow[])
+    if (sq.data) setSurveyQuestions(sq.data as SurveyQuestion[])
   }, [])
 
   const loadUserData = useCallback(async () => {
     if (!userId) return
-    const [prof, bm, ann, reads, profs, conns] = await Promise.all([
+    const [prof, bm, ann, reads, profs, conns, signups, survey, feedback] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).single(),
       supabase.from('bookmarks').select('session_id').eq('user_id', userId),
       supabase.from('announcements').select('*').order('created_at', { ascending: false }),
       supabase.from('notification_reads').select('announcement_id').eq('user_id', userId),
       supabase.from('profiles').select('*'),
       supabase.from('connections').select('*'),
+      supabase.from('activity_signups').select('activity_id, user_id'),
+      supabase.from('survey_responses').select('answers').eq('user_id', userId).maybeSingle(),
+      supabase.from('session_feedback').select('session_id, stars, tags, comment').eq('user_id', userId),
     ])
     if (prof.data) {
       const p = prof.data as ProfileRow
@@ -205,12 +246,31 @@ export function useAppState(): AppCtx {
           .filter((p) => p.id !== userId && p.name.trim() !== '')
           .map((p) => ({
             id: p.id, name: p.name, role: p.role, org: p.org, initials: p.initials || initialsFrom(p.name),
-            color: p.color, interests: p.interests,
+            color: p.color, interests: p.interests, avatarUrl: p.avatar_url,
             mutual: p.interests.filter((i) => myInterests.has(i)).length,
             status: statusFor(p.id),
           })),
       )
     }
+
+    // activity sign-ups → counts + my set
+    const su = (signups.data ?? []) as { activity_id: string; user_id: string }[]
+    const counts: Record<string, number> = {}
+    const mine = new Set<string>()
+    for (const r of su) {
+      counts[r.activity_id] = (counts[r.activity_id] ?? 0) + 1
+      if (r.user_id === userId) mine.add(r.activity_id)
+    }
+    setSignupCounts(counts)
+    setMySignups(mine)
+
+    setSurveyDone(!!survey.data)
+    const fb: Record<string, { stars: number; tags: string[]; comment: string }> = {}
+    for (const f of (feedback.data ?? []) as { session_id: string; stars: number; tags: string[]; comment: string }[]) {
+      fb[f.session_id] = { stars: f.stars, tags: f.tags ?? [], comment: f.comment ?? '' }
+    }
+    setMyFeedback(fb)
+
     setLoading(false)
   }, [userId])
 
@@ -227,6 +287,7 @@ export function useAppState(): AppCtx {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => loadUserData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => loadContent())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => loadUserData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_signups' }, () => loadUserData())
       .subscribe()
     return () => {
       supabase.removeChannel(ch)
@@ -240,6 +301,20 @@ export function useAppState(): AppCtx {
   )
   const unread = notifications.filter((n) => n.unread).length
   const top = stack[stack.length - 1]
+
+  const activities: ActivityView[] = useMemo(
+    () =>
+      activitiesRaw.map((a) => {
+        const going = signupCounts[a.id] ?? 0
+        const signedUp = mySignups.has(a.id)
+        return {
+          id: a.id, title: a.title, description: a.description, location: a.location,
+          day: a.day_id, start: a.start, end: a.end, capacity: a.capacity,
+          going, signedUp, full: a.capacity != null && going >= a.capacity && !signedUp,
+        }
+      }),
+    [activitiesRaw, signupCounts, mySignups],
+  )
 
   const toast = useCallback((msg: string) => {
     setToastMsg(msg)
@@ -295,6 +370,37 @@ export function useAppState(): AppCtx {
     localStorage.setItem(HOME_KEY, v)
   }
 
+  const setAvatar = (url: string) => {
+    setMe((m) => ({ ...m, avatarUrl: url }))
+    supabase.from('profiles').update({ avatar_url: url }).eq('id', userId).then()
+  }
+
+  const toggleActivitySignup = (id: string) => {
+    const a = activities.find((x) => x.id === id)
+    if (!a) return
+    if (a.signedUp) {
+      setMySignups((prev) => { const n = new Set(prev); n.delete(id); return n })
+      setSignupCounts((c) => ({ ...c, [id]: Math.max(0, (c[id] ?? 1) - 1) }))
+      supabase.from('activity_signups').delete().eq('activity_id', id).eq('user_id', userId).then()
+    } else {
+      if (a.full) { toast('That activity is full'); return }
+      setMySignups((prev) => new Set(prev).add(id))
+      setSignupCounts((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 }))
+      supabase.from('activity_signups').upsert({ activity_id: id, user_id: userId }).then()
+      toast('You’re signed up')
+    }
+  }
+
+  const submitSessionFeedback = async (sessionId: string, stars: number, tags: string[], comment: string) => {
+    setMyFeedback((prev) => ({ ...prev, [sessionId]: { stars, tags, comment } }))
+    await supabase.from('session_feedback').upsert({ session_id: sessionId, user_id: userId, stars, tags, comment })
+  }
+
+  const submitSurvey = async (answers: Record<string, unknown>) => {
+    setSurveyDone(true)
+    await supabase.from('survey_responses').upsert({ user_id: userId, answers })
+  }
+
   return {
     tab,
     stack,
@@ -328,6 +434,14 @@ export function useAppState(): AppCtx {
     markAllRead,
     attendees,
     setConnection,
+    activities,
+    toggleActivitySignup,
+    myFeedback,
+    submitSessionFeedback,
+    surveyQuestions,
+    surveyDone,
+    submitSurvey,
+    setAvatar,
     toast,
     toastMsg,
     homeVariant,

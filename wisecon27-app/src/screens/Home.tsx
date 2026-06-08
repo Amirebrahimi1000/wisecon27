@@ -140,7 +140,7 @@ function HomeCards({ ctx }: { ctx: AppCtx }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} />
             <Press onClick={() => ctx.setTab('profile')}>
-              <Avatar initials={ctx.me.initials} color={ctx.me.color} size={38} />
+              <Avatar initials={ctx.me.initials} color={ctx.me.color} size={38} src={ctx.me.avatarUrl} />
             </Press>
           </div>
         </div>

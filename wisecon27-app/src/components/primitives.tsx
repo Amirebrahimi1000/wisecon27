@@ -67,12 +67,14 @@ export function Avatar({
   color = T.green9,
   size = 40,
   ring = false,
+  src = null,
   style = {},
 }: {
   initials: string
   color?: string
   size?: number
   ring?: boolean
+  src?: string | null
   style?: CSSProperties
 }) {
   return (
@@ -90,11 +92,16 @@ export function Avatar({
         fontSize: size * 0.36,
         flexShrink: 0,
         letterSpacing: '0.01em',
+        overflow: 'hidden',
         boxShadow: ring ? '0 0 0 2.5px #fff, 0 0 0 4px ' + color : 'none',
         ...style,
       }}
     >
-      {initials}
+      {src ? (
+        <img src={src} alt={initials} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        initials
+      )}
     </div>
   )
 }

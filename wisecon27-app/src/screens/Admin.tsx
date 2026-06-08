@@ -7,9 +7,10 @@ import { supabase } from '../lib/supabase'
 import { TRACKS } from '../data'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx, EventInfoItem } from '../appState'
-import type { Session, Speaker, Sponsor, SponsorTier, TrackId, SessionType, NotificationType } from '../types'
+import type { Activity, Session, Speaker, Sponsor, SponsorTier, TrackId, SessionType, NotificationType } from '../types'
 import { Icon, type IconName } from '../components/Icon'
 import { AppHeader, Btn, Eyebrow, Press } from '../components/primitives'
+import { uploadSlides } from '../lib/storage'
 
 /* ── small field helpers ── */
 const inputStyle: CSSProperties = {
@@ -40,11 +41,11 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   )
 }
 
-type AdminTab = 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'info'
+type AdminTab = 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'activities' | 'info'
 
 export function Admin({ ctx }: { ctx: AppCtx }) {
   const [tab, setTab] = useState<AdminTab>('announce')
-  const TABS: [AdminTab, string][] = [['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['info', 'Info']]
+  const TABS: [AdminTab, string][] = [['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['activities', 'Activities'], ['info', 'Info']]
   return (
     <div>
       <AppHeader title="Admin" sub="Organiser tools" onBack={ctx.back} />
@@ -58,6 +59,7 @@ export function Admin({ ctx }: { ctx: AppCtx }) {
         {tab === 'sessions' && <Sessions ctx={ctx} />}
         {tab === 'speakers' && <Speakers ctx={ctx} />}
         {tab === 'sponsors' && <Sponsors ctx={ctx} />}
+        {tab === 'activities' && <AdminActivities ctx={ctx} />}
         {tab === 'info' && <EventInfo ctx={ctx} />}
       </div>
     </div>
@@ -153,6 +155,61 @@ function EventInfoEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Parti
   )
 }
 
+/* ════════ Activities ════════ */
+function AdminActivities({ ctx }: { ctx: AppCtx }) {
+  const [editing, setEditing] = useState<(Partial<Activity> & { id?: string }) | null>(null)
+  if (editing) return <ActivityEditor ctx={ctx} initial={editing} onDone={() => setEditing(null)} />
+  return (
+    <div>
+      <Btn kind="primary" full icon="plus" onClick={() => setEditing({ title: '', description: '', location: '', day: ctx.days[0]?.id ?? null, start: '', end: '', capacity: null })} style={{ marginBottom: 14 }}>New activity</Btn>
+      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+        {ctx.activities.map((a, i) => (
+          <Press key={a.id} onClick={() => setEditing(a)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: i === ctx.activities.length - 1 ? 'none' : '1px solid ' + T.line }}>
+            <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{a.title}</span>
+            <span style={{ fontFamily: T.onest, fontSize: 11, color: T.muted }}>{a.capacity != null ? `${a.going}/${a.capacity}` : `${a.going}`}</span>
+          </Press>
+        ))}
+      </div>
+    </div>
+  )
+}
+function ActivityEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial<Activity> & { id?: string }; onDone: () => void }) {
+  const [a, setA] = useState(initial)
+  const [cap, setCap] = useState(initial.capacity != null ? String(initial.capacity) : '')
+  const [saving, setSaving] = useState(false)
+  const set = (patch: Partial<Activity>) => setA((x) => ({ ...x, ...patch }))
+  const save = async () => {
+    if (!a.title?.trim() || saving) return
+    setSaving(true)
+    const row = {
+      id: a.id ?? 'ac-' + Date.now(), title: a.title?.trim(), description: a.description ?? '',
+      location: a.location ?? '', day_id: a.day || null, start: a.start ?? '', end: a.end ?? '',
+      capacity: cap.trim() === '' ? null : Math.max(0, parseInt(cap, 10) || 0),
+    }
+    const { error } = await supabase.from('activities').upsert(row)
+    setSaving(false)
+    if (error) return ctx.toast(error.message)
+    await ctx.refreshContent()
+    ctx.toast('Activity saved')
+    onDone()
+  }
+  return (
+    <div>
+      <Press onClick={onDone} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.green10, marginBottom: 12 }}>‹ Back to list</Press>
+      <Field label="Title"><Text value={a.title ?? ''} onChange={(v) => set({ title: v })} placeholder="Activity name" /></Field>
+      <Field label="Description"><Text value={a.description ?? ''} onChange={(v) => set({ description: v })} area /></Field>
+      <Field label="Location"><Text value={a.location ?? ''} onChange={(v) => set({ location: v })} placeholder="e.g. Rooftop Terrace" /></Field>
+      <Field label="Day"><Select value={a.day ?? ''} onChange={(v) => set({ day: v || null })} options={[['', 'No specific day'], ...ctx.days.map((d) => [d.id, d.long] as [string, string])]} /></Field>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ flex: 1 }}><Field label="Start"><Text value={a.start ?? ''} onChange={(v) => set({ start: v })} placeholder="08:00" /></Field></div>
+        <div style={{ flex: 1 }}><Field label="End"><Text value={a.end ?? ''} onChange={(v) => set({ end: v })} placeholder="08:40" /></Field></div>
+      </div>
+      <Field label="Capacity (blank = unlimited)"><Text value={cap} onChange={setCap} placeholder="e.g. 40" /></Field>
+      <Btn kind="primary" full size="lg" onClick={save} disabled={!a.title?.trim() || saving}>{saving ? 'Saving…' : 'Save activity'}</Btn>
+    </div>
+  )
+}
+
 /* ════════ Sessions ════════ */
 const blankSession = (dayId: string): Partial<Session> & { id?: string } => ({
   title: '', day: dayId, start: '09:00', end: '09:45', type: 'talk', track: 'pedagogy', room: '', desc: '', tags: [],
@@ -203,6 +260,20 @@ function SessionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
   const [pollOpts, setPollOpts] = useState<PollOptRow[]>([{ label: '' }, { label: '' }])
   const [removedOptIds, setRemovedOptIds] = useState<string[]>([])
 
+  // slides
+  const [slides, setSlides] = useState<{ path: string | null; name: string | null }>({ path: initial.slidesPath ?? null, name: initial.slidesName ?? null })
+  const [uploadingSlides, setUploadingSlides] = useState(false)
+  const onPickSlides = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingSlides(true)
+    const r = await uploadSlides(sid, file)
+    setUploadingSlides(false)
+    if (r.error) return ctx.toast(r.error)
+    setSlides({ path: r.path, name: r.name })
+    ctx.toast('Slides uploaded')
+  }
+
   useEffect(() => {
     if (!initial.id) return
     ;(async () => {
@@ -221,6 +292,7 @@ function SessionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
     const { error } = await supabase.from('sessions').upsert({
       id: sid, day_id: s.day, start: s.start, end: s.end, title: s.title?.trim(), type: s.type,
       track: s.track, room: s.room ?? '', desc: s.desc ?? '', tags: s.tags ?? [],
+      slides_path: slides.path, slides_name: slides.name,
     })
     if (error) { setSaving(false); return ctx.toast(error.message) }
 
@@ -267,6 +339,19 @@ function SessionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
       <Field label="Track"><Select value={s.track ?? 'pedagogy'} onChange={(v) => set({ track: v as TrackId })} options={(Object.keys(TRACKS) as TrackId[]).map((k) => [k, TRACKS[k].name])} /></Field>
       <Field label="Room"><Text value={s.room ?? ''} onChange={(v) => set({ room: v })} placeholder="e.g. Main Stage" /></Field>
       <Field label="Description"><Text value={s.desc ?? ''} onChange={(v) => set({ desc: v })} area /></Field>
+
+      {/* slides upload */}
+      <Eyebrow style={{ marginBottom: 8 }}>Speaker slides</Eyebrow>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 42, padding: '0 16px', borderRadius: 'var(--radius-2)', background: '#fff', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.ink, cursor: 'pointer' }}>
+          <Icon name="download" size={16} stroke={2} />{uploadingSlides ? 'Uploading…' : slides.path ? 'Replace file' : 'Upload slides'}
+          <input type="file" accept=".pdf,.ppt,.pptx,.key" onChange={onPickSlides} style={{ display: 'none' }} />
+        </label>
+        {slides.name && (
+          <span style={{ flex: 1, minWidth: 0, fontFamily: T.sig, fontSize: 13, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{slides.name}</span>
+        )}
+        {slides.path && <Press onClick={() => setSlides({ path: null, name: null })} style={{ color: T.muted, padding: 4 }}><Icon name="close" size={16} /></Press>}
+      </div>
 
       {/* speaker assignment */}
       <Eyebrow style={{ marginBottom: 8, marginTop: 4 }}>Speakers</Eyebrow>
@@ -384,6 +469,7 @@ function SponsorEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
     const row = {
       id: (initial as Sponsor & { id?: string }).id ?? slug(sp.name!), name: sp.name?.trim(),
       tier: sp.tier ?? 'Gold', blurb: sp.blurb ?? '', initials, color: sp.color ?? 'var(--wf-green-7)',
+      description: sp.description ?? '', booth: sp.booth ?? '', website: sp.website ?? '',
     }
     const { error } = await supabase.from('sponsors').upsert(row)
     setSaving(false)
@@ -397,7 +483,10 @@ function SponsorEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
       <Press onClick={onDone} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.green10, marginBottom: 12 }}>‹ Back to list</Press>
       <Field label="Name"><Text value={sp.name ?? ''} onChange={(v) => set({ name: v })} placeholder="Company name" /></Field>
       <Field label="Tier"><Select value={sp.tier ?? 'Gold'} onChange={(v) => set({ tier: v as SponsorTier })} options={(['Host', 'Platinum', 'Gold', 'Silver'] as SponsorTier[]).map((t) => [t, t])} /></Field>
-      <Field label="Blurb"><Text value={sp.blurb ?? ''} onChange={(v) => set({ blurb: v })} placeholder="Short description" /></Field>
+      <Field label="Blurb"><Text value={sp.blurb ?? ''} onChange={(v) => set({ blurb: v })} placeholder="Short tagline" /></Field>
+      <Field label="Booth"><Text value={sp.booth ?? ''} onChange={(v) => set({ booth: v })} placeholder="e.g. B12" /></Field>
+      <Field label="Website"><Text value={sp.website ?? ''} onChange={(v) => set({ website: v })} placeholder="https://…" /></Field>
+      <Field label="About (exhibitor profile)"><Text value={sp.description ?? ''} onChange={(v) => set({ description: v })} area /></Field>
       <Btn kind="primary" full size="lg" onClick={save} disabled={!sp.name?.trim() || saving}>{saving ? 'Saving…' : 'Save sponsor'}</Btn>
     </div>
   )

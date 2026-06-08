@@ -29,7 +29,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
       {/* your badge card */}
       <div style={{ padding: '12px 16px 0' }}>
         <Press onClick={() => ctx.push('ticket', {})} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'linear-gradient(135deg, var(--wf-green-9), var(--wf-green-11))', borderRadius: 'var(--radius-5)', padding: 16, color: '#fff' }}>
-          <Avatar initials={ctx.me.initials} color="rgba(255,255,255,0.2)" size={48} style={{ boxShadow: '0 0 0 2px rgba(255,255,255,0.4)' }} />
+          <Avatar initials={ctx.me.initials} color="rgba(255,255,255,0.2)" size={48} src={ctx.me.avatarUrl} style={{ boxShadow: '0 0 0 2px rgba(255,255,255,0.4)' }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16 }}>{ctx.me.name}</div>
             <div style={{ fontFamily: T.onest, fontSize: 12.5, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>Tap to share your badge</div>
@@ -54,7 +54,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
         ) : (
           shown.map((p) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 6px', borderBottom: '1px solid ' + T.line }}>
-              <Avatar initials={p.initials} color={p.color} size={46} />
+              <Avatar initials={p.initials} color={p.color} size={46} src={p.avatarUrl} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{p.name}</div>
                 <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.role}{p.org ? ' · ' + p.org : ''}</div>

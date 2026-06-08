@@ -7,6 +7,7 @@ import type { Session, Speaker } from '../types'
 import { Icon } from '../components/Icon'
 import { Avatar, Btn, Eyebrow, IconBtn, Press, TYPE_META } from '../components/primitives'
 import { useQA, usePoll, type QAItem } from '../sessionLive'
+import { slidesPublicUrl } from '../lib/storage'
 
 export function SessionDetail({ ctx }: { ctx: AppCtx }) {
   const s = ctx.params.session!
@@ -114,6 +115,67 @@ function DetailsTab({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppCtx }) 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: T.muted, fontFamily: T.sig, fontSize: 13.5 }}>
           <Icon name="speakers" size={17} /> {s.going.toLocaleString('en')} delegates planning to attend
         </div>
+      )}
+      {s.slidesPath && (
+        <a
+          href={slidesPublicUrl(s.slidesPath)}
+          target="_blank"
+          rel="noreferrer"
+          style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)', textDecoration: 'none' }}
+        >
+          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-3)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center' }}><Icon name="download" size={20} /></div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>Download slides</div>
+            <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.slidesName || 'Presentation'}</div>
+          </div>
+          <Icon name="chevronRight" size={18} stroke={2} style={{ color: T.line2 }} />
+        </a>
+      )}
+      <SessionFeedback s={s} ctx={ctx} />
+    </div>
+  )
+}
+
+const FB_CHIPS = ['Great speaker', 'Insightful', 'Practical', 'Too short', 'Right level', 'Loved it']
+function SessionFeedback({ s, ctx }: { s: Session; ctx: AppCtx }) {
+  const existing = ctx.myFeedback[s.id]
+  const [stars, setStars] = useState(existing?.stars ?? 0)
+  const [tags, setTags] = useState<string[]>(existing?.tags ?? [])
+  const [comment, setComment] = useState(existing?.comment ?? '')
+  const [saved, setSaved] = useState(!!existing)
+  const toggle = (c: string) => setTags((t) => (t.includes(c) ? t.filter((x) => x !== c) : [...t, c]))
+  const submit = async () => {
+    if (!stars) return
+    await ctx.submitSessionFeedback(s.id, stars, tags, comment)
+    setSaved(true)
+    ctx.toast('Thanks for your feedback')
+  }
+  return (
+    <div style={{ borderTop: '1px solid ' + T.line, paddingTop: 18 }}>
+      <Eyebrow style={{ marginBottom: 10 }}>{saved ? 'Your rating' : 'Rate this session'}</Eyebrow>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Press key={i} onClick={() => { setStars(i); setSaved(false) }} style={{ color: i <= stars ? 'var(--wf-yellow-8)' : T.line2 }}>
+            <Icon name={i <= stars ? 'starFill' : 'star'} size={30} />
+          </Press>
+        ))}
+      </div>
+      {stars > 0 && (
+        <>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            {FB_CHIPS.map((c) => (
+              <Press key={c} onClick={() => { toggle(c); setSaved(false) }} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13, padding: '6px 12px', borderRadius: 999, background: tags.includes(c) ? T.green9 : '#fff', color: tags.includes(c) ? '#fff' : T.body, boxShadow: tags.includes(c) ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>{c}</Press>
+            ))}
+          </div>
+          <textarea
+            value={comment}
+            onChange={(e) => { setComment(e.target.value); setSaved(false) }}
+            placeholder="Comments for the speaker (optional)"
+            rows={2}
+            style={{ width: '100%', boxSizing: 'border-box', resize: 'none', border: '1px solid var(--wf-grey-6)', borderRadius: 'var(--radius-4)', padding: 12, fontFamily: T.sig, fontSize: 14.5, color: T.ink, outline: 'none', lineHeight: 1.5, marginBottom: 12 }}
+          />
+          <Btn kind={saved ? 'default' : 'primary'} full icon={saved ? 'check' : undefined} onClick={submit}>{saved ? 'Saved — update' : 'Submit feedback'}</Btn>
+        </>
       )}
     </div>
   )

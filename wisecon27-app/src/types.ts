@@ -56,6 +56,8 @@ export interface Session {
   tags?: string[]
   going: number
   capacity?: number
+  slidesPath?: string | null
+  slidesName?: string | null
 }
 
 export type ConnectStatus = 'connect' | 'pending' | 'connected'
@@ -70,6 +72,7 @@ export interface Attendee {
   interests: string[]
   mutual: number
   status: ConnectStatus
+  avatarUrl?: string | null
 }
 
 export type NotificationType =
@@ -91,11 +94,15 @@ export interface AppNotification {
 export type SponsorTier = 'Host' | 'Platinum' | 'Gold' | 'Silver'
 
 export interface Sponsor {
+  id?: string
   name: string
   tier: SponsorTier
   blurb: string
   initials: string
   color: string
+  description?: string
+  booth?: string
+  website?: string
 }
 
 export interface Me {
@@ -107,4 +114,25 @@ export interface Me {
   ticket: string
   badgeId: string
   bookmarks: string[]
+  avatarUrl?: string | null
+}
+
+export interface Activity {
+  id: string
+  title: string
+  description: string
+  location: string
+  day: string | null
+  start: string
+  end: string
+  capacity: number | null
+}
+
+export type SurveyKind = 'rating' | 'nps' | 'choice' | 'text'
+export interface SurveyQuestion {
+  id: string
+  prompt: string
+  kind: SurveyKind
+  options: string[]
+  sort: number
 }
