@@ -132,9 +132,13 @@ export function useAppState(): AppCtx {
   const [attendees, setAttendees] = useState<Attendee[]>([])
 
   // ui
-  const [homeVariant, setHomeVariantState] = useState<HomeVariant>(
-    () => (localStorage.getItem(HOME_KEY) as HomeVariant) || 'bold',
-  )
+  const [homeVariant, setHomeVariantState] = useState<HomeVariant>(() => {
+    const raw = localStorage.getItem(HOME_KEY)
+    if (!raw) return 'bold'
+    // tolerate the old JSON-quoted format ("\"bold\"") as well as a raw value
+    const v = (raw.startsWith('"') ? raw.replace(/^"|"$/g, '') : raw) as HomeVariant
+    return v === 'bold' || v === 'cards' || v === 'classic' ? v : 'bold'
+  })
   const [toastMsg, setToastMsg] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 

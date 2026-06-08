@@ -72,8 +72,17 @@ function Announce({ ctx }: { ctx: AppCtx }) {
     if (!title.trim() || saving) return
     setSaving(true)
     const { error } = await supabase.from('announcements').insert({ title: title.trim(), body: body.trim(), type })
+    if (error) {
+      setSaving(false)
+      return ctx.toast(error.message)
+    }
+    // also fire device push (no-op if the edge function isn't deployed yet)
+    try {
+      await supabase.functions.invoke('send-push', { body: { title: title.trim(), body: body.trim() } })
+    } catch {
+      /* in-app announcement already delivered; push is best-effort */
+    }
     setSaving(false)
-    if (error) return ctx.toast(error.message)
     setTitle(''); setBody('')
     ctx.toast('Announcement sent to all delegates')
   }
