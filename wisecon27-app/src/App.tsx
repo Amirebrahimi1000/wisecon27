@@ -4,8 +4,11 @@
 import { useEffect, useRef } from 'react'
 import { T, TABBAR_H } from './theme'
 import { useAppState, type AppCtx, type PushScreen, type TabId } from './store'
+import { useAuth } from './auth'
+import { isSupabaseConfigured } from './lib/supabase'
 import { Icon, type IconName } from './components/Icon'
 import { Press } from './components/primitives'
+import { SignIn } from './screens/SignIn'
 
 import { Home } from './screens/Home'
 import { Agenda } from './screens/Agenda'
@@ -82,7 +85,7 @@ function Toast({ msg }: { msg: string | null }) {
   )
 }
 
-export default function App() {
+function AuthedApp() {
   const ctx = useAppState()
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -112,18 +115,52 @@ export default function App() {
   else ScreenEl = TAB_SCREENS[ctx.tab]
 
   return (
-    <div className="wc-stage">
-      <div className="wc-device">
-        <div style={{ height: '100%', position: 'relative', background: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
-            <div key={screenKey} className="wc-screen">
-              {ScreenEl ? <ScreenEl ctx={ctx} /> : null}
-            </div>
-          </div>
-          <Toast msg={ctx.toastMsg} />
-          <BottomNav active={ctx.tab} onSelect={ctx.setTab} unread={ctx.unread} />
+    <div style={{ height: '100%', position: 'relative', background: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+        <div key={screenKey} className="wc-screen">
+          {ScreenEl ? <ScreenEl ctx={ctx} /> : null}
         </div>
       </div>
+      <Toast msg={ctx.toastMsg} />
+      <BottomNav active={ctx.tab} onSelect={ctx.setTab} unread={ctx.unread} />
+    </div>
+  )
+}
+
+/** Brief splash while we check for an existing session. */
+function Splash() {
+  return (
+    <div style={{ height: '100%', display: 'grid', placeItems: 'center', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)' }}>
+      <img src={import.meta.env.BASE_URL + 'logo-mark.svg'} alt="WISEcon27" width="72" style={{ filter: 'brightness(0) invert(1)', opacity: 0.92 }} />
+    </div>
+  )
+}
+
+/** Shown only if the Supabase env vars are missing (e.g. secrets not set). */
+function SetupNotice() {
+  return (
+    <div style={{ height: '100%', display: 'grid', placeItems: 'center', padding: 28, textAlign: 'center', background: 'var(--wf-grey-2)' }}>
+      <div>
+        <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink }}>Backend not configured</div>
+        <p style={{ fontFamily: T.sig, fontSize: 14.5, color: T.muted, marginTop: 8, lineHeight: 1.55 }}>
+          Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> (in
+          <code> .env.local</code> for dev, or as GitHub Actions secrets for the deployed build).
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default function App() {
+  const { session, loading } = useAuth()
+  let content
+  if (!isSupabaseConfigured) content = <SetupNotice />
+  else if (loading) content = <Splash />
+  else if (!session) content = <SignIn />
+  else content = <AuthedApp />
+  return (
+    <div className="wc-stage">
+      <div className="wc-device">{content}</div>
     </div>
   )
 }

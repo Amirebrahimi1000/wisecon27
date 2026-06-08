@@ -30,3 +30,9 @@ export const supabase: SupabaseClient = createClient(
     },
   },
 )
+
+// Dev-only: expose the client for local testing/automation. Tree-shaken out of
+// production builds (import.meta.env.DEV is false there).
+if (import.meta.env.DEV) {
+  ;(window as unknown as { supabase: SupabaseClient }).supabase = supabase
+}

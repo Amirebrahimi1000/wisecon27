@@ -16,7 +16,14 @@
       "Bash(git -c user.name=amirebrahimi1000 -c user.email=amirebrahimi1000@users.noreply.github.com commit -q -m 'CI: auto-enable GitHub Pages in deploy workflow *)",
       "Bash(git push *)",
       "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies['@supabase/supabase-js']\\)\")",
-      "Bash(echo \"installed: $\\(node -e \"console.log\\(require\\('./package.json'\\).dependencies['@supabase/supabase-js']\\)\"\\)\")"
+      "Bash(echo \"installed: $\\(node -e \"console.log\\(require\\('./package.json'\\).dependencies['@supabase/supabase-js']\\)\"\\)\")",
+      "mcp__Claude_in_Chrome__list_connected_browsers",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__navigate",
+      "mcp__Claude_in_Chrome__computer",
+      "mcp__Claude_in_Chrome__get_page_text",
+      "Bash(pkill -f vite)",
+      "Bash(npx tsx *)"
     ]
   }
 }

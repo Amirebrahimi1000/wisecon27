@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "qr": "node scripts/make-qr.mjs",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "devlogin": "tsx scripts/devlogin.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",

@@ -6,8 +6,10 @@ import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Eyebrow, IconBtn, Press } from '../components/primitives'
 import { QR } from '../components/QR'
+import { useAuth } from '../auth'
 
 export function Profile({ ctx }: { ctx: AppCtx }) {
+  const { signOut } = useAuth()
   const count = SESSIONS.filter((s) => ctx.isBookmarked(s.id)).length
   const connectedCount = Object.values(ctx.connections).filter((s) => s === 'connected').length
 
@@ -61,7 +63,7 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
           ))}
         </div>
         <div style={{ textAlign: 'center', marginTop: 18 }}>
-          <Btn kind="danger" icon="logout" onClick={() => ctx.toast('Signed out (demo)')}>Sign out</Btn>
+          <Btn kind="danger" icon="logout" onClick={() => signOut()}>Sign out</Btn>
         </div>
         <div style={{ textAlign: 'center', fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 18 }}>WISEcon27 · v1.0 · Powered by WISEflow</div>
       </div>
