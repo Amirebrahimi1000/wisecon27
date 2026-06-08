@@ -47,9 +47,11 @@ export interface AppCtx {
   speakersOf: (s: Session) => Speaker[]
   refreshContent: () => Promise<void>
   // identity
+  userId: string
   me: Me
   isAdmin: boolean
   updateProfile: (patch: Partial<Me>) => Promise<void>
+  nameFor: (id: string) => string
   // bookmarks (per account)
   isBookmarked: (id: string) => boolean
   toggleBookmark: (id: string) => void
@@ -308,9 +310,12 @@ export function useAppState(): AppCtx {
     eventInfo,
     speakersOf,
     refreshContent: loadContent,
+    userId,
     me,
     isAdmin,
     updateProfile,
+    nameFor: (id) =>
+      id === userId ? me.name : attendees.find((a) => a.id === id)?.name || 'A delegate',
     isBookmarked: (id) => bookmarkSet.has(id),
     toggleBookmark,
     notifications,

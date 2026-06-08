@@ -6,6 +6,7 @@ import type { AppCtx } from '../appState'
 import type { Session, Speaker } from '../types'
 import { Icon } from '../components/Icon'
 import { Avatar, Btn, Eyebrow, IconBtn, Press, TYPE_META } from '../components/primitives'
+import { useQA, usePoll, type QAItem } from '../sessionLive'
 
 export function SessionDetail({ ctx }: { ctx: AppCtx }) {
   const s = ctx.params.session!
@@ -15,6 +16,7 @@ export function SessionDetail({ ctx }: { ctx: AppCtx }) {
   const [tab, setTab] = useState<'details' | 'qa' | 'poll'>('details')
   const bm = ctx.isBookmarked(s.id)
   const day = ctx.days.find((d) => d.id === s.day)!
+  const qa = useQA(s.id, ctx.userId)
 
   return (
     <div style={{ paddingBottom: TABBAR_H + 16 }}>
@@ -65,7 +67,7 @@ export function SessionDetail({ ctx }: { ctx: AppCtx }) {
           {([['details', 'Details'], ['qa', 'Q&A'], ['poll', 'Live poll']] as const).map(([k, label]) => (
             <Press key={k} onClick={() => setTab(k)} style={{ flex: 1, textAlign: 'center', paddingBottom: 10, fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: tab === k ? T.green10 : T.muted, borderBottom: '2.5px solid ' + (tab === k ? T.green9 : 'transparent') }}>
               {label}
-              {k === 'qa' && <span style={{ fontFamily: T.onest, fontSize: 11, color: tab === k ? T.green9 : T.muted, marginLeft: 5 }}>4</span>}
+              {k === 'qa' && qa.items.length > 0 && <span style={{ fontFamily: T.onest, fontSize: 11, color: tab === k ? T.green9 : T.muted, marginLeft: 5 }}>{qa.items.length}</span>}
             </Press>
           ))}
         </div>
@@ -73,8 +75,8 @@ export function SessionDetail({ ctx }: { ctx: AppCtx }) {
 
       <div style={{ padding: '18px 16px 0' }}>
         {(isBreak || tab === 'details') && <DetailsTab s={s} sp={sp} ctx={ctx} />}
-        {!isBreak && tab === 'qa' && <QATab ctx={ctx} />}
-        {!isBreak && tab === 'poll' && <PollTab />}
+        {!isBreak && tab === 'qa' && <QATab ctx={ctx} qa={qa} />}
+        {!isBreak && tab === 'poll' && <PollTab sessionId={s.id} ctx={ctx} />}
       </div>
     </div>
   )
@@ -117,24 +119,17 @@ function DetailsTab({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppCtx }) 
   )
 }
 
-interface QAItem { id: number; q: string; who: string; up: number; voted: boolean }
-
-function QATab({ ctx }: { ctx: AppCtx }) {
-  const seed: QAItem[] = [
-    { id: 1, q: 'How do you handle false positives in AI detection at scale?', who: 'Camille R.', up: 18, voted: false },
-    { id: 2, q: 'Is there guidance on setting thresholds for different disciplines?', who: 'Anonymous', up: 12, voted: false },
-    { id: 3, q: 'Will the slides be shared afterwards?', who: 'Tom B.', up: 9, voted: false },
-    { id: 4, q: 'How does this interact with open-book formats?', who: 'Daniel O.', up: 5, voted: false },
-  ]
-  const [items, setItems] = useState<QAItem[]>(seed)
+function QATab({ ctx, qa }: { ctx: AppCtx; qa: ReturnType<typeof useQA> }) {
   const [text, setText] = useState('')
-  const sorted = [...items].sort((a, b) => b.up - a.up)
+  const [anon, setAnon] = useState(false)
   const submit = () => {
     if (!text.trim()) return
-    setItems([...items, { id: Date.now(), q: text.trim(), who: 'You', up: 0, voted: false }])
+    qa.submit(text, anon)
     setText('')
     ctx.toast('Question submitted')
   }
+  const who = (it: QAItem) =>
+    it.anonymous ? 'Anonymous' : it.userId === ctx.userId ? 'You' : ctx.nameFor(it.userId ?? '')
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
@@ -147,18 +142,27 @@ function QATab({ ctx }: { ctx: AppCtx }) {
         />
         <Btn kind="primary" onClick={submit} icon="send" style={{ height: 44, padding: '0 14px' }} />
       </div>
-      {sorted.map((it) => (
+      <Press onClick={() => setAnon((a) => !a)} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, alignSelf: 'flex-start', color: anon ? T.green9 : T.muted }}>
+        <Icon name={anon ? 'checkCircle' : 'user'} size={16} stroke={2} />
+        <span style={{ fontFamily: T.sig, fontSize: 12.5, fontWeight: 600 }}>Ask anonymously</span>
+      </Press>
+      {qa.items.length === 0 && (
+        <div style={{ textAlign: 'center', color: T.muted, padding: '20px 0', fontFamily: T.sig, fontSize: 14 }}>
+          No questions yet — be the first to ask.
+        </div>
+      )}
+      {qa.items.map((it) => (
         <div key={it.id} style={{ display: 'flex', gap: 12, background: '#fff', borderRadius: 'var(--radius-4)', padding: '13px 14px', boxShadow: 'var(--shadow-sm)' }}>
           <Press
-            onClick={() => setItems(items.map((x) => (x.id === it.id ? { ...x, up: x.voted ? x.up - 1 : x.up + 1, voted: !x.voted } : x)))}
+            onClick={() => qa.toggleVote(it)}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: 38, flexShrink: 0, color: it.voted ? T.green9 : T.muted, background: it.voted ? T.green1 : T.sunken, borderRadius: 'var(--radius-3)', padding: '6px 0' }}
           >
             <Icon name="arrowUp" size={17} stroke={2.2} />
             <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 13 }}>{it.up}</span>
           </Press>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: T.sig, fontSize: 14.5, color: T.ink, lineHeight: 1.4 }}>{it.q}</div>
-            <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 5 }}>{it.who}</div>
+            <div style={{ fontFamily: T.sig, fontSize: 14.5, color: T.ink, lineHeight: 1.4 }}>{it.body}</div>
+            <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 5 }}>{who(it)}</div>
           </div>
         </div>
       ))}
@@ -166,38 +170,30 @@ function QATab({ ctx }: { ctx: AppCtx }) {
   )
 }
 
-interface PollOpt { id: string; label: string; v: number }
-
-function PollTab() {
-  const opts: PollOpt[] = [
-    { id: 'a', label: 'Detection tools', v: 34 },
-    { id: 'b', label: 'Redesigning assessments', v: 52 },
-    { id: 'c', label: 'Both equally', v: 71 },
-    { id: 'd', label: 'Neither — policy first', v: 19 },
-  ]
-  const [votes, setVotes] = useState<PollOpt[]>(opts)
-  const [picked, setPicked] = useState<string | null>(null)
-  const total = votes.reduce((a, b) => a + b.v, 0)
-  const vote = (id: string) => {
-    if (picked) return
-    setPicked(id)
-    setVotes(votes.map((o) => (o.id === id ? { ...o, v: o.v + 1 } : o)))
+function PollTab({ sessionId, ctx }: { sessionId: string; ctx: AppCtx }) {
+  const poll = usePoll(sessionId, ctx.userId)
+  if (poll.loading) return null
+  if (!poll.pollId) {
+    return (
+      <div style={{ textAlign: 'center', color: T.muted, padding: '32px 0', fontFamily: T.sig, fontSize: 14.5 }}>
+        No live poll for this session.
+      </div>
+    )
   }
+  const picked = poll.myOption
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <span style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--wf-tomato-9)' }} className="wc-pulse" />
         <Eyebrow color="var(--wf-tomato-11)">Live now</Eyebrow>
       </div>
-      <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 18, color: T.ink, lineHeight: 1.3, marginBottom: 16 }}>
-        Where should institutions invest first to protect integrity?
-      </div>
+      <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 18, color: T.ink, lineHeight: 1.3, marginBottom: 16 }}>{poll.question}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {votes.map((o) => {
-          const pct = Math.round((o.v / total) * 100)
+        {poll.options.map((o) => {
+          const pct = poll.total ? Math.round((o.votes / poll.total) * 100) : 0
           const mine = picked === o.id
           return (
-            <Press key={o.id} onClick={() => vote(o.id)} style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-4)', border: '1.5px solid ' + (mine ? T.green9 : 'var(--wf-grey-6)'), padding: '13px 14px', background: '#fff' }}>
+            <Press key={o.id} onClick={() => !picked && poll.vote(poll.pollId!, o.id)} style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-4)', border: '1.5px solid ' + (mine ? T.green9 : 'var(--wf-grey-6)'), padding: '13px 14px', background: '#fff' }}>
               {picked && <div style={{ position: 'absolute', inset: 0, width: pct + '%', background: mine ? T.green1 : T.sunken, transition: 'width .6s var(--ease-out)' }} />}
               <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -211,7 +207,7 @@ function PollTab() {
         })}
       </div>
       <div style={{ fontFamily: T.onest, fontSize: 12, color: T.muted, marginTop: 14, textAlign: 'center' }}>
-        {picked ? `${total} votes · thanks for voting` : `${total} votes · tap to cast yours`}
+        {picked ? `${poll.total} votes · thanks for voting` : `${poll.total} votes · tap to cast yours`}
       </div>
     </div>
   )

@@ -91,6 +91,27 @@ async function main() {
     console.log(`• announcements (${count} already present — skipped)`)
   }
 
+  // Seed one live poll for the opening keynote (only if it has none yet).
+  const POLL_SESSION = 's102'
+  const { data: existingPoll } = await db.from('polls').select('id').eq('session_id', POLL_SESSION).maybeSingle()
+  if (!existingPoll) {
+    const { data: poll } = await db
+      .from('polls')
+      .insert({ session_id: POLL_SESSION, question: 'Where should institutions invest first to protect integrity?', is_live: true })
+      .select('id')
+      .single()
+    if (poll) {
+      await db.from('poll_options').insert(
+        ['Detection tools', 'Redesigning assessments', 'Both equally', 'Neither — policy first'].map((label, sort) => ({
+          poll_id: poll.id, label, sort,
+        })),
+      )
+      console.log('✓ poll (1) for ' + POLL_SESSION)
+    }
+  } else {
+    console.log('• poll already present — skipped')
+  }
+
   console.log('\nSeed complete. Tip: make yourself an admin after signing up:')
   console.log("  update public.profiles set is_admin = true where id = '<your-user-id>';")
 }
