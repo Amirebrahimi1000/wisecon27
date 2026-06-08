@@ -6,6 +6,15 @@ declare const self: ServiceWorkerGlobalScope
 
 precacheAndRoute(self.__WB_MANIFEST)
 
+// Activate a new version immediately and take control of open tabs, so content
+// updates (schedule changes, new builds) reach delegates without a manual reload.
+self.addEventListener('install', () => {
+  self.skipWaiting()
+})
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim())
+})
+
 self.addEventListener('push', (event: PushEvent) => {
   let data: { title?: string; body?: string; url?: string } = {}
   try {
