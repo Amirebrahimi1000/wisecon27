@@ -21,7 +21,7 @@ export function SpeakerProfile({ ctx }: { ctx: AppCtx }) {
           <IconBtn name="share" onClick={() => ctx.toast('Profile link copied')} color="#fff" bg="rgba(255,255,255,0.16)" />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Avatar initials={p.initials} color="rgba(255,255,255,0.22)" size={72} style={{ boxShadow: '0 0 0 2px rgba(255,255,255,0.4)' }} />
+          <Avatar initials={p.initials} color="rgba(255,255,255,0.22)" size={72} src={p.photoUrl} style={{ boxShadow: '0 0 0 2px rgba(255,255,255,0.4)' }} />
           <div style={{ flex: 1 }}>
             <h2 style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 23, color: '#fff', lineHeight: 1.15 }}>{p.name}</h2>
             <div style={{ fontFamily: T.sig, fontSize: 14.5, color: 'rgba(255,255,255,0.92)', marginTop: 3 }}>{p.role}</div>

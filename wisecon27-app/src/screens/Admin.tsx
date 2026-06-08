@@ -9,8 +9,8 @@ import { T, TABBAR_H } from '../theme'
 import type { AppCtx, EventInfoItem } from '../appState'
 import type { Activity, Session, Speaker, Sponsor, SponsorTier, TrackId, SessionType, NotificationType } from '../types'
 import { Icon, type IconName } from '../components/Icon'
-import { AppHeader, Btn, Eyebrow, Press } from '../components/primitives'
-import { uploadSlides } from '../lib/storage'
+import { AppHeader, Avatar, Btn, Eyebrow, Press } from '../components/primitives'
+import { uploadSlides, uploadSpeakerPhoto } from '../lib/storage'
 
 /* ── small field helpers ── */
 const inputStyle: CSSProperties = {
@@ -41,27 +41,170 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   )
 }
 
-type AdminTab = 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'activities' | 'info'
+type AdminTab = 'dashboard' | 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'activities' | 'info' | 'import'
 
 export function Admin({ ctx }: { ctx: AppCtx }) {
-  const [tab, setTab] = useState<AdminTab>('announce')
-  const TABS: [AdminTab, string][] = [['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['activities', 'Activities'], ['info', 'Info']]
+  const [tab, setTab] = useState<AdminTab>('dashboard')
+  const TABS: [AdminTab, string][] = [['dashboard', 'Dashboard'], ['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['activities', 'Activities'], ['info', 'Info'], ['import', 'Import']]
   return (
     <div>
       <AppHeader title="Admin" sub="Organiser tools" onBack={ctx.back} />
-      <div style={{ display: 'flex', gap: 4, padding: '12px 16px 0' }}>
+      <div className="wc-noscroll" style={{ display: 'flex', gap: 18, padding: '12px 16px 0', overflowX: 'auto' }}>
         {TABS.map(([k, l]) => (
-          <Press key={k} onClick={() => setTab(k)} style={{ flex: 1, textAlign: 'center', paddingBottom: 10, fontFamily: T.sig, fontWeight: 600, fontSize: 13, color: tab === k ? T.green10 : T.muted, borderBottom: '2.5px solid ' + (tab === k ? T.green9 : 'transparent') }}>{l}</Press>
+          <Press key={k} onClick={() => setTab(k)} style={{ flexShrink: 0, whiteSpace: 'nowrap', paddingBottom: 10, fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: tab === k ? T.green10 : T.muted, borderBottom: '2.5px solid ' + (tab === k ? T.green9 : 'transparent') }}>{l}</Press>
         ))}
       </div>
       <div style={{ padding: '16px 16px ' + (TABBAR_H + 16) + 'px' }}>
+        {tab === 'dashboard' && <Dashboard ctx={ctx} />}
         {tab === 'announce' && <Announce ctx={ctx} />}
         {tab === 'sessions' && <Sessions ctx={ctx} />}
         {tab === 'speakers' && <Speakers ctx={ctx} />}
         {tab === 'sponsors' && <Sponsors ctx={ctx} />}
         {tab === 'activities' && <AdminActivities ctx={ctx} />}
         {tab === 'info' && <EventInfo ctx={ctx} />}
+        {tab === 'import' && <CsvImport ctx={ctx} />}
       </div>
+    </div>
+  )
+}
+
+/* ════════ Organiser dashboard ════════ */
+function StatTile({ n, label }: { n: number | string; label: string }) {
+  return (
+    <div style={{ background: '#fff', borderRadius: 'var(--radius-4)', boxShadow: 'var(--shadow-sm)', padding: '14px 16px' }}>
+      <div style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 26, color: T.ink, lineHeight: 1 }}>{n}</div>
+      <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 4 }}>{label}</div>
+    </div>
+  )
+}
+interface DashStats { delegates: number; bookmarks: number; avg: number; fbCount: number; survey: number; signups: number; top: [string, number][] }
+function Dashboard({ ctx }: { ctx: AppCtx }) {
+  const [s, setS] = useState<DashStats | null>(null)
+  useEffect(() => {
+    ;(async () => {
+      const [delegates, bms, fb, survey, signups] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('bookmarks').select('session_id'),
+        supabase.from('session_feedback').select('stars'),
+        supabase.from('survey_responses').select('user_id', { count: 'exact', head: true }),
+        supabase.from('activity_signups').select('activity_id', { count: 'exact', head: true }),
+      ])
+      const bmRows = (bms.data ?? []) as { session_id: string }[]
+      const tally: Record<string, number> = {}
+      bmRows.forEach((b) => { tally[b.session_id] = (tally[b.session_id] ?? 0) + 1 })
+      const top = Object.entries(tally).sort((a, b) => b[1] - a[1]).slice(0, 5)
+      const stars = ((fb.data ?? []) as { stars: number }[]).map((r) => r.stars)
+      const avg = stars.length ? stars.reduce((a, b) => a + b, 0) / stars.length : 0
+      setS({ delegates: delegates.count ?? 0, bookmarks: bmRows.length, avg, fbCount: stars.length, survey: survey.count ?? 0, signups: signups.count ?? 0, top })
+    })()
+  }, [])
+  if (!s) return <div style={{ fontFamily: T.sig, color: T.muted, padding: 20, textAlign: 'center' }}>Loading…</div>
+  const title = (id: string) => ctx.sessions.find((x) => x.id === id)?.title ?? id
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
+        <StatTile n={s.delegates} label="Delegates" />
+        <StatTile n={ctx.sessions.length} label="Sessions" />
+        <StatTile n={ctx.speakers.length} label="Speakers" />
+        <StatTile n={s.bookmarks} label="Bookmarks" />
+        <StatTile n={s.signups} label="Activity sign-ups" />
+        <StatTile n={s.survey} label="Survey responses" />
+        <StatTile n={s.fbCount ? s.avg.toFixed(1) + '★' : '–'} label={`Session ratings (${s.fbCount})`} />
+        <StatTile n={ctx.attendees.filter((a) => a.status === 'connected').length} label="Your connections" />
+      </div>
+      <Eyebrow style={{ marginBottom: 10 }}>Most bookmarked sessions</Eyebrow>
+      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+        {s.top.length === 0 && <div style={{ padding: 16, fontFamily: T.sig, fontSize: 14, color: T.muted }}>No bookmarks yet.</div>}
+        {s.top.map(([id, n], i) => (
+          <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: i === s.top.length - 1 ? 'none' : '1px solid ' + T.line }}>
+            <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 13, color: T.muted, width: 18 }}>{i + 1}</span>
+            <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title(id)}</span>
+            <span style={{ fontFamily: T.onest, fontSize: 12, color: T.green10 }}>{n}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ════════ CSV import ════════ */
+function parseCsv(text: string): { headers: string[]; rows: Record<string, string>[] } {
+  const lines = text.trim().split(/\r?\n/).filter((l) => l.trim())
+  if (!lines.length) return { headers: [], rows: [] }
+  const split = (line: string) => {
+    const out: string[] = []
+    let cur = '', q = false
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i]
+      if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++ } else q = false } else cur += c }
+      else if (c === '"') q = true
+      else if (c === ',') { out.push(cur); cur = '' }
+      else cur += c
+    }
+    out.push(cur)
+    return out.map((x) => x.trim())
+  }
+  const headers = split(lines[0]).map((h) => h.toLowerCase())
+  const rows = lines.slice(1).map((l) => {
+    const cells = split(l)
+    const o: Record<string, string> = {}
+    headers.forEach((h, j) => (o[h] = cells[j] ?? ''))
+    return o
+  })
+  return { headers, rows }
+}
+const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+const initialsOf = (s: string) => s.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
+
+function CsvImport({ ctx }: { ctx: AppCtx }) {
+  const [kind, setKind] = useState<'sessions' | 'speakers' | 'sponsors'>('sessions')
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const HINT: Record<string, string> = {
+    sessions: 'Columns: title, day_id, start, end, type, track, room, desc  (id optional)',
+    speakers: 'Columns: name, role, org, bio, topics  (topics separated by ; — id optional)',
+    sponsors: 'Columns: name, tier, blurb, booth, website, description  (id optional)',
+  }
+  const run = async () => {
+    if (busy) return
+    const { rows } = parseCsv(text)
+    if (!rows.length) return ctx.toast('No rows found — paste CSV with a header row')
+    setBusy(true)
+    let payload: Record<string, unknown>[] = []
+    if (kind === 'sessions') {
+      payload = rows.filter((r) => r.title).map((r, i) => ({
+        id: r.id || 'sx-' + Date.now() + '-' + i, title: r.title, day_id: r.day_id || r.day || ctx.days[0]?.id,
+        start: r.start || '09:00', end: r.end || '09:45', type: r.type || 'talk', track: r.track || 'plenary',
+        room: r.room || '', desc: r.desc || r.description || '', tags: [], going: 0,
+      }))
+    } else if (kind === 'speakers') {
+      payload = rows.filter((r) => r.name).map((r, i) => ({
+        id: r.id || 'spx-' + Date.now() + '-' + i, name: r.name, role: r.role || '', org: r.org || '',
+        initials: initialsOf(r.name), color: 'var(--wf-green-9)', bio: r.bio || '',
+        topics: (r.topics || '').split(/[;|]/).map((t) => t.trim()).filter(Boolean),
+      }))
+    } else {
+      payload = rows.filter((r) => r.name).map((r) => ({
+        id: r.id || slugify(r.name), name: r.name, tier: r.tier || 'Gold', blurb: r.blurb || '',
+        initials: initialsOf(r.name), color: 'var(--wf-green-7)', booth: r.booth || '', website: r.website || '', description: r.description || '',
+      }))
+    }
+    const { error } = await supabase.from(kind).upsert(payload)
+    setBusy(false)
+    if (error) return ctx.toast(error.message)
+    await ctx.refreshContent()
+    setText('')
+    ctx.toast(`Imported ${payload.length} ${kind}`)
+  }
+  return (
+    <div>
+      <div style={{ fontFamily: T.sig, fontSize: 14, color: T.muted, marginBottom: 16, lineHeight: 1.5 }}>
+        Paste CSV (with a header row) to bulk add or update content. Existing rows with a matching <code>id</code> are updated.
+      </div>
+      <Field label="Type"><Select value={kind} onChange={(v) => setKind(v as typeof kind)} options={[['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors']]} /></Field>
+      <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.subtle, margin: '-4px 0 10px' }}>{HINT[kind]}</div>
+      <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={'title,day_id,start,end,type,track,room\nClosing remarks,d3,16:00,16:30,plenary,plenary,Main Stage'} rows={8} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: 13, lineHeight: 1.5 }} />
+      <Btn kind="primary" full size="lg" onClick={run} disabled={busy || !text.trim()} style={{ marginTop: 12 }}>{busy ? 'Importing…' : 'Import CSV'}</Btn>
     </div>
   )
 }
@@ -409,15 +552,27 @@ function SpeakerEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
   const [p, setP] = useState(initial)
   const [topics, setTopics] = useState((initial.topics ?? []).join(', '))
   const [saving, setSaving] = useState(false)
+  const [sid] = useState(initial.id ?? 'spx-' + Date.now())
+  const [photoUrl, setPhotoUrl] = useState<string | null>(initial.photoUrl ?? null)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const set = (patch: Partial<Speaker>) => setP((x) => ({ ...x, ...patch }))
   const initials = (p.name ?? '').trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
+  const onPickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingPhoto(true)
+    const r = await uploadSpeakerPhoto(sid, file)
+    setUploadingPhoto(false)
+    if (r.error) return ctx.toast(r.error)
+    setPhotoUrl(r.url)
+  }
   const save = async () => {
     if (!p.name?.trim() || saving) return
     setSaving(true)
     const row = {
-      id: p.id ?? 'spx-' + Date.now(), name: p.name?.trim(), role: p.role ?? '', org: p.org ?? '',
+      id: sid, name: p.name?.trim(), role: p.role ?? '', org: p.org ?? '',
       initials, color: p.color ?? 'var(--wf-green-9)', bio: p.bio ?? '',
-      topics: topics.split(',').map((t) => t.trim()).filter(Boolean),
+      topics: topics.split(',').map((t) => t.trim()).filter(Boolean), photo_url: photoUrl,
     }
     const { error } = await supabase.from('speakers').upsert(row)
     setSaving(false)
@@ -429,6 +584,13 @@ function SpeakerEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
   return (
     <div>
       <Press onClick={onDone} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.green10, marginBottom: 12 }}>‹ Back to list</Press>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+        <Avatar initials={initials || '·'} color={p.color ?? 'var(--wf-green-9)'} size={60} src={photoUrl} />
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 14px', borderRadius: 'var(--radius-2)', background: '#fff', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.ink, cursor: 'pointer' }}>
+          {uploadingPhoto ? 'Uploading…' : photoUrl ? 'Replace photo' : 'Upload photo'}
+          <input type="file" accept="image/*" onChange={onPickPhoto} style={{ display: 'none' }} />
+        </label>
+      </div>
       <Field label="Name"><Text value={p.name ?? ''} onChange={(v) => set({ name: v })} placeholder="Dr. Jane Doe" /></Field>
       <Field label="Role"><Text value={p.role ?? ''} onChange={(v) => set({ role: v })} placeholder="Professor of …" /></Field>
       <Field label="Organisation"><Text value={p.org ?? ''} onChange={(v) => set({ org: v })} placeholder="University of …" /></Field>

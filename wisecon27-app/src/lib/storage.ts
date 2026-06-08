@@ -23,3 +23,13 @@ export async function uploadSlides(sessionId: string, file: File): Promise<{ pat
 export function slidesPublicUrl(path: string): string {
   return supabase.storage.from('session-files').getPublicUrl(path).data.publicUrl
 }
+
+/** Upload a speaker photo (admin only) to the public session-files bucket. */
+export async function uploadSpeakerPhoto(speakerId: string, file: File): Promise<{ url: string | null; error: string | null }> {
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+  const path = `speakers/${speakerId}.${ext}`
+  const { error } = await supabase.storage.from('session-files').upload(path, file, { upsert: true, contentType: file.type })
+  if (error) return { url: null, error: error.message }
+  const { data } = supabase.storage.from('session-files').getPublicUrl(path)
+  return { url: `${data.publicUrl}?t=${Date.now()}`, error: null }
+}

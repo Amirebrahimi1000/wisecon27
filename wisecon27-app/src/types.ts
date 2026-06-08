@@ -31,6 +31,7 @@ export interface Speaker {
   color: string
   bio: string
   topics: string[]
+  photoUrl?: string | null
 }
 
 export type SessionType =

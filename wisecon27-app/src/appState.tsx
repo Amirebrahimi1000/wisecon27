@@ -194,7 +194,7 @@ export function useAppState(): AppCtx {
       supabase.from('survey_questions').select('*').eq('active', true).order('sort'),
     ])
     if (d.data) setDays(d.data as Day[])
-    if (sp.data) setSpeakers(sp.data as Speaker[])
+    if (sp.data) setSpeakers((sp.data as (Speaker & { photo_url: string | null })[]).map((s) => ({ ...s, photoUrl: s.photo_url })))
     if (se.data) setSessions((se.data as SessionRow[]).map(mapSession))
     if (so.data) setSponsors(so.data as Sponsor[])
     if (ei.data) setEventInfo(ei.data as EventInfoItem[])

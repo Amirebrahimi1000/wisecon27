@@ -100,7 +100,7 @@ function DetailsTab({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppCtx }) 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {sp.map((p) => (
               <Press key={p.id} onClick={() => ctx.push('speaker', { speaker: p })} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', borderRadius: 'var(--radius-4)', padding: 12, boxShadow: 'var(--shadow-sm)' }}>
-                <Avatar initials={p.initials} color={p.color} size={44} />
+                <Avatar initials={p.initials} color={p.color} size={44} src={p.photoUrl} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{p.name}</div>
                   <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.role} · {p.org}</div>

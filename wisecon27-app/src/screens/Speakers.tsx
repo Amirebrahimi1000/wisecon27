@@ -25,7 +25,7 @@ export function Speakers({ ctx }: { ctx: AppCtx }) {
       <div style={{ padding: '8px 12px ' + (TABBAR_H + 16) + 'px' }}>
         {list.map((p) => (
           <Press key={p.id} onClick={() => ctx.push('speaker', { speaker: p })} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 8px', borderBottom: '1px solid ' + T.line }}>
-            <Avatar initials={p.initials} color={p.color} size={52} />
+            <Avatar initials={p.initials} color={p.color} size={52} src={p.photoUrl} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16, color: T.ink }}>{p.name}</div>
               <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.body }}>{p.role}</div>

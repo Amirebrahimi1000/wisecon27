@@ -10,6 +10,7 @@ interface AuthValue {
   session: Session | null
   loading: boolean
   signIn: (email: string) => Promise<{ error: string | null }>
+  verifyCode: (email: string, token: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
@@ -50,9 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null }
   }
 
+  // verify the 6-digit code from the email — keeps sign-in inside an installed PWA
+  const verifyCode = async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: token.trim(), type: 'email' })
+    return { error: error?.message ?? null }
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
   }
 
-  return <AuthCtx.Provider value={{ session, loading, signIn, signOut }}>{children}</AuthCtx.Provider>
+  return <AuthCtx.Provider value={{ session, loading, signIn, verifyCode, signOut }}>{children}</AuthCtx.Provider>
 }
