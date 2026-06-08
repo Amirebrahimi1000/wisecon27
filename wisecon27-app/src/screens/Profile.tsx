@@ -22,6 +22,7 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
     { icon: 'star', label: 'Give feedback', to: () => ctx.push('feedback', {}) },
     { icon: 'info', label: 'Event info & Wi-Fi', to: () => ctx.push('info', {}) },
     { icon: 'settings', label: 'Settings', to: () => ctx.push('settings' as PushScreen, {}) },
+    ...(ctx.isAdmin ? [{ icon: 'grid' as IconName, label: 'Admin tools', detail: 'Organiser', to: () => ctx.push('admin', {}) }] : []),
   ]
 
   return (

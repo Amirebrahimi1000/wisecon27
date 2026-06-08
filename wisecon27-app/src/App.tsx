@@ -25,6 +25,7 @@ import { Ticket } from './screens/Ticket'
 import { Feedback } from './screens/Feedback'
 import { Info } from './screens/Info'
 import { Settings } from './screens/Settings'
+import { Admin } from './screens/Admin'
 
 const TABS: { id: TabId; icon: IconName; label: string }[] = [
   { id: 'home', icon: 'home', label: 'Home' },
@@ -44,6 +45,7 @@ const PUSH_SCREENS: Record<PushScreen, (p: { ctx: AppCtx }) => JSX.Element> = {
   feedback: Feedback,
   info: Info,
   settings: Settings,
+  admin: Admin,
 }
 
 const TAB_SCREENS: Record<Exclude<TabId, 'home'>, (p: { ctx: AppCtx }) => JSX.Element> = {

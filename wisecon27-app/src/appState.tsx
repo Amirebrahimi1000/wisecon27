@@ -13,7 +13,7 @@ import type {
 export type TabId = 'home' | 'agenda' | 'speakers' | 'connect' | 'profile'
 export type PushScreen =
   | 'session' | 'speaker' | 'myschedule' | 'notifications' | 'sponsors'
-  | 'ticket' | 'feedback' | 'info' | 'settings'
+  | 'ticket' | 'feedback' | 'info' | 'settings' | 'admin'
 export type HomeVariant = 'classic' | 'cards' | 'bold'
 
 export interface EventInfoItem { id: string; icon: string; label: string; detail: string }

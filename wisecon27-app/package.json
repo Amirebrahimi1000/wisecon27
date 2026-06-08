@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "qr": "node scripts/make-qr.mjs",
     "seed": "tsx scripts/seed.ts",
-    "devlogin": "tsx scripts/devlogin.ts"
+    "devlogin": "tsx scripts/devlogin.ts",
+    "mkadmin": "tsx scripts/mkadmin.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",
