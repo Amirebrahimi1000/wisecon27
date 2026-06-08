@@ -33,10 +33,15 @@ jobs:
 
       - run: npm ci
 
-      # base must be "/<repo>/" for a GitHub Pages project site
+      # base must be "/<repo>/" for a GitHub Pages project site.
+      # Supabase values come from repo secrets (Settings → Secrets and variables
+      # → Actions). The anon key is public-by-design, protected by RLS.
       - run: npm run build
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
 
       - uses: actions/configure-pages@v5
         with:

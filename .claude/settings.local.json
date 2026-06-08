@@ -10,7 +10,13 @@
       "Bash(echo \"git: $\\(git --version || echo none\\)\")",
       "Bash(gh --version)",
       "Bash(echo \"gh: $\\(gh --version)",
-      "Bash(VITE_BASE=/wisecon27-app/ npm run build)"
+      "Bash(VITE_BASE=/wisecon27-app/ npm run build)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git -c user.name=amirebrahimi1000 -c user.email=amirebrahimi1000@users.noreply.github.com commit -q -m 'CI: auto-enable GitHub Pages in deploy workflow *)",
+      "Bash(git push *)",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies['@supabase/supabase-js']\\)\")",
+      "Bash(echo \"installed: $\\(node -e \"console.log\\(require\\('./package.json'\\).dependencies['@supabase/supabase-js']\\)\"\\)\")"
     ]
   }
 }
