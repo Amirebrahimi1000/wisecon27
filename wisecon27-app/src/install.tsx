@@ -193,6 +193,167 @@ export function InstallCard({ compact = false }: { compact?: boolean }) {
 }
 
 /**
+ * Auto-showing first-visit install sheet. Pops up once on phones (not desktop)
+ * when the app is not yet installed: a one-tap Install button on Android, and
+ * an animated "tap Share → Add to Home Screen" guide on iOS. Remembers that it
+ * has been shown so it does not nag on every visit.
+ */
+export function InstallSheet() {
+  const { mode, promptInstall } = useInstall()
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  // Auto-open shortly after load — only on phones, only if not seen/installed.
+  useEffect(() => {
+    if (mode !== 'ios' && mode !== 'android') return
+    let seen = false
+    try {
+      seen = localStorage.getItem('wc27-install-sheet-seen') === '1'
+    } catch {
+      /* ignore */
+    }
+    if (seen) return
+    const t = setTimeout(() => setOpen(true), 1200)
+    return () => clearTimeout(t)
+  }, [mode])
+
+  // Close automatically if it gets installed while open.
+  useEffect(() => {
+    if (mode === 'installed') setOpen(false)
+  }, [mode])
+
+  if (!open || mode === 'installed' || mode === 'other') return null
+
+  const close = () => {
+    setOpen(false)
+    try {
+      localStorage.setItem('wc27-install-sheet-seen', '1')
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return (
+    <div
+      onClick={close}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 120,
+        background: 'rgba(10,14,4,0.55)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+      }}
+    >
+      <div
+        className="wc-sheet-up"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#fff',
+          borderRadius: '22px 22px 0 0',
+          padding: '20px 20px 26px',
+          boxShadow: '0 -16px 40px rgba(0,0,0,0.25)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+          <img
+            src={import.meta.env.BASE_URL + 'apple-touch-icon.png'}
+            alt=""
+            width={52}
+            height={52}
+            style={{ borderRadius: 12, flexShrink: 0 }}
+          />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 17, color: T.ink }}>Install the WISEcon27 app</div>
+            <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginTop: 2, lineHeight: 1.4 }}>
+              Get a home-screen icon, full-screen mode and event notifications.
+            </div>
+          </div>
+          <Press onClick={close} style={{ color: T.muted, flexShrink: 0, alignSelf: 'flex-start' }}>
+            <Icon name="close" size={20} />
+          </Press>
+        </div>
+
+        {mode === 'android' ? (
+          <>
+            <Btn
+              kind="primary"
+              full
+              size="lg"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true)
+                const outcome = await promptInstall()
+                setBusy(false)
+                if (outcome !== 'dismissed') close()
+              }}
+              style={{ marginTop: 18 }}
+            >
+              {busy ? 'Installing…' : 'Install app'}
+            </Btn>
+            <Press
+              onClick={close}
+              style={{ display: 'block', textAlign: 'center', marginTop: 12, fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.muted }}
+            >
+              Maybe later
+            </Press>
+          </>
+        ) : (
+          <>
+            <ol style={{ margin: '18px 0 0', padding: 0, listStyle: 'none', display: 'grid', gap: 12 }}>
+              {[
+                <>Tap the <b style={{ color: T.ink }}>Share</b> icon <Icon name="share" size={15} style={{ verticalAlign: '-2px', color: T.green10 }} /> in Safari's toolbar</>,
+                <>Scroll and choose <b style={{ color: T.ink }}>Add to Home Screen</b> <Icon name="plus" size={15} style={{ verticalAlign: '-2px', color: T.green10 }} /></>,
+                <>Open <b style={{ color: T.ink }}>WISEcon27</b> from your home screen — and sign in there</>,
+              ].map((step, i) => (
+                <li key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      background: T.green10,
+                      color: '#fff',
+                      fontFamily: T.onest,
+                      fontWeight: 700,
+                      fontSize: 12.5,
+                      display: 'grid',
+                      placeItems: 'center',
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <span style={{ fontFamily: T.sig, fontSize: 14, color: T.body, lineHeight: 1.5 }}>{step}</span>
+                </li>
+              ))}
+            </ol>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
+                marginTop: 18,
+                color: T.green10,
+              }}
+            >
+              <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5, color: T.muted }}>
+                The Share button is in Safari's toolbar
+              </span>
+              <span className="wc-bounce-y" style={{ display: 'inline-flex' }}>
+                <Icon name="chevronDown" size={26} />
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/**
  * Slim, dismissible banner for use inside the signed-in app. Stays hidden once
  * dismissed (per browser) and when already installed.
  */

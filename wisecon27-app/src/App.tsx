@@ -8,6 +8,7 @@ import { useAuth } from './auth'
 import { isSupabaseConfigured } from './lib/supabase'
 import { Icon, type IconName } from './components/Icon'
 import { Press } from './components/primitives'
+import { InstallSheet } from './install'
 import { SignIn } from './screens/SignIn'
 import { ProfileSetup } from './screens/ProfileSetup'
 
@@ -174,7 +175,10 @@ export default function App() {
   else content = <AuthedApp />
   return (
     <div className="wc-stage">
-      <div className="wc-device">{content}</div>
+      <div className="wc-device">
+        {content}
+        <InstallSheet />
+      </div>
     </div>
   )
 }

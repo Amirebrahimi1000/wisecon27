@@ -161,6 +161,18 @@ button { font-family: inherit; }
 }
 .wc-toast { animation: wc-toast-in var(--dur-3) var(--ease-out); }
 
+/* ── install sheet slide-up + nudging arrow ── */
+@keyframes wc-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.wc-sheet-up { animation: wc-sheet-up 0.32s var(--ease-out); }
+@keyframes wc-bounce-y {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(7px); }
+}
+.wc-bounce-y { animation: wc-bounce-y 1.1s var(--ease-out) infinite; }
+
 /* keep content visible by default; animate transforms only (per handoff) */
 .wc-screen { min-height: 100%; }
 
