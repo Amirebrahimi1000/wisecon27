@@ -28,7 +28,8 @@
       "Bash(npx --yes web-push generate-vapid-keys --json)",
       "Bash(pbcopy)",
       "Bash(curl -s \"https://api.github.com/repos/Amirebrahimi1000/wisecon27/actions/runs?per_page=8\")",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['created_at'], r['status'], r['conclusion'], '—', r['display_title'][:50]\\) for r in d.get\\('workflow_runs',[]\\)]\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['created_at'], r['status'], r['conclusion'], '—', r['display_title'][:50]\\) for r in d.get\\('workflow_runs',[]\\)]\")",
+      "Bash(cat > *)"
     ]
   }
 }

@@ -66,16 +66,16 @@ export function SignIn() {
             </div>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 21, color: T.ink, textAlign: 'center' }}>Check your email</div>
             <p style={{ fontFamily: T.sig, fontSize: 14.5, color: T.body, marginTop: 8, lineHeight: 1.55, textAlign: 'center' }}>
-              Sent to <b style={{ color: T.ink }}>{email.trim()}</b>. Tap the sign-in link — or, if your email includes a 6-digit code, enter it below to stay in the app.
+              Sent to <b style={{ color: T.ink }}>{email.trim()}</b>. Enter the code from the email below to stay in the app — or tap the sign-in link.
             </p>
             <input
               inputMode="numeric"
               autoComplete="one-time-code"
               value={code}
-              onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); if (error) setError('') }}
+              onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 10)); if (error) setError('') }}
               onKeyDown={(e) => e.key === 'Enter' && verify()}
-              placeholder="••••••"
-              style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center', letterSpacing: '0.4em', border: 'none', outline: 'none', background: '#fff', borderRadius: 'var(--radius-4)', padding: '16px 0', marginTop: 18, fontFamily: T.onest, fontWeight: 700, fontSize: 26, color: T.ink, boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}
+              placeholder="Enter code"
+              style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center', letterSpacing: '0.25em', border: 'none', outline: 'none', background: '#fff', borderRadius: 'var(--radius-4)', padding: '16px 0', marginTop: 18, fontFamily: T.onest, fontWeight: 700, fontSize: 24, color: T.ink, boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}
             />
             {error && <div style={{ fontFamily: T.sig, fontSize: 13, color: 'var(--wf-negative-9)', marginTop: 8, textAlign: 'center' }}>{error}</div>}
             <Btn kind="primary" full size="lg" onClick={verify} disabled={code.length < 6 || verifying} style={{ marginTop: 16 }}>
@@ -92,7 +92,7 @@ export function SignIn() {
           <>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink }}>Sign in</div>
             <p style={{ fontFamily: T.sig, fontSize: 14.5, color: T.muted, marginTop: 6, lineHeight: 1.5 }}>
-              Enter your email and we'll send a 6-digit sign-in code — no password needed.
+              Enter your email and we'll send a sign-in code — no password needed.
             </p>
             <div style={{ marginTop: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', borderRadius: 'var(--radius-4)', padding: '0 14px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}>
