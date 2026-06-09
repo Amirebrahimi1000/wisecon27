@@ -18,6 +18,7 @@ export type PushScreen =
 export type HomeVariant = 'classic' | 'cards' | 'bold'
 
 export interface EventInfoItem { id: string; icon: string; label: string; detail: string }
+export interface EventMeta { dateline: string; location: string }
 
 export interface NavParams {
   session?: Session
@@ -47,6 +48,7 @@ export interface AppCtx {
   sessions: Session[]
   sponsors: Sponsor[]
   eventInfo: EventInfoItem[]
+  event: EventMeta
   speakersOf: (s: Session) => Speaker[]
   refreshContent: () => Promise<void>
   // identity
@@ -166,6 +168,7 @@ export function useAppState(): AppCtx {
   const [sessions, setSessions] = useState<Session[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
   const [eventInfo, setEventInfo] = useState<EventInfoItem[]>([])
+  const [event, setEvent] = useState<EventMeta>({ dateline: '', location: '' })
 
   // identity / user data
   const [me, setMe] = useState<Me>(EMPTY_ME)
@@ -204,7 +207,7 @@ export function useAppState(): AppCtx {
 
   /* ── load all content + user data ── */
   const loadContent = useCallback(async () => {
-    const [d, sp, se, so, ei, act, sq] = await Promise.all([
+    const [d, sp, se, so, ei, act, sq, st] = await Promise.all([
       supabase.from('days').select('*').order('sort'),
       supabase.from('speakers').select('*').order('sort'),
       supabase.from('sessions').select('*, session_speakers(speaker_id, ord)'),
@@ -212,7 +215,12 @@ export function useAppState(): AppCtx {
       supabase.from('event_info').select('*').order('sort'),
       supabase.from('activities').select('*').order('sort'),
       supabase.from('survey_questions').select('*').eq('active', true).order('sort'),
+      supabase.from('settings').select('key, value'),
     ])
+    if (st.data) {
+      const m = new Map((st.data as { key: string; value: string }[]).map((r) => [r.key, r.value]))
+      setEvent({ dateline: m.get('event_dateline') ?? '', location: m.get('event_location') ?? '' })
+    }
     if (d.data) setDays(d.data as Day[])
     if (sp.data) setSpeakers((sp.data as (Speaker & { photo_url: string | null })[]).map((s) => ({ ...s, photoUrl: s.photo_url })))
     if (se.data) setSessions((se.data as SessionRow[]).map(mapSession))
@@ -307,6 +315,8 @@ export function useAppState(): AppCtx {
       .channel('wc27-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => loadUserData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => loadContent())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'days' }, () => loadContent())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadContent())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => loadUserData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_signups' }, () => loadUserData())
       .subscribe()
@@ -580,6 +590,7 @@ export function useAppState(): AppCtx {
     sessions,
     sponsors,
     eventInfo,
+    event,
     speakersOf,
     refreshContent: loadContent,
     userId,

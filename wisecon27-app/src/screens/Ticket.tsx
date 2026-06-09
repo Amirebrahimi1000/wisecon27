@@ -16,7 +16,7 @@ export function Ticket({ ctx }: { ctx: AppCtx }) {
       <div style={{ padding: '20px 22px' }}>
         <div style={{ background: '#fff', borderRadius: 22, overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.3)' }}>
           <div style={{ padding: '22px 22px 16px', textAlign: 'center', borderBottom: '2px dashed ' + T.line }}>
-            <Eyebrow style={{ marginBottom: 6 }} color="var(--wf-green-10)">WISEcon27 · Aarhus</Eyebrow>
+            <Eyebrow style={{ marginBottom: 6 }} color="var(--wf-green-10)">{['WISEcon27', ctx.event.location].filter(Boolean).join(' · ')}</Eyebrow>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 24, color: T.ink }}>{ME.name}</div>
             <div style={{ fontFamily: T.sig, fontSize: 14.5, color: T.body, marginTop: 2 }}>{ME.org}</div>
             <span style={{ display: 'inline-flex', marginTop: 12, background: T.green1, color: T.green11, fontFamily: T.sig, fontWeight: 600, fontSize: 13, borderRadius: 999, padding: '5px 14px' }}>{ME.ticket}</span>

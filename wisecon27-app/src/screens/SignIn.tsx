@@ -1,6 +1,7 @@
 // WISEcon27 — magic-link sign-in screen (brand hero + email → link).
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../auth'
+import { supabase } from '../lib/supabase'
 import { T, STATUS_INSET } from '../theme'
 import { Icon } from '../components/Icon'
 import { Btn, Press } from '../components/primitives'
@@ -13,6 +14,18 @@ export function SignIn() {
   const [error, setError] = useState('')
   const [code, setCode] = useState('')
   const [verifying, setVerifying] = useState(false)
+  const [dateline, setDateline] = useState('')
+  const [location, setLocation] = useState('')
+
+  // event headline is editable in Admin → Event; settings are public-readable
+  useEffect(() => {
+    supabase.from('settings').select('key, value').then(({ data }) => {
+      if (!data) return
+      const m = new Map((data as { key: string; value: string }[]).map((r) => [r.key, r.value]))
+      setDateline(m.get('event_dateline') ?? '')
+      setLocation(m.get('event_location') ?? '')
+    })
+  }, [])
 
   const valid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())
 
@@ -48,7 +61,7 @@ export function SignIn() {
             style={{ width: 250, maxWidth: '78%', display: 'block', filter: 'brightness(0) invert(1)' }}
           />
           <div style={{ fontFamily: T.sig, fontSize: 15, color: 'rgba(255,255,255,0.9)', marginTop: 18, lineHeight: 1.5 }}>
-            14–16 September · Aarhus
+            {[dateline, location].filter(Boolean).join(' · ')}
           </div>
         </div>
       </div>

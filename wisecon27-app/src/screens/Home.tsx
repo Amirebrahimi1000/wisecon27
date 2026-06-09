@@ -9,6 +9,12 @@ import { Avatar, BookmarkBtn, Eyebrow, IconBtn, Press, SessionRow, TrackTag } fr
 import { InstallBanner } from '../install'
 import type { Session } from '../types'
 
+// "Day X of N" + today's long label, derived from the live day list
+function dayMeta(ctx: AppCtx) {
+  const idx = Math.max(0, ctx.days.findIndex((d) => d.id === CLOCK.today))
+  return { long: ctx.days[idx]?.long ?? '', n: idx + 1, total: ctx.days.length }
+}
+
 function planForHome(ctx: AppCtx) {
   const { today, now } = CLOCK
   const mine = ctx.sessions.filter((s) => ctx.isBookmarked(s.id) && s.day === today).sort((a, b) =>
@@ -74,7 +80,7 @@ function HomeClassic({ ctx }: { ctx: AppCtx }) {
         <div style={{ marginTop: 22 }}>
           <div style={{ fontFamily: T.onest, fontSize: 13, color: T.muted }}>Good morning</div>
           <h1 style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 28, color: T.ink, lineHeight: 1.1, marginTop: 2 }}>{ctx.me.name.split(' ')[0]}</h1>
-          <div style={{ fontFamily: T.sig, fontSize: 14, color: T.body, marginTop: 6 }}>Tuesday, 14 September · Day 1 of 3</div>
+          <div style={{ fontFamily: T.sig, fontSize: 14, color: T.body, marginTop: 6 }}>{[dayMeta(ctx).long, `Day ${dayMeta(ctx).n} of ${dayMeta(ctx).total}`].filter(Boolean).join(' · ')}</div>
         </div>
       </div>
 
@@ -210,7 +216,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: T.onest, fontWeight: 600, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap' }}>
               <span className="wc-pulse" style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--wf-lime-9)' }} />
-              Live · Day 1 of 3
+              Live · Day {dayMeta(ctx).n} of {dayMeta(ctx).total}
             </span>
             <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} color="#fff" bg="rgba(255,255,255,0.16)" />
           </div>

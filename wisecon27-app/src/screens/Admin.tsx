@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 import { TRACKS } from '../data'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx, EventInfoItem } from '../appState'
-import type { Activity, Session, Speaker, Sponsor, SponsorTier, TrackId, SessionType, NotificationType } from '../types'
+import type { Activity, Day, Session, Speaker, Sponsor, SponsorTier, TrackId, SessionType, NotificationType } from '../types'
 import { Icon, type IconName } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Eyebrow, Press } from '../components/primitives'
 import { uploadSlides, uploadSpeakerPhoto } from '../lib/storage'
@@ -41,11 +41,11 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   )
 }
 
-type AdminTab = 'dashboard' | 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'activities' | 'info' | 'delegates' | 'import'
+type AdminTab = 'dashboard' | 'event' | 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'activities' | 'info' | 'delegates' | 'import'
 
 export function Admin({ ctx }: { ctx: AppCtx }) {
   const [tab, setTab] = useState<AdminTab>('dashboard')
-  const TABS: [AdminTab, string][] = [['dashboard', 'Dashboard'], ['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['activities', 'Activities'], ['delegates', 'Delegates'], ['info', 'Info'], ['import', 'Import']]
+  const TABS: [AdminTab, string][] = [['dashboard', 'Dashboard'], ['event', 'Event'], ['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['activities', 'Activities'], ['delegates', 'Delegates'], ['info', 'Info'], ['import', 'Import']]
   return (
     <div>
       <AppHeader title="Admin" sub="Organiser tools" onBack={ctx.back} />
@@ -56,6 +56,7 @@ export function Admin({ ctx }: { ctx: AppCtx }) {
       </div>
       <div style={{ padding: '16px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {tab === 'dashboard' && <Dashboard ctx={ctx} />}
+        {tab === 'event' && <EventSettings ctx={ctx} />}
         {tab === 'announce' && <Announce ctx={ctx} />}
         {tab === 'sessions' && <Sessions ctx={ctx} />}
         {tab === 'speakers' && <Speakers ctx={ctx} />}
@@ -314,6 +315,98 @@ function CsvImport({ ctx }: { ctx: AppCtx }) {
       <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.subtle, margin: '-4px 0 10px' }}>{HINT[kind]}</div>
       <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={'title,day_id,start,end,type,track,room\nClosing remarks,d3,16:00,16:30,plenary,plenary,Main Stage'} rows={8} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: 13, lineHeight: 1.5 }} />
       <Btn kind="primary" full size="lg" onClick={run} disabled={busy || !text.trim()} style={{ marginTop: 12 }}>{busy ? 'Importing…' : 'Import CSV'}</Btn>
+    </div>
+  )
+}
+
+/* ════════ Event details: headline (dates + location) + days ════════ */
+type DayDraft = Day & { sort?: number }
+function EventSettings({ ctx }: { ctx: AppCtx }) {
+  const [dateline, setDateline] = useState(ctx.event.dateline)
+  const [location, setLocation] = useState(ctx.event.location)
+  const [savingHead, setSavingHead] = useState(false)
+  useEffect(() => { setDateline(ctx.event.dateline); setLocation(ctx.event.location) }, [ctx.event.dateline, ctx.event.location])
+
+  const [days, setDays] = useState<DayDraft[]>(ctx.days.map((d) => ({ ...d })))
+  const [savingDays, setSavingDays] = useState(false)
+  useEffect(() => { setDays(ctx.days.map((d) => ({ ...d }))) }, [ctx.days])
+
+  const sessionsOnDay = (id: string) => ctx.sessions.filter((s) => s.day === id).length
+
+  const saveHeadline = async () => {
+    if (savingHead) return
+    setSavingHead(true)
+    const { error } = await supabase.from('settings').upsert([
+      { key: 'event_dateline', value: dateline.trim() },
+      { key: 'event_location', value: location.trim() },
+    ])
+    setSavingHead(false)
+    if (error) return ctx.toast(error.message)
+    await ctx.refreshContent()
+    ctx.toast('Event details saved')
+  }
+
+  const setDay = (i: number, patch: Partial<DayDraft>) => setDays((ds) => ds.map((d, j) => (j === i ? { ...d, ...patch } : d)))
+  const addDay = () => {
+    const ids = new Set(days.map((d) => d.id))
+    let n = days.length + 1
+    while (ids.has('d' + n)) n++
+    setDays((ds) => [...ds, { id: 'd' + n, dow: '', date: '', long: '', sort: ds.length }])
+  }
+  const removeDay = (i: number) => {
+    const d = days[i]
+    const count = sessionsOnDay(d.id)
+    if (count > 0 && !window.confirm(`Day "${d.date || d.id}" has ${count} session(s). Removing it will also delete those sessions. Continue?`)) return
+    setDays((ds) => ds.filter((_, j) => j !== i))
+  }
+  const saveDays = async () => {
+    if (savingDays) return
+    setSavingDays(true)
+    const rows = days.map((d, i) => ({ id: d.id, dow: d.dow.trim(), date: d.date.trim(), long: d.long.trim(), sort: i }))
+    const keep = new Set(rows.map((r) => r.id))
+    const removed = ctx.days.filter((d) => !keep.has(d.id)).map((d) => d.id)
+    let error = null
+    if (rows.length) error = (await supabase.from('days').upsert(rows)).error
+    if (!error && removed.length) error = (await supabase.from('days').delete().in('id', removed)).error
+    setSavingDays(false)
+    if (error) return ctx.toast(error.message)
+    await ctx.refreshContent()
+    ctx.toast('Days saved')
+  }
+
+  return (
+    <div>
+      <Eyebrow style={{ marginBottom: 10 }}>Event headline</Eyebrow>
+      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16, marginBottom: 10 }}>
+        <Field label="Dates (shown on sign-in, agenda & badge)"><Text value={dateline} onChange={setDateline} placeholder="e.g. 2–3 March 2027" /></Field>
+        <Field label="Location"><Text value={location} onChange={setLocation} placeholder="e.g. Aarhus" /></Field>
+        <Btn kind="primary" full size="lg" onClick={saveHeadline} disabled={savingHead}>{savingHead ? 'Saving…' : 'Save event details'}</Btn>
+      </div>
+      <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginBottom: 24, paddingLeft: 2, lineHeight: 1.5 }}>
+        Tip: type the date range exactly as you want it shown — e.g. “2–3 March 2027”.
+      </div>
+
+      <Eyebrow style={{ marginBottom: 10 }}>Days</Eyebrow>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 12 }}>
+        {days.map((d, i) => (
+          <div key={d.id} style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 12, color: T.muted }}>Day {i + 1}{sessionsOnDay(d.id) ? ` · ${sessionsOnDay(d.id)} session(s)` : ''}</span>
+              <Press onClick={() => removeDay(i)} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13, color: 'var(--wf-negative-9)' }}>Remove</Press>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ width: 78 }}><Text value={d.dow} onChange={(v) => setDay(i, { dow: v })} placeholder="Mon" /></div>
+              <div style={{ flex: 1 }}><Text value={d.date} onChange={(v) => setDay(i, { date: v })} placeholder="2 Mar" /></div>
+            </div>
+            <div style={{ marginTop: 8 }}><Text value={d.long} onChange={(v) => setDay(i, { long: v })} placeholder="Monday, 2 March" /></div>
+          </div>
+        ))}
+      </div>
+      <Btn kind="outline" full icon="plus" onClick={addDay} style={{ marginBottom: 12 }}>Add day</Btn>
+      <Btn kind="primary" full size="lg" onClick={saveDays} disabled={savingDays}>{savingDays ? 'Saving…' : 'Save days'}</Btn>
+      <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 12, paddingLeft: 2, lineHeight: 1.5 }}>
+        “Mon / 2 Mar” show on the agenda day tabs; the long label shows on Home. Sessions stay attached to their day as you rename it.
+      </div>
     </div>
   )
 }

@@ -14,7 +14,7 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
   )
   return (
     <div>
-      <AppHeader title="Agenda" sub="14–16 September · Aarhus" right={<IconBtn name="search" onClick={() => ctx.toast('Search coming soon')} />} />
+      <AppHeader title="Agenda" sub={[ctx.event.dateline, ctx.event.location].filter(Boolean).join(' · ')} right={<IconBtn name="search" onClick={() => ctx.toast('Search coming soon')} />} />
       {/* day selector */}
       <div style={{ display: 'flex', gap: 8, padding: '14px 16px 4px' }}>
         {ctx.days.map((d) => {
