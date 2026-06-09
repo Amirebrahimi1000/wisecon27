@@ -1,7 +1,7 @@
 // WISEcon27 — app shell: tab bar, navigation stack, toast.
 // The iOS bezel, desktop stage toolbar, "Compare homes" mode and Tweaks panel
 // from the prototype are intentionally NOT ported (prototype-only chrome).
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { T, TABBAR_H } from './theme'
 import { useAppState, type AppCtx, type PushScreen, type TabId } from './appState'
 import { useAuth } from './auth'
@@ -98,10 +98,35 @@ function Toast({ msg }: { msg: string | null }) {
   )
 }
 
+const PULL_TRIGGER = 64 // px (after resistance) to trigger a refresh
+
 function AuthedApp() {
   const ctx = useAppState()
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // pull-to-refresh: drag down at the top of any screen to reload the app
+  const pullStart = useRef<number | null>(null)
+  const [pull, setPull] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+  const onTouchStart = (e: React.TouchEvent) => {
+    pullStart.current = (scrollRef.current?.scrollTop ?? 0) <= 0 ? e.touches[0].clientY : null
+  }
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (pullStart.current == null || refreshing) return
+    if ((scrollRef.current?.scrollTop ?? 0) > 0) { pullStart.current = null; setPull(0); return }
+    const dy = e.touches[0].clientY - pullStart.current
+    setPull(dy > 0 ? Math.min(dy * 0.5, 90) : 0)
+  }
+  const onTouchEnd = () => {
+    if (pull >= PULL_TRIGGER) {
+      setRefreshing(true)
+      setPull(PULL_TRIGGER)
+      window.location.reload()
+    } else {
+      setPull(0)
+    }
+    pullStart.current = null
+  }
 
   const top = ctx.stack[ctx.stack.length - 1] || null
   const screenKey = ctx.tab + '·' + ctx.stack.length + '·' + (top ? top.screen : '')
@@ -134,7 +159,22 @@ function AuthedApp() {
 
   return (
     <div style={{ height: '100%', position: 'relative', background: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+      {/* pull-to-refresh indicator */}
+      {(pull > 0 || refreshing) && (
+        <div style={{ position: 'absolute', top: 0, left: '50%', zIndex: 50, transform: `translate(-50%, ${(refreshing ? PULL_TRIGGER : pull) - 36}px)`, transition: pullStart.current == null ? 'transform .25s var(--ease-out)' : 'none', pointerEvents: 'none' }}>
+          <div
+            className={refreshing ? 'wc-spin' : ''}
+            style={{ width: 30, height: 30, borderRadius: '50%', background: '#fff', boxShadow: 'var(--shadow-card)', border: '2.5px solid var(--wf-grey-5)', borderTopColor: 'var(--wf-green-9)', transform: refreshing ? undefined : `rotate(${pull * 4}deg)` }}
+          />
+        </div>
+      )}
+      <div
+        ref={scrollRef}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', transform: pull ? `translateY(${pull}px)` : undefined, transition: pullStart.current == null ? 'transform .25s var(--ease-out)' : 'none' }}
+      >
         <div key={screenKey} className="wc-screen">
           {ScreenEl ? <ScreenEl ctx={ctx} /> : null}
         </div>

@@ -4,7 +4,7 @@ import { T, TABBAR_H } from '../theme'
 import type { AppCtx, PushScreen, TabId } from '../appState'
 import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
-import { AppHeader, Avatar, Btn, Eyebrow, IconBtn, Press } from '../components/primitives'
+import { AppHeader, Avatar, Btn, Eyebrow, Press } from '../components/primitives'
 import { QR } from '../components/QR'
 import { uploadAvatar } from '../lib/storage'
 import { useAuth } from '../auth'
@@ -42,7 +42,7 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
 
   return (
     <div>
-      <AppHeader title="Profile" right={<IconBtn name="settings" onClick={() => ctx.push('settings', {})} />} />
+      <AppHeader title="Profile" />
       <div style={{ padding: '8px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {/* identity */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '8px 4px 18px' }}>

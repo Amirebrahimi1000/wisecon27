@@ -77,6 +77,9 @@ export function SignIn() {
             <p style={{ fontFamily: T.sig, fontSize: 14.5, color: T.body, marginTop: 8, lineHeight: 1.55, textAlign: 'center' }}>
               Sent to <b style={{ color: T.ink }}>{email.trim()}</b>. Enter the code from the email below to stay in the app — or tap the sign-in link.
             </p>
+            <p style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginTop: 6, lineHeight: 1.5, textAlign: 'center' }}>
+              It can take a minute to arrive — and please check your spam / junk folder.
+            </p>
             <input
               inputMode="numeric"
               autoComplete="one-time-code"
