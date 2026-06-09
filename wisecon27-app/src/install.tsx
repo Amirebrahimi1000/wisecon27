@@ -46,26 +46,41 @@ const isIOS = () =>
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
 
 /**
- * On iOS, only *Safari* can "Add to Home Screen" — Chrome (CriOS), Firefox
- * (FxiOS), Edge (EdgiOS), Opera (OPiOS) and in-app webviews (LinkedIn, Gmail,
- * Instagram, etc.) cannot install at all. Returns true when an iOS user is in
- * one of those and must switch to Safari first.
+ * Which iOS browser the user is in. Since iOS 16.4, Safari, Chrome (CriOS),
+ * Firefox (FxiOS) and Edge (EdgiOS) can all "Add to Home Screen" — only in-app
+ * webviews (LinkedIn, Instagram, Gmail, Facebook, etc.) cannot, because they
+ * have no Share/menu entry for it.
  */
-export const iosNeedsSafari = () => {
-  if (!isIOS()) return false
+type IosBrowser = 'safari' | 'chrome' | 'firefox' | 'edge' | 'inapp'
+export const iosBrowser = (): IosBrowser | null => {
+  if (!isIOS()) return null
   const ua = navigator.userAgent
-  const otherBrowser = /CriOS|FxiOS|EdgiOS|OPiOS|GSA/.test(ua)
-  const realSafari = /Safari/.test(ua) && /Version\//.test(ua) && !otherBrowser
-  return !realSafari
+  // Known in-app webviews that can't add to the Home Screen.
+  if (/FBAN|FBAV|FB_IAB|Instagram|LinkedInApp|Snapchat|Twitter|Pinterest|MicroMessenger|Line\//i.test(ua)) return 'inapp'
+  if (/CriOS/.test(ua)) return 'chrome'
+  if (/FxiOS/.test(ua)) return 'firefox'
+  if (/EdgiOS/.test(ua)) return 'edge'
+  if (/Safari/.test(ua) && /Version\//.test(ua)) return 'safari'
+  // iOS with no browser token and no Safari token → generic WKWebView shell.
+  if (!/Safari/.test(ua)) return 'inapp'
+  return 'safari'
 }
 
-/** Open the current page in Safari from inside another iOS browser/webview. */
+/** Where the Share button lives + how to reach it, per iOS browser. */
+const IOS_SHARE_HINT: Record<Exclude<IosBrowser, 'inapp'>, { step1: string; toolbar: string; down: boolean }> = {
+  safari: { step1: "Tap the Share icon in Safari's toolbar", toolbar: "The Share button is at the bottom in Safari", down: true },
+  chrome: { step1: 'Tap the Share icon (top-right) in Chrome', toolbar: 'The Share button is at the top in Chrome', down: false },
+  edge: { step1: 'Tap the menu (•••) in Edge', toolbar: 'The menu is at the bottom in Edge', down: true },
+  firefox: { step1: 'Tap the menu (•••) in Firefox', toolbar: 'The menu is at the bottom in Firefox', down: true },
+}
+
+/** Open the current page in Safari from inside an in-app browser/webview. */
 function OpenInSafari() {
   const href = typeof window !== 'undefined' ? 'x-safari-' + window.location.href : '#'
   return (
     <div style={{ marginTop: 16 }}>
       <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.body, lineHeight: 1.5 }}>
-        To install on iPhone you need <b style={{ color: T.ink }}>Safari</b> — this browser can't add apps to the Home Screen.
+        You're in an in-app browser, which can't add apps to the Home Screen. Open this page in <b style={{ color: T.ink }}>Safari</b> or <b style={{ color: T.ink }}>Chrome</b> to install.
       </div>
       <a
         href={href}
@@ -87,7 +102,7 @@ function OpenInSafari() {
         Open in Safari
       </a>
       <div style={{ fontFamily: T.sig, fontSize: 12, color: T.muted, marginTop: 10, lineHeight: 1.5, textAlign: 'center' }}>
-        If nothing happens, copy this page's link and paste it into Safari.
+        If nothing happens, copy this page's link and paste it into Safari or Chrome.
       </div>
     </div>
   )
@@ -181,8 +196,8 @@ export function InstallCard({ compact = false }: { compact?: boolean }) {
     )
   }
 
-  // iOS in a non-Safari browser / in-app webview — can't install here.
-  if (mode === 'ios' && iosNeedsSafari()) {
+  // iOS in-app webview (LinkedIn, Instagram, …) — can't install; send to Safari.
+  if (mode === 'ios' && iosBrowser() === 'inapp') {
     return (
       <div style={card}>
         <div style={titleRow}>
@@ -190,8 +205,8 @@ export function InstallCard({ compact = false }: { compact?: boolean }) {
             <Icon name="share" size={20} />
           </div>
           <div>
-            <div style={title}>Open in Safari to install</div>
-            <div style={sub}>Adding to the Home Screen only works in Safari on iPhone.</div>
+            <div style={title}>Open in a browser to install</div>
+            <div style={sub}>Adding to the Home Screen doesn't work inside in-app browsers.</div>
           </div>
         </div>
         <OpenInSafari />
@@ -199,8 +214,9 @@ export function InstallCard({ compact = false }: { compact?: boolean }) {
     )
   }
 
-  // iOS Safari — manual Add to Home Screen.
+  // iOS Safari / Chrome / Firefox / Edge — manual Add to Home Screen.
   if (mode === 'ios') {
+    const hint = IOS_SHARE_HINT[(iosBrowser() ?? 'safari') as Exclude<IosBrowser, 'inapp'>]
     return (
       <div style={card}>
         <div style={titleRow}>
@@ -214,7 +230,7 @@ export function InstallCard({ compact = false }: { compact?: boolean }) {
         </div>
         <ol style={{ margin: '14px 0 0', padding: 0, listStyle: 'none', display: 'grid', gap: 10 }}>
           {[
-            <>Tap the <b style={{ color: T.ink }}>Share</b> icon <Icon name="share" size={14} style={{ verticalAlign: '-2px', color: T.green10 }} /> in Safari's toolbar</>,
+            <>{hint.step1} <Icon name="share" size={14} style={{ verticalAlign: '-2px', color: T.green10 }} /></>,
             <>Choose <b style={{ color: T.ink }}>Add to Home Screen</b> <Icon name="plus" size={14} style={{ verticalAlign: '-2px', color: T.green10 }} /></>,
             <>Open <b style={{ color: T.ink }}>WISEcon27</b> from your home screen and sign in there</>,
           ].map((step, i) => (
@@ -365,13 +381,13 @@ export function InstallSheet() {
               Maybe later
             </Press>
           </>
-        ) : iosNeedsSafari() ? (
+        ) : iosBrowser() === 'inapp' ? (
           <OpenInSafari />
         ) : (
           <>
             <ol style={{ margin: '18px 0 0', padding: 0, listStyle: 'none', display: 'grid', gap: 12 }}>
               {[
-                <>Tap the <b style={{ color: T.ink }}>Share</b> icon <Icon name="share" size={15} style={{ verticalAlign: '-2px', color: T.green10 }} /> in Safari's toolbar</>,
+                <>{IOS_SHARE_HINT[(iosBrowser() ?? 'safari') as Exclude<IosBrowser, 'inapp'>].step1} <Icon name="share" size={15} style={{ verticalAlign: '-2px', color: T.green10 }} /></>,
                 <>Scroll and choose <b style={{ color: T.ink }}>Add to Home Screen</b> <Icon name="plus" size={15} style={{ verticalAlign: '-2px', color: T.green10 }} /></>,
                 <>Open <b style={{ color: T.ink }}>WISEcon27</b> from your home screen — and sign in there</>,
               ].map((step, i) => (
@@ -408,10 +424,10 @@ export function InstallSheet() {
               }}
             >
               <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5, color: T.muted }}>
-                The Share button is in Safari's toolbar
+                {IOS_SHARE_HINT[(iosBrowser() ?? 'safari') as Exclude<IosBrowser, 'inapp'>].toolbar}
               </span>
               <span className="wc-bounce-y" style={{ display: 'inline-flex' }}>
-                <Icon name="chevronDown" size={26} />
+                <Icon name={IOS_SHARE_HINT[(iosBrowser() ?? 'safari') as Exclude<IosBrowser, 'inapp'>].down ? 'chevronDown' : 'arrowUp'} size={26} />
               </span>
             </div>
           </>
