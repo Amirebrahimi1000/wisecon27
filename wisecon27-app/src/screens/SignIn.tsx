@@ -40,18 +40,13 @@ export function SignIn() {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--wf-grey-2)' }}>
       {/* brand hero */}
       <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)', padding: STATUS_INSET + 'px 24px 48px' }}>
-        <img src={import.meta.env.BASE_URL + 'logo-mark.svg'} alt="" style={{ position: 'absolute', right: -40, top: 0, width: 230, opacity: 0.12, filter: 'brightness(0) invert(1)', transform: 'rotate(-8deg)' }} />
-        <div style={{ position: 'relative', paddingTop: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <img src={import.meta.env.BASE_URL + 'logo-icon.svg'} width="34" height="34" style={{ borderRadius: 8 }} alt="" />
-            <span style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 20, color: '#fff', letterSpacing: '-0.01em' }}>
-              WISEcon<span style={{ color: 'var(--wf-lime-9)' }}>27</span>
-            </span>
-          </div>
-          <h1 style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 34, color: '#fff', lineHeight: 1.05, letterSpacing: '-0.02em', marginTop: 28 }}>
-            Welcome to<br />the conference.
-          </h1>
-          <div style={{ fontFamily: T.sig, fontSize: 15, color: 'rgba(255,255,255,0.85)', marginTop: 10, lineHeight: 1.5 }}>
+        <div style={{ position: 'relative', paddingTop: 28 }}>
+          <img
+            src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'}
+            alt="WISEcon27 — Connect. Create. Transform Assessment."
+            style={{ width: 250, maxWidth: '78%', display: 'block', filter: 'brightness(0) invert(1)' }}
+          />
+          <div style={{ fontFamily: T.sig, fontSize: 15, color: 'rgba(255,255,255,0.9)', marginTop: 18, lineHeight: 1.5 }}>
             14–16 September · Aarhus
           </div>
         </div>

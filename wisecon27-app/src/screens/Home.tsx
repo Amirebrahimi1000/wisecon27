@@ -67,12 +67,7 @@ function HomeClassic({ ctx }: { ctx: AppCtx }) {
     <div style={{ background: '#fff', minHeight: '100%', paddingBottom: TABBAR_H + 16 }}>
       <div style={{ padding: STATUS_INSET + 'px 18px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-            <img src="/logo-icon.svg" width="30" height="30" style={{ borderRadius: 7 }} alt="" />
-            <span style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 18, color: T.ink, letterSpacing: '-0.01em' }}>
-              WISEcon<span style={{ color: T.green9 }}>27</span>
-            </span>
-          </div>
+          <img src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'} alt="WISEcon27" style={{ height: 36, display: 'block' }} />
           <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} />
         </div>
         <div style={{ marginTop: 22 }}>
@@ -209,7 +204,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
     <div style={{ background: 'var(--wf-grey-2)', minHeight: '100%', paddingBottom: TABBAR_H + 16 }}>
       {/* hero */}
       <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)', padding: STATUS_INSET + 'px 20px 56px' }}>
-        <img src="/logo-mark.svg" alt="" style={{ position: 'absolute', right: -40, top: 10, width: 230, opacity: 0.12, filter: 'brightness(0) invert(1)', transform: 'rotate(-8deg)' }} />
+        <img src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'} alt="" style={{ position: 'absolute', right: -24, top: 18, width: 260, opacity: 0.13, filter: 'brightness(0) invert(1)', transform: 'rotate(-8deg)' }} />
         <div style={{ position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: T.onest, fontWeight: 600, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap' }}>

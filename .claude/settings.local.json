@@ -29,7 +29,9 @@
       "Bash(pbcopy)",
       "Bash(curl -s \"https://api.github.com/repos/Amirebrahimi1000/wisecon27/actions/runs?per_page=8\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['created_at'], r['status'], r['conclusion'], '—', r['display_title'][:50]\\) for r in d.get\\('workflow_runs',[]\\)]\")",
-      "Bash(cat > *)"
+      "Bash(cat > *)",
+      "Read(//Users/amirebrahimi/Downloads/**)",
+      "Bash(cp \"/Users/amirebrahimi/Downloads/WISEcon27 logo.svg\" /Users/amirebrahimi/Desktop/Claude/Code/design_handoff_wisecon27_app/wisecon27-app/public/wisecon27-logo.svg && echo \"copied → public/wisecon27-logo.svg \\($\\(wc -c < /Users/amirebrahimi/Desktop/Claude/Code/design_handoff_wisecon27_app/wisecon27-app/public/wisecon27-logo.svg\\) bytes\\)\")"
     ]
   }
 }
