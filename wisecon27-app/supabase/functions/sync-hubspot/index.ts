@@ -70,11 +70,13 @@ Deno.serve(async (req) => {
     if (users.length < 1000) break
   }
 
-  // 4) create / update delegates
+  // 4) create / update delegates (and remember who's currently on the list)
+  const syncedEmails = new Set<string>()
   let created = 0, updated = 0, failed = 0
   for (const c of contacts) {
     const email = (c.email || '').trim().toLowerCase()
     if (!email.includes('@')) { failed++; continue }
+    syncedEmails.add(email)
     const name = [c.firstname, c.lastname].filter(Boolean).join(' ').trim()
     let userId = byEmail.get(email)
     if (!userId) {
@@ -82,12 +84,25 @@ Deno.serve(async (req) => {
       if (error || !cu.user) { failed++; continue }
       userId = cu.user.id; byEmail.set(email, userId); created++
     } else updated++
-    const patch: Record<string, unknown> = {}
+    const patch: Record<string, unknown> = { from_hubspot: true }
     if (name) { patch.name = name; patch.initials = initialsOf(name) }
     if (c.jobtitle) patch.role = c.jobtitle
     if (c.company) patch.org = c.company
-    if (Object.keys(patch).length) await admin.from('profiles').update(patch).eq('id', userId)
+    await admin.from('profiles').update(patch).eq('id', userId)
   }
 
-  return json({ created, updated, failed, total: contacts.length })
+  // 5) reconcile: remove delegates we previously synced from HubSpot who are no
+  //    longer on the list. Never touches admins, the caller, or manually-added
+  //    (from_hubspot = false) delegates.
+  let removed = 0
+  const { data: hsProfiles } = await admin.from('profiles').select('id, is_admin').eq('from_hubspot', true)
+  const idToEmail = new Map<string, string>()
+  for (const [em, id] of byEmail) idToEmail.set(id, em)
+  for (const p of (hsProfiles ?? []) as { id: string; is_admin: boolean }[]) {
+    if (p.is_admin || p.id === who.user.id) continue
+    const em = idToEmail.get(p.id)
+    if (em && !syncedEmails.has(em)) { await admin.auth.admin.deleteUser(p.id); removed++ }
+  }
+
+  return json({ created, updated, removed, failed, total: contacts.length })
 })

@@ -146,9 +146,9 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
     const { data, error } = await supabase.functions.invoke('sync-hubspot')
     setSyncing(false)
     if (error) return ctx.toast(error.message)
-    const r = data as { created: number; updated: number; failed: number; error?: string }
+    const r = data as { created: number; updated: number; removed: number; failed: number; error?: string }
     if (r.error) return ctx.toast(r.error)
-    ctx.toast(`HubSpot: +${r.created} new, ${r.updated} updated`)
+    ctx.toast(`HubSpot: +${r.created} new, ${r.updated} updated${r.removed ? `, ${r.removed} removed` : ''}`)
     load()
   }
 
