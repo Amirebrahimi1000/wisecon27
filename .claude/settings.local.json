@@ -31,7 +31,8 @@
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['created_at'], r['status'], r['conclusion'], '—', r['display_title'][:50]\\) for r in d.get\\('workflow_runs',[]\\)]\")",
       "Bash(cat > *)",
       "Read(//Users/amirebrahimi/Downloads/**)",
-      "Bash(cp \"/Users/amirebrahimi/Downloads/WISEcon27 logo.svg\" /Users/amirebrahimi/Desktop/Claude/Code/design_handoff_wisecon27_app/wisecon27-app/public/wisecon27-logo.svg && echo \"copied → public/wisecon27-logo.svg \\($\\(wc -c < /Users/amirebrahimi/Desktop/Claude/Code/design_handoff_wisecon27_app/wisecon27-app/public/wisecon27-logo.svg\\) bytes\\)\")"
+      "Bash(cp \"/Users/amirebrahimi/Downloads/WISEcon27 logo.svg\" /Users/amirebrahimi/Desktop/Claude/Code/design_handoff_wisecon27_app/wisecon27-app/public/wisecon27-logo.svg && echo \"copied → public/wisecon27-logo.svg \\($\\(wc -c < /Users/amirebrahimi/Desktop/Claude/Code/design_handoff_wisecon27_app/wisecon27-app/public/wisecon27-logo.svg\\) bytes\\)\")",
+      "mcp__26f73184-3a43-4b39-9e19-8da9ec50f5cb__search_properties"
     ]
   }
 }

@@ -138,6 +138,19 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
   const [showImport, setShowImport] = useState(false)
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+
+  const syncHubspot = async () => {
+    if (syncing) return
+    setSyncing(true)
+    const { data, error } = await supabase.functions.invoke('sync-hubspot')
+    setSyncing(false)
+    if (error) return ctx.toast(error.message)
+    const r = data as { created: number; updated: number; failed: number; error?: string }
+    if (r.error) return ctx.toast(r.error)
+    ctx.toast(`HubSpot: +${r.created} new, ${r.updated} updated`)
+    load()
+  }
 
   const load = async () => {
     setLoading(true)
@@ -179,9 +192,12 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
         <Eyebrow>{loading ? 'Loading…' : `${roster.length} delegates`}</Eyebrow>
-        <Btn kind={showImport ? 'default' : 'primary'} size="sm" icon={showImport ? 'close' : 'plus'} onClick={() => setShowImport((s) => !s)}>{showImport ? 'Close' : 'Import'}</Btn>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Btn kind="outline" size="sm" icon="download" onClick={syncHubspot} disabled={syncing}>{syncing ? 'Syncing…' : 'HubSpot'}</Btn>
+          <Btn kind={showImport ? 'default' : 'primary'} size="sm" icon={showImport ? 'close' : 'plus'} onClick={() => setShowImport((s) => !s)}>{showImport ? 'Close' : 'Import'}</Btn>
+        </div>
       </div>
 
       {showImport && (
