@@ -41,11 +41,11 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   )
 }
 
-type AdminTab = 'dashboard' | 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'activities' | 'info' | 'import'
+type AdminTab = 'dashboard' | 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'activities' | 'info' | 'delegates' | 'import'
 
 export function Admin({ ctx }: { ctx: AppCtx }) {
   const [tab, setTab] = useState<AdminTab>('dashboard')
-  const TABS: [AdminTab, string][] = [['dashboard', 'Dashboard'], ['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['activities', 'Activities'], ['info', 'Info'], ['import', 'Import']]
+  const TABS: [AdminTab, string][] = [['dashboard', 'Dashboard'], ['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['activities', 'Activities'], ['delegates', 'Delegates'], ['info', 'Info'], ['import', 'Import']]
   return (
     <div>
       <AppHeader title="Admin" sub="Organiser tools" onBack={ctx.back} />
@@ -61,6 +61,7 @@ export function Admin({ ctx }: { ctx: AppCtx }) {
         {tab === 'speakers' && <Speakers ctx={ctx} />}
         {tab === 'sponsors' && <Sponsors ctx={ctx} />}
         {tab === 'activities' && <AdminActivities ctx={ctx} />}
+        {tab === 'delegates' && <Delegates ctx={ctx} />}
         {tab === 'info' && <EventInfo ctx={ctx} />}
         {tab === 'import' && <CsvImport ctx={ctx} />}
       </div>
@@ -123,6 +124,41 @@ function Dashboard({ ctx }: { ctx: AppCtx }) {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+/* ════════ Delegates (registered attendees) ════════ */
+function Delegates({ ctx }: { ctx: AppCtx }) {
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+  const run = async () => {
+    if (busy) return
+    const { rows } = parseCsv(text)
+    const delegates = rows
+      .map((r) => ({ email: r.email || r['e-mail'] || '', name: r.name || '', role: r.role || r.title || '', org: r.org || r.organisation || r.organization || r.company || '' }))
+      .filter((d) => d.email.includes('@'))
+    if (!delegates.length) return ctx.toast('No valid rows — need an "email" column')
+    setBusy(true)
+    setResult(null)
+    const { data, error } = await supabase.functions.invoke('import-delegates', { body: { delegates } })
+    setBusy(false)
+    if (error) return ctx.toast(error.message)
+    const r = data as { created: number; updated: number; failed: number }
+    setResult(`Added ${r.created}, updated ${r.updated}${r.failed ? `, ${r.failed} skipped` : ''}.`)
+    setText('')
+    ctx.toast('Delegates imported')
+  }
+  return (
+    <div>
+      <div style={{ fontFamily: T.sig, fontSize: 14, color: T.muted, marginBottom: 16, lineHeight: 1.5 }}>
+        Paste your registration list (CSV with a header row). Each registered email gets an account and a pre-filled badge. They sign in with that email — no one else can.
+      </div>
+      <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.subtle, marginBottom: 8 }}>Columns: email (required), name, role, org</div>
+      <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={'email,name,role,org\njane@uni.edu,Jane Doe,Lecturer,Example University'} rows={8} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: 13, lineHeight: 1.5 }} />
+      <Btn kind="primary" full size="lg" onClick={run} disabled={busy || !text.trim()} icon="connect" style={{ marginTop: 12 }}>{busy ? 'Importing…' : 'Import delegates'}</Btn>
+      {result && <div style={{ fontFamily: T.sig, fontSize: 14, color: T.green10, marginTop: 12, textAlign: 'center' }}>{result}</div>}
     </div>
   )
 }
