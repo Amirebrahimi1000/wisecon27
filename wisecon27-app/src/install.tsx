@@ -45,6 +45,54 @@ const isIOS = () =>
     // iPadOS 13+ reports as Mac, so also check for touch
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
 
+/**
+ * On iOS, only *Safari* can "Add to Home Screen" — Chrome (CriOS), Firefox
+ * (FxiOS), Edge (EdgiOS), Opera (OPiOS) and in-app webviews (LinkedIn, Gmail,
+ * Instagram, etc.) cannot install at all. Returns true when an iOS user is in
+ * one of those and must switch to Safari first.
+ */
+export const iosNeedsSafari = () => {
+  if (!isIOS()) return false
+  const ua = navigator.userAgent
+  const otherBrowser = /CriOS|FxiOS|EdgiOS|OPiOS|GSA/.test(ua)
+  const realSafari = /Safari/.test(ua) && /Version\//.test(ua) && !otherBrowser
+  return !realSafari
+}
+
+/** Open the current page in Safari from inside another iOS browser/webview. */
+function OpenInSafari() {
+  const href = typeof window !== 'undefined' ? 'x-safari-' + window.location.href : '#'
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.body, lineHeight: 1.5 }}>
+        To install on iPhone you need <b style={{ color: T.ink }}>Safari</b> — this browser can't add apps to the Home Screen.
+      </div>
+      <a
+        href={href}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: 48,
+          marginTop: 14,
+          borderRadius: 'var(--radius-2)',
+          background: T.green9,
+          color: '#fff',
+          fontFamily: T.sig,
+          fontWeight: 600,
+          fontSize: 16,
+          textDecoration: 'none',
+        }}
+      >
+        Open in Safari
+      </a>
+      <div style={{ fontFamily: T.sig, fontSize: 12, color: T.muted, marginTop: 10, lineHeight: 1.5, textAlign: 'center' }}>
+        If nothing happens, copy this page's link and paste it into Safari.
+      </div>
+    </div>
+  )
+}
+
 type InstallMode = 'installed' | 'android' | 'ios' | 'other'
 
 export function useInstall() {
@@ -129,6 +177,24 @@ export function InstallCard({ compact = false }: { compact?: boolean }) {
         >
           {busy ? 'Installing…' : 'Install app'}
         </Btn>
+      </div>
+    )
+  }
+
+  // iOS in a non-Safari browser / in-app webview — can't install here.
+  if (mode === 'ios' && iosNeedsSafari()) {
+    return (
+      <div style={card}>
+        <div style={titleRow}>
+          <div style={badge}>
+            <Icon name="share" size={20} />
+          </div>
+          <div>
+            <div style={title}>Open in Safari to install</div>
+            <div style={sub}>Adding to the Home Screen only works in Safari on iPhone.</div>
+          </div>
+        </div>
+        <OpenInSafari />
       </div>
     )
   }
@@ -299,6 +365,8 @@ export function InstallSheet() {
               Maybe later
             </Press>
           </>
+        ) : iosNeedsSafari() ? (
+          <OpenInSafari />
         ) : (
           <>
             <ol style={{ margin: '18px 0 0', padding: 0, listStyle: 'none', display: 'grid', gap: 12 }}>
