@@ -4,6 +4,7 @@ import { useAuth } from '../auth'
 import { T, STATUS_INSET } from '../theme'
 import { Icon } from '../components/Icon'
 import { Btn, Press } from '../components/primitives'
+import { InstallCard } from '../install'
 
 export function SignIn() {
   const { signIn, verifyCode } = useAuth()
@@ -113,6 +114,15 @@ export function SignIn() {
             <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 18, lineHeight: 1.5, textAlign: 'center' }}>
               By continuing you agree to the event terms. Your badge is created automatically on first sign-in.
             </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0 16px' }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--wf-grey-6)' }} />
+              <div style={{ fontFamily: T.onest, fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.muted }}>
+                For the best experience
+              </div>
+              <div style={{ flex: 1, height: 1, background: 'var(--wf-grey-6)' }} />
+            </div>
+            <InstallCard />
           </>
         )}
       </div>

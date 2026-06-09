@@ -17,8 +17,8 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       registerType: 'autoUpdate',
-      injectManifest: { globPatterns: ['**/*.{js,css,html,svg,woff2}'] },
-      includeAssets: ['logo-icon.svg', 'logo-mark.svg'],
+      injectManifest: { globPatterns: ['**/*.{js,css,html,svg,woff2,png}'] },
+      includeAssets: ['logo-icon.svg', 'logo-mark.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'WISEcon27',
         short_name: 'WISEcon27',
@@ -28,8 +28,10 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         icons: [
-          { src: 'logo-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-          { src: 'logo-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
+          { src: 'pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'pwa-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'pwa-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
     }),

@@ -6,6 +6,7 @@ import type { AppCtx, HomeVariant } from '../appState'
 import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
 import { Avatar, BookmarkBtn, Eyebrow, IconBtn, Press, SessionRow, TrackTag } from '../components/primitives'
+import { InstallBanner } from '../install'
 import type { Session } from '../types'
 
 function planForHome(ctx: AppCtx) {
@@ -231,6 +232,9 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
 
       {/* sheet */}
       <div style={{ marginTop: -34, background: 'var(--wf-grey-2)', borderRadius: '24px 24px 0 0', position: 'relative', paddingTop: 22 }}>
+        <div style={{ padding: '0 16px' }}>
+          <InstallBanner />
+        </div>
         {upNext && t && (
           <div style={{ padding: '0 16px' }}>
             <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }} color={T.subtle}>Up next at {upNext.start}</Eyebrow>
