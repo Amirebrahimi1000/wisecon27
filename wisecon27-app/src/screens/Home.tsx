@@ -235,7 +235,10 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: T.onest, fontWeight: 600, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap' }}>
               {live && <span className="wc-pulse" style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--wf-lime-9)' }} />}
-              {live ? `Live · ${h.status}` : h.status || ctx.event.dateline}
+              {live ? `Live · Day ${clock.dayIndex} of ${clock.total}`
+                : clock.phase === 'before' ? 'Counting down'
+                : clock.phase === 'ended' ? 'Event ended'
+                : ctx.event.dateline}
             </span>
             <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} color="#fff" bg="rgba(255,255,255,0.16)" />
           </div>

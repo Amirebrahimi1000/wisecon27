@@ -19,17 +19,19 @@ const startOfDay = (ms: number) => {
   return d.getTime()
 }
 
-/** "3d 4h 20m" / "4h 20m" / "20m" / "Less than a minute" */
+/** Ticking countdown incl. seconds: "3d 04h 20m 09s" / "4h 20m 09s" / "20m 09s" / "9s" */
 export function formatCountdown(ms: number): string {
   if (ms <= 0) return ''
-  const totalMin = Math.floor(ms / 60000)
-  const d = Math.floor(totalMin / 1440)
-  const h = Math.floor((totalMin % 1440) / 60)
-  const m = totalMin % 60
-  if (d > 0) return `${d}d ${h}h ${m}m`
-  if (h > 0) return `${h}h ${m}m`
-  if (m > 0) return `${m}m`
-  return 'less than a minute'
+  const totalSec = Math.floor(ms / 1000)
+  const d = Math.floor(totalSec / 86400)
+  const h = Math.floor((totalSec % 86400) / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  const s = totalSec % 60
+  const p = (n: number) => String(n).padStart(2, '0')
+  if (d > 0) return `${d}d ${p(h)}h ${p(m)}m ${p(s)}s`
+  if (h > 0) return `${h}h ${p(m)}m ${p(s)}s`
+  if (m > 0) return `${m}m ${p(s)}s`
+  return `${s}s`
 }
 
 export function computeEventClock(nowMs: number, startISO: string, endISO: string, total: number): EventClock {
@@ -46,7 +48,9 @@ export function computeEventClock(nowMs: number, startISO: string, endISO: strin
 export function useEventClock(startISO: string, endISO: string, total: number): EventClock {
   const [nowMs, setNowMs] = useState(() => Date.now())
   useEffect(() => {
-    const t = setInterval(() => setNowMs(Date.now()), 1000)
+    // 250ms so the seconds digit never looks stale (it's derived from the real
+    // clock, so this only affects how promptly the display flips)
+    const t = setInterval(() => setNowMs(Date.now()), 250)
     return () => clearInterval(t)
   }, [])
   return computeEventClock(nowMs, startISO, endISO, total)
