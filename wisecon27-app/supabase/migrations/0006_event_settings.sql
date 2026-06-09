@@ -18,7 +18,9 @@ create policy "settings admin write" on public.settings for all using (public.is
 -- seed with the current values so nothing changes until an organiser edits them
 insert into public.settings (key, value) values
   ('event_dateline', '14–16 September'),
-  ('event_location', 'Aarhus')
+  ('event_location', 'Aarhus'),
+  ('event_start', ''),   -- local ISO datetime, e.g. 2027-03-02T09:00 (set in Admin → Event)
+  ('event_end', '')      -- local ISO datetime, e.g. 2027-03-03T17:00
 on conflict (key) do nothing;
 
 -- realtime so a headline / day change shows up on every device

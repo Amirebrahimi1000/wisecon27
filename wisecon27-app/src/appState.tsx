@@ -18,7 +18,7 @@ export type PushScreen =
 export type HomeVariant = 'classic' | 'cards' | 'bold'
 
 export interface EventInfoItem { id: string; icon: string; label: string; detail: string }
-export interface EventMeta { dateline: string; location: string }
+export interface EventMeta { dateline: string; location: string; startISO: string; endISO: string }
 
 export interface NavParams {
   session?: Session
@@ -168,7 +168,7 @@ export function useAppState(): AppCtx {
   const [sessions, setSessions] = useState<Session[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
   const [eventInfo, setEventInfo] = useState<EventInfoItem[]>([])
-  const [event, setEvent] = useState<EventMeta>({ dateline: '', location: '' })
+  const [event, setEvent] = useState<EventMeta>({ dateline: '', location: '', startISO: '', endISO: '' })
 
   // identity / user data
   const [me, setMe] = useState<Me>(EMPTY_ME)
@@ -219,7 +219,12 @@ export function useAppState(): AppCtx {
     ])
     if (st.data) {
       const m = new Map((st.data as { key: string; value: string }[]).map((r) => [r.key, r.value]))
-      setEvent({ dateline: m.get('event_dateline') ?? '', location: m.get('event_location') ?? '' })
+      setEvent({
+        dateline: m.get('event_dateline') ?? '',
+        location: m.get('event_location') ?? '',
+        startISO: m.get('event_start') ?? '',
+        endISO: m.get('event_end') ?? '',
+      })
     }
     if (d.data) setDays(d.data as Day[])
     if (sp.data) setSpeakers((sp.data as (Speaker & { photo_url: string | null })[]).map((s) => ({ ...s, photoUrl: s.photo_url })))

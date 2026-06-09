@@ -7,12 +7,23 @@ import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
 import { Avatar, BookmarkBtn, Eyebrow, IconBtn, Press, SessionRow, TrackTag } from '../components/primitives'
 import { InstallBanner } from '../install'
+import { useEventClock, type EventClock } from '../eventClock'
 import type { Session } from '../types'
 
-// "Day X of N" + today's long label, derived from the live day list
-function dayMeta(ctx: AppCtx) {
-  const idx = Math.max(0, ctx.days.findIndex((d) => d.id === CLOCK.today))
-  return { long: ctx.days[idx]?.long ?? '', n: idx + 1, total: ctx.days.length }
+// Real-time header bits derived from the event clock + live day list.
+function eventHeader(ctx: AppCtx, clock: EventClock) {
+  const todayLong = ctx.days[clock.dayIndex - 1]?.long ?? ''
+  // primary date line shown on every variant
+  const dateLine = clock.phase === 'live' ? todayLong || ctx.event.dateline : ctx.event.dateline
+  // short status used in the live/Day pill
+  const status =
+    clock.phase === 'live' ? `Day ${clock.dayIndex} of ${clock.total}`
+    : clock.phase === 'before' ? (clock.countdown ? `Starts in ${clock.countdown}` : 'Starting soon')
+    : clock.phase === 'ended' ? 'Event ended'
+    : ''
+  // single combined line for the simpler variants
+  const line = [dateLine, status].filter(Boolean).join(' · ')
+  return { todayLong, dateLine, status, line }
 }
 
 function planForHome(ctx: AppCtx) {
@@ -70,6 +81,8 @@ function HeroStat({ n, label }: { n: number; label: string }) {
 /* ════════ VARIANT A — Classic ════════ */
 function HomeClassic({ ctx }: { ctx: AppCtx }) {
   const { upNext, mine } = planForHome(ctx)
+  const clock = useEventClock(ctx.event.startISO, ctx.event.endISO, ctx.days.length)
+  const h = eventHeader(ctx, clock)
   return (
     <div style={{ background: '#fff', minHeight: '100%', paddingBottom: TABBAR_H + 16 }}>
       <div style={{ padding: STATUS_INSET + 'px 18px 0' }}>
@@ -80,7 +93,7 @@ function HomeClassic({ ctx }: { ctx: AppCtx }) {
         <div style={{ marginTop: 22 }}>
           <div style={{ fontFamily: T.onest, fontSize: 13, color: T.muted }}>Good morning</div>
           <h1 style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 28, color: T.ink, lineHeight: 1.1, marginTop: 2 }}>{ctx.me.name.split(' ')[0]}</h1>
-          <div style={{ fontFamily: T.sig, fontSize: 14, color: T.body, marginTop: 6 }}>{[dayMeta(ctx).long, `Day ${dayMeta(ctx).n} of ${dayMeta(ctx).total}`].filter(Boolean).join(' · ')}</div>
+          <div style={{ fontFamily: T.sig, fontSize: 14, color: T.body, marginTop: 6 }}>{h.line}</div>
         </div>
       </div>
 
@@ -112,7 +125,7 @@ function HomeClassic({ ctx }: { ctx: AppCtx }) {
 
       <div style={{ padding: '24px 18px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-          <Eyebrow>Your schedule today</Eyebrow>
+          <Eyebrow>Your bookmarked sessions</Eyebrow>
           <Press onClick={() => ctx.push('myschedule', {})} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13, color: T.green10 }}>See all</Press>
         </div>
         <div style={{ border: '1px solid ' + T.line, borderRadius: 'var(--radius-5)', overflow: 'hidden' }}>
@@ -131,6 +144,8 @@ function HomeClassic({ ctx }: { ctx: AppCtx }) {
 function HomeCards({ ctx }: { ctx: AppCtx }) {
   const { upNext, mine } = planForHome(ctx)
   const t = upNext && TRACKS[upNext.track]
+  const clock = useEventClock(ctx.event.startISO, ctx.event.endISO, ctx.days.length)
+  const h = eventHeader(ctx, clock)
   return (
     <div style={{ background: 'var(--wf-grey-2)', minHeight: '100%', paddingBottom: TABBAR_H + 16 }}>
       <div style={{ padding: STATUS_INSET + 'px 16px 0' }}>
@@ -138,6 +153,7 @@ function HomeCards({ ctx }: { ctx: AppCtx }) {
           <div>
             <div style={{ fontFamily: T.onest, fontSize: 12.5, color: T.muted }}>Good morning</div>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 24, color: T.ink, lineHeight: 1.1 }}>Hello, {ctx.me.name.split(' ')[0]}</div>
+            {h.line && <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginTop: 3 }}>{h.line}</div>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} />
@@ -190,7 +206,7 @@ function HomeCards({ ctx }: { ctx: AppCtx }) {
 
       <div style={{ paddingTop: 22 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0 16px 10px' }}>
-          <Eyebrow>Your day</Eyebrow>
+          <Eyebrow>Your bookmarked sessions</Eyebrow>
           <Press onClick={() => ctx.push('myschedule', {})} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13, color: T.green10 }}>See all</Press>
         </div>
         <div className="wc-noscroll" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 16px 4px' }}>
@@ -207,6 +223,9 @@ function HomeCards({ ctx }: { ctx: AppCtx }) {
 function HomeBold({ ctx }: { ctx: AppCtx }) {
   const { upNext, later, mine } = planForHome(ctx)
   const t = upNext && TRACKS[upNext.track]
+  const clock = useEventClock(ctx.event.startISO, ctx.event.endISO, ctx.days.length)
+  const h = eventHeader(ctx, clock)
+  const live = clock.phase === 'live'
   return (
     <div style={{ background: 'var(--wf-grey-2)', minHeight: '100%', paddingBottom: TABBAR_H + 16 }}>
       {/* hero */}
@@ -215,8 +234,8 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
         <div style={{ position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: T.onest, fontWeight: 600, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap' }}>
-              <span className="wc-pulse" style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--wf-lime-9)' }} />
-              Live · Day {dayMeta(ctx).n} of {dayMeta(ctx).total}
+              {live && <span className="wc-pulse" style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--wf-lime-9)' }} />}
+              {live ? `Live · ${h.status}` : h.status || ctx.event.dateline}
             </span>
             <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} color="#fff" bg="rgba(255,255,255,0.16)" />
           </div>
@@ -227,12 +246,28 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
               <br />
               reimagined.
             </h1>
+            {h.dateLine && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 12, fontFamily: T.sig, fontSize: 14, color: 'rgba(255,255,255,0.92)' }}>
+                <Icon name="calendar" size={15} style={{ opacity: 0.9 }} />
+                {h.dateLine}
+              </div>
+            )}
           </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-            <HeroStat n={ctx.sessions.filter((s) => s.day === CLOCK.today && s.type !== 'break').length} label="sessions today" />
-            <HeroStat n={mine.length} label="in your plan" />
-            <HeroStat n={ctx.speakers.length} label="speakers" />
-          </div>
+          {clock.phase === 'before' && clock.countdown ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 13, marginTop: 20, background: 'rgba(255,255,255,0.15)', borderRadius: 'var(--radius-4)', padding: '14px 16px', backdropFilter: 'blur(4px)' }}>
+              <Icon name="clock" size={26} style={{ color: '#fff', flexShrink: 0 }} />
+              <div>
+                <div style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 22, color: '#fff', lineHeight: 1 }}>{clock.countdown}</div>
+                <div style={{ fontFamily: T.sig, fontSize: 12.5, color: 'rgba(255,255,255,0.82)', marginTop: 3 }}>until WISEcon27 begins</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <HeroStat n={ctx.sessions.filter((s) => s.day === ctx.days[clock.dayIndex - 1]?.id && s.type !== 'break').length} label="sessions today" />
+              <HeroStat n={mine.length} label="in your plan" />
+              <HeroStat n={ctx.speakers.length} label="speakers" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -271,10 +306,23 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
         </div>
 
         <div style={{ padding: '24px 16px 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink }}>Then today</div>
-            <Press onClick={() => ctx.push('myschedule', {})} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.green10 }}>See all</Press>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink }}>Your bookmarked sessions</div>
+            <Press onClick={() => ctx.setTab('agenda')} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.green10 }}>Full programme</Press>
           </div>
+          <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginBottom: 12, lineHeight: 1.4 }}>
+            {live ? 'Sessions you’ve saved for today — this isn’t the full schedule. Browse every session in the Agenda.' : 'Sessions you’ve saved. Browse the full programme in the Agenda.'}
+          </div>
+          {mine.length === 0 ? (
+            <Press onClick={() => ctx.setTab('agenda')} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', borderRadius: 'var(--radius-4)', padding: 16, boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ width: 38, height: 38, borderRadius: '50%', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name="calendar" size={19} /></div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>No saved sessions yet</div>
+                <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginTop: 1 }}>Bookmark sessions in the Agenda to build your plan.</div>
+              </div>
+              <Icon name="chevronRight" size={18} stroke={2} style={{ color: T.muted }} />
+            </Press>
+          ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {later.map((s) => {
               const tt = TRACKS[s.track]
@@ -292,7 +340,11 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
                 </Press>
               )
             })}
+            {later.length === 0 && (
+              <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, padding: '4px 2px', lineHeight: 1.45 }}>That’s your only saved session so far — add more from the Agenda.</div>
+            )}
           </div>
+          )}
         </div>
       </div>
     </div>

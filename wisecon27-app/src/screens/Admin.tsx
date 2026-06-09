@@ -324,8 +324,13 @@ type DayDraft = Day & { sort?: number }
 function EventSettings({ ctx }: { ctx: AppCtx }) {
   const [dateline, setDateline] = useState(ctx.event.dateline)
   const [location, setLocation] = useState(ctx.event.location)
+  const [startISO, setStartISO] = useState(ctx.event.startISO)
+  const [endISO, setEndISO] = useState(ctx.event.endISO)
   const [savingHead, setSavingHead] = useState(false)
-  useEffect(() => { setDateline(ctx.event.dateline); setLocation(ctx.event.location) }, [ctx.event.dateline, ctx.event.location])
+  useEffect(() => {
+    setDateline(ctx.event.dateline); setLocation(ctx.event.location)
+    setStartISO(ctx.event.startISO); setEndISO(ctx.event.endISO)
+  }, [ctx.event.dateline, ctx.event.location, ctx.event.startISO, ctx.event.endISO])
 
   const [days, setDays] = useState<DayDraft[]>(ctx.days.map((d) => ({ ...d })))
   const [savingDays, setSavingDays] = useState(false)
@@ -339,6 +344,8 @@ function EventSettings({ ctx }: { ctx: AppCtx }) {
     const { error } = await supabase.from('settings').upsert([
       { key: 'event_dateline', value: dateline.trim() },
       { key: 'event_location', value: location.trim() },
+      { key: 'event_start', value: startISO },
+      { key: 'event_end', value: endISO },
     ])
     setSavingHead(false)
     if (error) return ctx.toast(error.message)
@@ -380,10 +387,20 @@ function EventSettings({ ctx }: { ctx: AppCtx }) {
       <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16, marginBottom: 10 }}>
         <Field label="Dates (shown on sign-in, agenda & badge)"><Text value={dateline} onChange={setDateline} placeholder="e.g. 2–3 March 2027" /></Field>
         <Field label="Location"><Text value={location} onChange={setLocation} placeholder="e.g. Aarhus" /></Field>
-        <Btn kind="primary" full size="lg" onClick={saveHeadline} disabled={savingHead}>{savingHead ? 'Saving…' : 'Save event details'}</Btn>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <label style={{ flex: 1 }}>
+            <Eyebrow style={{ marginBottom: 6 }}>Starts</Eyebrow>
+            <input type="datetime-local" value={startISO} onChange={(e) => setStartISO(e.target.value)} style={inputStyle} />
+          </label>
+          <label style={{ flex: 1 }}>
+            <Eyebrow style={{ marginBottom: 6 }}>Ends</Eyebrow>
+            <input type="datetime-local" value={endISO} onChange={(e) => setEndISO(e.target.value)} style={inputStyle} />
+          </label>
+        </div>
+        <Btn kind="primary" full size="lg" onClick={saveHeadline} disabled={savingHead} style={{ marginTop: 12 }}>{savingHead ? 'Saving…' : 'Save event details'}</Btn>
       </div>
       <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginBottom: 24, paddingLeft: 2, lineHeight: 1.5 }}>
-        Tip: type the date range exactly as you want it shown — e.g. “2–3 March 2027”.
+        The <b>Dates</b> text is what delegates see. <b>Starts/Ends</b> drive the live status &amp; countdown on Home — set them to the real first-session start and last-session end.
       </div>
 
       <Eyebrow style={{ marginBottom: 10 }}>Days</Eyebrow>
