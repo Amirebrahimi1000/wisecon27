@@ -9,6 +9,7 @@ import { isSupabaseConfigured } from './lib/supabase'
 import { Icon, type IconName } from './components/Icon'
 import { Press } from './components/primitives'
 import { InstallSheet } from './install'
+import { NotifyPrompt } from './NotifyPrompt'
 import { SignIn } from './screens/SignIn'
 import { ProfileSetup } from './screens/ProfileSetup'
 
@@ -140,6 +141,7 @@ function AuthedApp() {
       </div>
       <Toast msg={ctx.toastMsg} />
       <BottomNav active={ctx.tab} onSelect={ctx.setTab} unread={ctx.unread} />
+      <NotifyPrompt userId={ctx.userId} onToast={ctx.toast} />
     </div>
   )
 }
