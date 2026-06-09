@@ -82,6 +82,7 @@ export type NotificationType =
   | 'announce'
   | 'social'
   | 'feedback'
+  | 'message'
 
 export interface AppNotification {
   id: string
@@ -90,6 +91,30 @@ export interface AppNotification {
   body: string
   time: string
   unread: boolean
+  // 'announcement' (default, global) vs per-user derived items that navigate on tap
+  kind?: 'announcement' | 'request' | 'message'
+  peerId?: string
+}
+
+export interface Message {
+  id: string
+  senderId: string
+  recipientId: string
+  body: string
+  createdAt: string
+  readAt: string | null
+}
+
+export interface Conversation {
+  peerId: string
+  peerName: string
+  peerInitials: string
+  peerColor: string
+  peerAvatarUrl?: string | null
+  lastBody: string
+  lastAt: string
+  unread: number
+  fromMe: boolean
 }
 
 export type SponsorTier = 'Host' | 'Platinum' | 'Gold' | 'Silver'

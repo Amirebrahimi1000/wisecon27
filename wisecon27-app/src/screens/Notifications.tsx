@@ -12,6 +12,7 @@ const META: Record<NotificationType, { icon: IconName; color: string; bg: string
   announce: { icon: 'info', color: 'var(--wf-blue-9)', bg: 'var(--wf-blue-1)' },
   social: { icon: 'heart', color: 'var(--wf-tomato-9)', bg: 'var(--wf-tomato-2)' },
   feedback: { icon: 'star', color: 'var(--wf-orange-9)', bg: 'var(--wf-orange-2)' },
+  message: { icon: 'message', color: 'var(--wf-green-10)', bg: 'var(--wf-green-1)' },
 }
 
 export function Notifications({ ctx }: { ctx: AppCtx }) {
@@ -27,8 +28,13 @@ export function Notifications({ ctx }: { ctx: AppCtx }) {
       <div style={{ padding: '8px 12px ' + (TABBAR_H + 16) + 'px' }}>
         {ctx.notifications.map((n) => {
           const m = META[n.type]
+          const onTap = () => {
+            if (n.kind === 'message' && n.peerId) ctx.push('conversation', { peerId: n.peerId })
+            else if (n.kind === 'request') ctx.setTab('connect')
+            else ctx.readOne(n.id)
+          }
           return (
-            <Press key={n.id} onClick={() => ctx.readOne(n.id)} style={{ display: 'flex', gap: 12, padding: '14px 10px', borderBottom: '1px solid ' + T.line, background: n.unread ? T.green1 + '55' : 'transparent', borderRadius: 'var(--radius-3)' }}>
+            <Press key={n.id} onClick={onTap} style={{ display: 'flex', gap: 12, padding: '14px 10px', borderBottom: '1px solid ' + T.line, background: n.unread ? T.green1 + '55' : 'transparent', borderRadius: 'var(--radius-3)' }}>
               <div style={{ width: 38, height: 38, borderRadius: '50%', background: m.bg, color: m.color, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                 <Icon name={m.icon} size={19} />
               </div>

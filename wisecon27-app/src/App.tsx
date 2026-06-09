@@ -30,6 +30,7 @@ import { Admin } from './screens/Admin'
 import { Activities } from './screens/Activities'
 import { Survey } from './screens/Survey'
 import { ExhibitorDetail } from './screens/ExhibitorDetail'
+import { Conversation } from './screens/Conversation'
 
 const TABS: { id: TabId; icon: IconName; label: string }[] = [
   { id: 'home', icon: 'home', label: 'Home' },
@@ -53,6 +54,7 @@ const PUSH_SCREENS: Record<PushScreen, (p: { ctx: AppCtx }) => JSX.Element> = {
   activities: Activities,
   survey: Survey,
   exhibitor: ExhibitorDetail,
+  conversation: Conversation,
 }
 
 const TAB_SCREENS: Record<Exclude<TabId, 'home'>, (p: { ctx: AppCtx }) => JSX.Element> = {

@@ -7,14 +7,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { useAuth } from './auth'
 import type {
-  Activity, AppNotification, Attendee, ConnectStatus, Day, Me, Session, Speaker, Sponsor, SurveyQuestion,
+  Activity, AppNotification, Attendee, ConnectStatus, Conversation, Day, Me, Message, Session, Speaker, Sponsor, SurveyQuestion,
 } from './types'
 
 export type TabId = 'home' | 'agenda' | 'speakers' | 'connect' | 'profile'
 export type PushScreen =
   | 'session' | 'speaker' | 'myschedule' | 'notifications' | 'sponsors'
   | 'ticket' | 'feedback' | 'info' | 'settings' | 'admin'
-  | 'activities' | 'survey' | 'exhibitor'
+  | 'activities' | 'survey' | 'exhibitor' | 'conversation'
 export type HomeVariant = 'classic' | 'cards' | 'bold'
 
 export interface EventInfoItem { id: string; icon: string; label: string; detail: string }
@@ -24,6 +24,7 @@ export interface NavParams {
   speaker?: Speaker
   sponsor?: Sponsor
   day?: string
+  peerId?: string
   _fromTab?: boolean
 }
 interface StackEntry { screen: PushScreen; params: NavParams }
@@ -65,6 +66,14 @@ export interface AppCtx {
   // connections (other delegates)
   attendees: Attendee[]
   setConnection: (id: string, status: ConnectStatus) => void
+  incomingRequests: Attendee[]
+  acceptConnection: (id: string) => void
+  declineConnection: (id: string) => void
+  // direct messages (between connected delegates)
+  conversations: Conversation[]
+  messagesWith: (peerId: string) => Message[]
+  sendMessage: (peerId: string, body: string) => Promise<void>
+  markThreadRead: (peerId: string) => void
   // interactive activities (with sign-up)
   activities: ActivityView[]
   toggleActivitySignup: (id: string) => void
@@ -120,6 +129,15 @@ export interface ActivityView extends Activity {
   full: boolean
 }
 
+interface MessageRow {
+  id: string; sender_id: string; recipient_id: string; body: string; created_at: string; read_at: string | null
+}
+const mapMessage = (r: MessageRow): Message => ({
+  id: r.id, senderId: r.sender_id, recipientId: r.recipient_id, body: r.body, createdAt: r.created_at, readAt: r.read_at,
+})
+
+type ConnRow = { requester_id: string; target_id: string; status: ConnectStatus }
+
 const initialsFrom = (name: string) =>
   name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('') || '?'
 
@@ -156,6 +174,8 @@ export function useAppState(): AppCtx {
   const [announcements, setAnnouncements] = useState<AppNotification[]>([])
   const [readSet, setReadSet] = useState<Set<string>>(new Set())
   const [attendees, setAttendees] = useState<Attendee[]>([])
+  const [connRows, setConnRows] = useState<ConnRow[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
 
   // features: activities, survey, per-session feedback
   const [activitiesRaw, setActivitiesRaw] = useState<ActivityRow[]>([])
@@ -232,7 +252,8 @@ export function useAppState(): AppCtx {
     // attendees = other profiles, with my connection status + shared interests
     if (profs.data) {
       const myInterests = new Set((prof.data as ProfileRow | null)?.interests ?? [])
-      const connRows = (conns.data ?? []) as { requester_id: string; target_id: string; status: ConnectStatus }[]
+      const connRows = (conns.data ?? []) as ConnRow[]
+      setConnRows(connRows)
       const statusFor = (otherId: string): ConnectStatus => {
         const row = connRows.find(
           (c) =>
@@ -294,11 +315,95 @@ export function useAppState(): AppCtx {
     }
   }, [userId, loadContent, loadUserData])
 
+  /* ── direct messages: own loader + realtime (kept separate so a new message
+        doesn't reload all content/user data) ── */
+  const loadMessages = useCallback(async () => {
+    if (!userId) return
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+      .order('created_at')
+    if (data) setMessages((data as MessageRow[]).map(mapMessage))
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId) return
+    loadMessages()
+    const ch = supabase
+      .channel('wc27-msgs')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadMessages())
+      .subscribe()
+    return () => {
+      supabase.removeChannel(ch)
+    }
+  }, [userId, loadMessages])
+
   /* ── derived ── */
-  const notifications = useMemo(
-    () => announcements.map((n) => ({ ...n, unread: !readSet.has(n.id) })),
-    [announcements, readSet],
+  const attendeeById = useMemo(() => new Map(attendees.map((a) => [a.id, a])), [attendees])
+
+  // incoming connection requests = someone asked to connect with me (pending)
+  const incomingRequests = useMemo(() => {
+    const ids = new Set(
+      connRows.filter((c) => c.target_id === userId && c.requester_id !== userId && c.status === 'pending').map((c) => c.requester_id),
+    )
+    return attendees.filter((a) => ids.has(a.id))
+  }, [connRows, attendees, userId])
+
+  // group my messages into conversations (one per peer)
+  const conversations = useMemo<Conversation[]>(() => {
+    const byPeer = new Map<string, Message[]>()
+    for (const m of messages) {
+      const peer = m.senderId === userId ? m.recipientId : m.senderId
+      const arr = byPeer.get(peer)
+      if (arr) arr.push(m)
+      else byPeer.set(peer, [m])
+    }
+    const out: Conversation[] = []
+    for (const [peerId, msgs] of byPeer) {
+      msgs.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      const last = msgs[msgs.length - 1]
+      const a = attendeeById.get(peerId)
+      out.push({
+        peerId,
+        peerName: a?.name ?? 'A delegate',
+        peerInitials: a?.initials ?? '?',
+        peerColor: a?.color ?? 'var(--wf-blue-9)',
+        peerAvatarUrl: a?.avatarUrl,
+        lastBody: last.body,
+        lastAt: last.createdAt,
+        unread: msgs.filter((m) => m.recipientId === userId && !m.readAt).length,
+        fromMe: last.senderId === userId,
+      })
+    }
+    return out.sort((a, b) => b.lastAt.localeCompare(a.lastAt))
+  }, [messages, attendeeById, userId])
+
+  const messagesWith = useCallback(
+    (peerId: string) =>
+      messages
+        .filter((m) => (m.senderId === userId && m.recipientId === peerId) || (m.senderId === peerId && m.recipientId === userId))
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    [messages, userId],
   )
+
+  // notification feed = unread messages + incoming requests (live, per-user) +
+  // global announcements; the bell badge counts all three.
+  const notifications = useMemo<AppNotification[]>(() => {
+    const msgNotifs: AppNotification[] = conversations
+      .filter((c) => c.unread > 0)
+      .map((c) => ({
+        id: 'msg:' + c.peerId, type: 'message', kind: 'message', peerId: c.peerId,
+        title: c.peerName, body: c.lastBody, time: shortTime(c.lastAt), unread: true,
+      }))
+    const reqNotifs: AppNotification[] = incomingRequests.map((a) => ({
+      id: 'req:' + a.id, type: 'connect', kind: 'request', peerId: a.id,
+      title: a.name + ' wants to connect', body: [a.role, a.org].filter(Boolean).join(' · '), time: '', unread: true,
+    }))
+    const annNotifs: AppNotification[] = announcements.map((n) => ({ ...n, kind: 'announcement', unread: !readSet.has(n.id) }))
+    return [...msgNotifs, ...reqNotifs, ...annNotifs]
+  }, [conversations, incomingRequests, announcements, readSet])
+
   const unread = notifications.filter((n) => n.unread).length
   const top = stack[stack.length - 1]
 
@@ -344,12 +449,69 @@ export function useAppState(): AppCtx {
     if (rows.length) supabase.from('notification_reads').upsert(rows).then()
   }
 
+  // best-effort device push to one delegate (no-op if function/subscription absent)
+  const pushTo = (toUserId: string, title: string, body: string) => {
+    supabase.functions
+      .invoke('notify-user', { body: { toUserId, title, body, url: import.meta.env.BASE_URL } })
+      .catch(() => {})
+  }
+
   const setConnection = (id: string, status: ConnectStatus) => {
     setAttendees((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)))
     if (status === 'connect') {
+      setConnRows((prev) => prev.filter((c) => !(c.requester_id === userId && c.target_id === id)))
       supabase.from('connections').delete().eq('requester_id', userId).eq('target_id', id).then()
     } else {
+      setConnRows((prev) => [...prev.filter((c) => !(c.requester_id === userId && c.target_id === id)), { requester_id: userId, target_id: id, status }])
       supabase.from('connections').upsert({ requester_id: userId, target_id: id, status }).then()
+      if (status === 'pending') pushTo(id, (me.name || 'Someone') + ' wants to connect', 'Open WISEcon27 to view the request.')
+    }
+  }
+
+  const acceptConnection = (id: string) => {
+    setConnRows((prev) => prev.map((c) => (c.requester_id === id && c.target_id === userId ? { ...c, status: 'connected' } : c)))
+    setAttendees((prev) => prev.map((a) => (a.id === id ? { ...a, status: 'connected' } : a)))
+    supabase.from('connections').update({ status: 'connected' }).eq('requester_id', id).eq('target_id', userId).then()
+    pushTo(id, (me.name || 'Someone') + ' accepted your request', 'You’re now connected — say hello on WISEcon27.')
+    toast('Connected')
+  }
+
+  const declineConnection = (id: string) => {
+    setConnRows((prev) => prev.filter((c) => !(c.requester_id === id && c.target_id === userId)))
+    setAttendees((prev) => prev.map((a) => (a.id === id ? { ...a, status: 'connect' } : a)))
+    supabase.from('connections').delete().eq('requester_id', id).eq('target_id', userId).then()
+  }
+
+  const sendMessage = async (peerId: string, body: string) => {
+    const text = body.trim()
+    if (!text || !userId) return
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({ sender_id: userId, recipient_id: peerId, body: text })
+      .select()
+      .single()
+    if (!error && data) {
+      setMessages((prev) => [...prev, mapMessage(data as MessageRow)])
+      pushTo(peerId, me.name || 'New message', text.length > 120 ? text.slice(0, 117) + '…' : text)
+    } else if (error) {
+      toast('Could not send message')
+    }
+  }
+
+  const markThreadRead = (peerId: string) => {
+    const now = new Date().toISOString()
+    let changed = false
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.senderId === peerId && m.recipientId === userId && !m.readAt) {
+          changed = true
+          return { ...m, readAt: now }
+        }
+        return m
+      }),
+    )
+    if (changed) {
+      supabase.from('messages').update({ read_at: now }).eq('sender_id', peerId).eq('recipient_id', userId).is('read_at', null).then()
     }
   }
 
@@ -434,6 +596,13 @@ export function useAppState(): AppCtx {
     markAllRead,
     attendees,
     setConnection,
+    incomingRequests,
+    acceptConnection,
+    declineConnection,
+    conversations,
+    messagesWith,
+    sendMessage,
+    markThreadRead,
     activities,
     toggleActivitySignup,
     myFeedback,
