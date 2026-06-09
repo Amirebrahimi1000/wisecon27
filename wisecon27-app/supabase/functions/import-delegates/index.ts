@@ -34,7 +34,41 @@ Deno.serve(async (req) => {
   const { data: prof } = await admin.from('profiles').select('is_admin').eq('id', who.user.id).single()
   if (!prof?.is_admin) return json({ error: 'Admins only' }, 403)
 
-  const { delegates } = (await req.json().catch(() => ({}))) as { delegates?: DelegateInput[] }
+  const body = (await req.json().catch(() => ({}))) as { action?: string; delegates?: DelegateInput[]; id?: string }
+  const action = body.action ?? 'import'
+
+  // ── list the full roster (profiles joined with auth: email, last sign-in) ──
+  if (action === 'list') {
+    const { data: profs } = await admin.from('profiles').select('id, name, role, org, is_admin, avatar_url')
+    const pById = new Map((profs ?? []).map((p) => [p.id as string, p]))
+    const out: unknown[] = []
+    for (let page = 1; ; page++) {
+      const { data } = await admin.auth.admin.listUsers({ page, perPage: 1000 })
+      const users = data?.users ?? []
+      for (const u of users) {
+        const p = pById.get(u.id) as { name?: string; role?: string; org?: string; is_admin?: boolean; avatar_url?: string } | undefined
+        out.push({
+          id: u.id, email: u.email, name: p?.name ?? '', role: p?.role ?? '', org: p?.org ?? '',
+          is_admin: p?.is_admin ?? false, avatar_url: p?.avatar_url ?? null,
+          signed_in: !!u.last_sign_in_at,
+        })
+      }
+      if (users.length < 1000) break
+    }
+    out.sort((a, b) => ((a as { name: string }).name || (a as { email: string }).email).localeCompare((b as { name: string }).name || (b as { email: string }).email))
+    return json({ delegates: out })
+  }
+
+  // ── remove a delegate ──
+  if (action === 'delete') {
+    if (!body.id) return json({ error: 'No id' }, 400)
+    if (body.id === who.user.id) return json({ error: "You can't remove your own account" }, 400)
+    const { error } = await admin.auth.admin.deleteUser(body.id)
+    return error ? json({ error: error.message }, 400) : json({ ok: true })
+  }
+
+  // ── import (default) ──
+  const delegates = body.delegates
   if (!Array.isArray(delegates) || !delegates.length) return json({ error: 'No delegates provided' }, 400)
 
   // map existing emails → id (page through all users)

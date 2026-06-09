@@ -129,11 +129,35 @@ function Dashboard({ ctx }: { ctx: AppCtx }) {
 }
 
 /* ════════ Delegates (registered attendees) ════════ */
+interface DelegateRow { id: string; email: string; name: string; role: string; org: string; is_admin: boolean; avatar_url: string | null; signed_in: boolean }
 function Delegates({ ctx }: { ctx: AppCtx }) {
+  const [roster, setRoster] = useState<DelegateRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [q, setQ] = useState('')
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [showImport, setShowImport] = useState(false)
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<string | null>(null)
-  const run = async () => {
+
+  const load = async () => {
+    setLoading(true)
+    const { data, error } = await supabase.functions.invoke('import-delegates', { body: { action: 'list' } })
+    setLoading(false)
+    if (error) return ctx.toast(error.message)
+    setRoster(((data as { delegates: DelegateRow[] }).delegates) ?? [])
+  }
+  useEffect(() => { load() }, [])
+
+  const remove = async (d: DelegateRow) => {
+    if (confirmId !== d.id) { setConfirmId(d.id); return }
+    setConfirmId(null)
+    const { error } = await supabase.functions.invoke('import-delegates', { body: { action: 'delete', id: d.id } })
+    if (error) return ctx.toast(error.message)
+    setRoster((r) => r.filter((x) => x.id !== d.id))
+    ctx.toast('Delegate removed')
+  }
+
+  const runImport = async () => {
     if (busy) return
     const { rows } = parseCsv(text)
     const delegates = rows
@@ -141,24 +165,57 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
       .filter((d) => d.email.includes('@'))
     if (!delegates.length) return ctx.toast('No valid rows — need an "email" column')
     setBusy(true)
-    setResult(null)
     const { data, error } = await supabase.functions.invoke('import-delegates', { body: { delegates } })
     setBusy(false)
     if (error) return ctx.toast(error.message)
     const r = data as { created: number; updated: number; failed: number }
-    setResult(`Added ${r.created}, updated ${r.updated}${r.failed ? `, ${r.failed} skipped` : ''}.`)
-    setText('')
-    ctx.toast('Delegates imported')
+    ctx.toast(`Added ${r.created}, updated ${r.updated}${r.failed ? `, ${r.failed} skipped` : ''}`)
+    setText(''); setShowImport(false)
+    load()
   }
+
+  const filtered = roster.filter((d) => (d.name + d.email + d.org).toLowerCase().includes(q.toLowerCase()))
+  const initials = (d: DelegateRow) => (d.name || d.email).trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
+
   return (
     <div>
-      <div style={{ fontFamily: T.sig, fontSize: 14, color: T.muted, marginBottom: 16, lineHeight: 1.5 }}>
-        Paste your registration list (CSV with a header row). Each registered email gets an account and a pre-filled badge. They sign in with that email — no one else can.
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <Eyebrow>{loading ? 'Loading…' : `${roster.length} delegates`}</Eyebrow>
+        <Btn kind={showImport ? 'default' : 'primary'} size="sm" icon={showImport ? 'close' : 'plus'} onClick={() => setShowImport((s) => !s)}>{showImport ? 'Close' : 'Import'}</Btn>
       </div>
-      <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.subtle, marginBottom: 8 }}>Columns: email (required), name, role, org</div>
-      <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={'email,name,role,org\njane@uni.edu,Jane Doe,Lecturer,Example University'} rows={8} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: 13, lineHeight: 1.5 }} />
-      <Btn kind="primary" full size="lg" onClick={run} disabled={busy || !text.trim()} icon="connect" style={{ marginTop: 12 }}>{busy ? 'Importing…' : 'Import delegates'}</Btn>
-      {result && <div style={{ fontFamily: T.sig, fontSize: 14, color: T.green10, marginTop: 12, textAlign: 'center' }}>{result}</div>}
+
+      {showImport && (
+        <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 16 }}>
+          <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.subtle, marginBottom: 8 }}>CSV columns: email (required), name, role, org</div>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={'email,name,role,org\njane@uni.edu,Jane Doe,Lecturer,Example University'} rows={6} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: 13, lineHeight: 1.5 }} />
+          <Btn kind="primary" full onClick={runImport} disabled={busy || !text.trim()} style={{ marginTop: 10 }}>{busy ? 'Importing…' : 'Import delegates'}</Btn>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 'var(--radius-4)', padding: '0 12px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', marginBottom: 12 }}>
+        <Icon name="search" size={18} style={{ color: T.muted }} />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search delegates" style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 0', fontFamily: T.sig, fontSize: 15, color: T.ink, background: 'transparent' }} />
+      </div>
+
+      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+        {filtered.map((d, i) => (
+          <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderBottom: i === filtered.length - 1 ? 'none' : '1px solid ' + T.line }}>
+            <Avatar initials={initials(d)} color={d.is_admin ? 'var(--wf-green-9)' : 'var(--wf-blue-9)'} size={38} src={d.avatar_url} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {d.name || d.email.split('@')[0]}
+                {d.is_admin && <span style={{ fontFamily: T.onest, fontSize: 10, color: T.green10, background: T.green1, borderRadius: 999, padding: '1px 7px' }}>ADMIN</span>}
+              </div>
+              <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.email}{d.org ? ' · ' + d.org : ''}</div>
+            </div>
+            <span style={{ fontFamily: T.onest, fontSize: 10.5, color: d.signed_in ? T.green10 : T.subtle, whiteSpace: 'nowrap' }}>{d.signed_in ? 'Signed in' : 'Not yet'}</span>
+            <Press onClick={() => remove(d)} style={{ color: confirmId === d.id ? 'var(--wf-negative-9)' : T.line2, padding: 4, fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>
+              {confirmId === d.id ? 'Remove?' : <Icon name="close" size={17} />}
+            </Press>
+          </div>
+        ))}
+        {!loading && filtered.length === 0 && <div style={{ padding: 20, textAlign: 'center', fontFamily: T.sig, fontSize: 14, color: T.muted }}>{roster.length === 0 ? 'No delegates yet — import your list.' : 'No matches.'}</div>}
+      </div>
     </div>
   )
 }
