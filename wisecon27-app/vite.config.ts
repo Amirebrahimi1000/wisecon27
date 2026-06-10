@@ -1,6 +1,14 @@
+import { execSync } from 'node:child_process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+
+// Build version, shown in the app footer: "2026-06-11 · a1b2c3d".
+// Uses the CI commit when available, local git otherwise.
+const sha = (process.env.GITHUB_SHA ?? (() => {
+  try { return execSync('git rev-parse HEAD').toString() } catch { return 'dev' }
+})()).slice(0, 7)
+const builtOn = new Date().toISOString().slice(0, 10)
 
 // On GitHub Pages the app is served from https://<user>.github.io/<repo>/, so the
 // build needs base = "/<repo>/". The deploy workflow sets VITE_BASE to that path
@@ -10,6 +18,9 @@ const base = process.env.VITE_BASE ?? '/'
 // https://vitejs.dev/config/
 export default defineConfig({
   base,
+  define: {
+    __APP_VERSION__: JSON.stringify(`${builtOn} · ${sha}`),
+  },
   plugins: [
     react(),
     VitePWA({
