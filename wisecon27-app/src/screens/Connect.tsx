@@ -30,8 +30,9 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
     ctx.toast('Request sent to ' + p.name.split(' ')[0])
   }
 
-  // Discover excludes people who are asking to connect with me (those live in Requests)
-  const discover = people.filter((p) => !incomingIds.has(p.id))
+  // Discover excludes incoming requesters (they live in Requests) and delegates
+  // who chose to hide from the list — unless we already have a relationship
+  const discover = people.filter((p) => !incomingIds.has(p.id) && (!p.hidden || p.status !== 'connect'))
 
   const tabs = [
     ['discover', 'Discover'],

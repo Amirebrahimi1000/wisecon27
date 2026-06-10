@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
   if (!who.user) return json({ error: 'Invalid session' }, 401)
   const me = who.user.id
 
-  const { toUserId, title, body, url } = await req.json().catch(() => ({}))
+  const { toUserId, kind, title, body, url } = await req.json().catch(() => ({}))
   if (!toUserId || toUserId === me) return json({ error: 'Bad request' }, 400)
 
   // gate: a connection row must exist between caller and target (either direction)
@@ -42,6 +42,13 @@ Deno.serve(async (req) => {
     Deno.env.get('VAPID_PUBLIC_KEY')!,
     Deno.env.get('VAPID_PRIVATE_KEY')!,
   )
+
+  // respect the recipient's notification topics (missing key = ON)
+  if (kind === 'connect' || kind === 'message') {
+    const { data: prof } = await admin.from('profiles').select('notif_prefs').eq('id', toUserId).maybeSingle()
+    const prefs = (prof?.notif_prefs ?? {}) as Record<string, boolean>
+    if (prefs[kind] === false) return json({ sent: 0, muted: true })
+  }
 
   const { data: subs } = await admin.from('push_subscriptions').select('*').eq('user_id', toUserId)
   const payload = JSON.stringify({ title: title ?? 'WISEcon27', body: body ?? '', url })

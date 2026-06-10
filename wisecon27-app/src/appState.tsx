@@ -111,6 +111,7 @@ interface ProfileRow {
   id: string; name: string; initials: string; role: string; org: string; color: string
   ticket: string; badge_id: string; interests: string[]; is_admin: boolean; is_staff?: boolean; avatar_url: string | null
   delegate_type: string | null; gala: boolean | null
+  hidden?: boolean | null; notif_prefs?: Record<string, boolean> | null
 }
 const mapProfile = (r: ProfileRow): Me => ({
   name: r.name, initials: r.initials, role: r.role, org: r.org, color: r.color,
@@ -275,6 +276,7 @@ export function useAppState(): AppCtx {
             color: p.color, interests: p.interests, avatarUrl: p.avatar_url,
             mutual: p.interests.filter((i) => myInterests.has(i)).length,
             status: statusFor(p.id),
+            hidden: p.hidden ?? false,
           })),
       )
     }
@@ -463,9 +465,9 @@ export function useAppState(): AppCtx {
   }
 
   // best-effort device push to one delegate (no-op if function/subscription absent)
-  const pushTo = (toUserId: string, title: string, body: string) => {
+  const pushTo = (toUserId: string, kind: 'connect' | 'message', title: string, body: string) => {
     supabase.functions
-      .invoke('notify-user', { body: { toUserId, title, body, url: import.meta.env.BASE_URL } })
+      .invoke('notify-user', { body: { toUserId, kind, title, body, url: import.meta.env.BASE_URL } })
       .catch(() => {})
   }
 
@@ -477,7 +479,7 @@ export function useAppState(): AppCtx {
     } else {
       setConnRows((prev) => [...prev.filter((c) => !(c.requester_id === userId && c.target_id === id)), { requester_id: userId, target_id: id, status }])
       supabase.from('connections').upsert({ requester_id: userId, target_id: id, status }).then()
-      if (status === 'pending') pushTo(id, (me.name || 'Someone') + ' wants to connect', 'Open WISEcon27 to view the request.')
+      if (status === 'pending') pushTo(id, 'connect', (me.name || 'Someone') + ' wants to connect', 'Open WISEcon27 to view the request.')
     }
   }
 
@@ -485,7 +487,7 @@ export function useAppState(): AppCtx {
     setConnRows((prev) => prev.map((c) => (c.requester_id === id && c.target_id === userId ? { ...c, status: 'connected' } : c)))
     setAttendees((prev) => prev.map((a) => (a.id === id ? { ...a, status: 'connected' } : a)))
     supabase.from('connections').update({ status: 'connected' }).eq('requester_id', id).eq('target_id', userId).then()
-    pushTo(id, (me.name || 'Someone') + ' accepted your request', 'You’re now connected — say hello on WISEcon27.')
+    pushTo(id, 'connect', (me.name || 'Someone') + ' accepted your request', 'You’re now connected — say hello on WISEcon27.')
     toast('Connected')
   }
 
@@ -505,7 +507,7 @@ export function useAppState(): AppCtx {
       .single()
     if (!error && data) {
       setMessages((prev) => [...prev, mapMessage(data as MessageRow)])
-      pushTo(peerId, me.name || 'New message', text.length > 120 ? text.slice(0, 117) + '…' : text)
+      pushTo(peerId, 'message', me.name || 'New message', text.length > 120 ? text.slice(0, 117) + '…' : text)
     } else if (error) {
       toast('Could not send message')
     }

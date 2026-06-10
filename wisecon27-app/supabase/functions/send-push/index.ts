@@ -28,7 +28,12 @@ Deno.serve(async (req) => {
     Deno.env.get('VAPID_PRIVATE_KEY')!,
   )
 
-  const { data: subs } = await supabase.from('push_subscriptions').select('*')
+  const [{ data: allSubs }, { data: muted }] = await Promise.all([
+    supabase.from('push_subscriptions').select('*'),
+    supabase.from('profiles').select('id').eq('notif_prefs->>announce', 'false'),
+  ])
+  const mutedIds = new Set((muted ?? []).map((m: { id: string }) => m.id))
+  const subs = (allSubs ?? []).filter((s: { user_id: string }) => !mutedIds.has(s.user_id))
   const payload = JSON.stringify({ title: title ?? 'WISEcon27', body: body ?? '', url })
 
   let sent = 0

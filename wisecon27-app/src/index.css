@@ -226,3 +226,7 @@ html[data-mode="dark"] {
   --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.5);
   --shadow-card: 0 0 0 1px rgba(255,255,255,0.04), 0 6px 18px rgba(0,0,0,0.45);
 }
+
+/* ── Text size (Settings → Text size): scales the whole UI ── */
+html[data-textsize="large"] .wc-device { zoom: 1.1; }
+html[data-textsize="xlarge"] .wc-device { zoom: 1.22; }

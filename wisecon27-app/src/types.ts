@@ -74,6 +74,7 @@ export interface Attendee {
   mutual: number
   status: ConnectStatus
   avatarUrl?: string | null
+  hidden?: boolean
 }
 
 export type NotificationType =

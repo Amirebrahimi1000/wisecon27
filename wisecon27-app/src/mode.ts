@@ -36,3 +36,31 @@ export function initMode() {
     if (getMode() === 'system') apply('system')
   })
 }
+
+/* ── Text size (Settings → Text size) ───────────────────────────── */
+export type TextSize = 'normal' | 'large' | 'xlarge'
+const SIZE_KEY = 'wc27.textsize'
+
+export function getTextSize(): TextSize {
+  try {
+    const v = localStorage.getItem(SIZE_KEY)
+    if (v === 'normal' || v === 'large' || v === 'xlarge') return v
+  } catch {
+    /* ignore */
+  }
+  return 'normal'
+}
+
+export function setTextSize(size: TextSize) {
+  try {
+    localStorage.setItem(SIZE_KEY, size)
+  } catch {
+    /* ignore */
+  }
+  document.documentElement.setAttribute('data-textsize', size)
+}
+
+/** Call once at startup. */
+export function initTextSize() {
+  document.documentElement.setAttribute('data-textsize', getTextSize())
+}
