@@ -88,7 +88,7 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
         <div style={{ textAlign: 'center', marginTop: 18 }}>
           <Btn kind="danger" icon="logout" onClick={() => signOut()}>Sign out</Btn>
         </div>
-        <div style={{ textAlign: 'center', fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 18 }}>WISEcon27 · {__APP_VERSION__} · Powered by WISEflow</div>
+        <div style={{ textAlign: 'center', fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 18 }}>WISEcon27 · {__APP_VERSION__} · Powered by UNIwise</div>
       </div>
     </div>
   )
