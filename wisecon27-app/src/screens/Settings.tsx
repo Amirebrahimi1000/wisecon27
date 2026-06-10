@@ -9,9 +9,9 @@ import { enablePush, isPushEnabled, pushSupported } from '../push'
 import { getMode, setMode, getTextSize, setTextSize, type AppMode, type TextSize } from '../mode'
 
 const MODES: { id: AppMode; name: string; desc: string }[] = [
-  { id: 'system', name: 'Automatic', desc: 'Follows your device’s light/dark setting' },
-  { id: 'light', name: 'Light', desc: 'Always light' },
+  { id: 'light', name: 'Light', desc: 'Always light (default)' },
   { id: 'dark', name: 'Dark', desc: 'Always dark — easier on the eyes in dim rooms' },
+  { id: 'system', name: 'Automatic', desc: 'Follows your device’s light/dark setting' },
 ]
 const SIZES: { id: TextSize; name: string; desc: string }[] = [
   { id: 'normal', name: 'Default', desc: 'Standard size' },

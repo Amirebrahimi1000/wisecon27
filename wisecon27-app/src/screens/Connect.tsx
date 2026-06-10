@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { Attendee } from '../types'
-import { AppHeader, Avatar, Btn, Divider, Empty, IconBtn, Press } from '../components/primitives'
+import { AppHeader, Avatar, Btn, Divider, Empty, Press } from '../components/primitives'
 import { QR } from '../components/QR'
 
 function relTime(iso: string) {
@@ -42,7 +42,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
 
   return (
     <div>
-      <AppHeader title="Connect" sub="Meet fellow delegates" right={<IconBtn name="qr" onClick={() => ctx.push('scanconnect', {})} />} />
+      <AppHeader title="Connect" sub="Meet fellow delegates" />
 
       {/* your badge card */}
       <div style={{ padding: '12px 16px 0' }}>
@@ -58,10 +58,9 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
         </Press>
       </div>
 
-      {/* primary networking actions — labelled, hard to miss */}
-      <div style={{ display: 'flex', gap: 8, padding: '10px 16px 0' }}>
-        <Btn kind="outline" icon="qr" onClick={() => ctx.push('ticket', {})} style={{ flex: 1 }}>My badge</Btn>
-        <Btn kind="primary" icon="qr" onClick={() => ctx.push('scanconnect', {})} style={{ flex: 1 }}>Scan to connect</Btn>
+      {/* one labelled scanning action — the badge card above opens your own badge */}
+      <div style={{ padding: '10px 16px 0' }}>
+        <Btn kind="primary" full icon="qr" onClick={() => ctx.push('scanconnect', {})}>Scan a badge to connect</Btn>
       </div>
 
       {/* tabs */}

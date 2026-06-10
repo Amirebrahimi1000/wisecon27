@@ -12,7 +12,7 @@ export function getMode(): AppMode {
   } catch {
     /* ignore */
   }
-  return 'system'
+  return 'light'
 }
 
 function apply(mode: AppMode) {
