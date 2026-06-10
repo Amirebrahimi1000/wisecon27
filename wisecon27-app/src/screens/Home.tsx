@@ -147,6 +147,46 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
           ))}
         </div>
 
+        {ctx.activities.length > 0 && (
+          <div style={{ paddingTop: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0 16px', marginBottom: 4 }}>
+              <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink }}>Interactive activities</div>
+              <Press onClick={() => ctx.push('activities', {})} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.green10 }}>See all</Press>
+            </div>
+            <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, padding: '0 16px', marginBottom: 12, lineHeight: 1.4 }}>
+              Sign up while there's space — spots are limited.
+            </div>
+            <div className="wc-noscroll" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 16px 4px' }}>
+              {ctx.activities.map((a) => {
+                const dayLabel = ctx.days.find((d) => d.id === a.day)?.date ?? ''
+                const spotsLeft = a.capacity != null ? Math.max(0, a.capacity - a.going) : null
+                return (
+                  <Press key={a.id} onClick={() => ctx.push('activities', {})} style={{ width: 220, flexShrink: 0, background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', padding: 14, boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 6 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: T.onest, fontSize: 11, fontWeight: 600, color: T.muted }}>
+                        <Icon name="sparkles" size={13} style={{ color: T.green10 }} />
+                        {[dayLabel, a.start].filter(Boolean).join(' · ')}
+                      </span>
+                      {a.signedUp ? (
+                        <span style={{ fontFamily: T.onest, fontSize: 10.5, fontWeight: 700, color: T.green10, background: T.green1, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>✓ SIGNED UP</span>
+                      ) : a.full ? (
+                        <span style={{ fontFamily: T.onest, fontSize: 10.5, fontWeight: 700, color: T.muted, background: 'var(--wf-grey-4)', borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>FULL</span>
+                      ) : spotsLeft != null && spotsLeft <= 10 ? (
+                        <span style={{ fontFamily: T.onest, fontSize: 10.5, fontWeight: 700, color: 'var(--wf-orange-11)', background: 'var(--wf-orange-2)', borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>{spotsLeft} SPOTS LEFT</span>
+                      ) : null}
+                    </div>
+                    <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink, lineHeight: 1.25, minHeight: 38 }}>{a.title}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 9, color: T.muted, fontFamily: T.sig, fontSize: 12.5 }}>
+                      <Icon name="pin" size={14} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.location}</span>
+                    </div>
+                  </Press>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         <div style={{ padding: '24px 16px 0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink }}>Your bookmarked sessions</div>
