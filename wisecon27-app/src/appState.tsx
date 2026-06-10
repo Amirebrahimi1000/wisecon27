@@ -14,7 +14,7 @@ export type TabId = 'home' | 'agenda' | 'speakers' | 'connect' | 'profile'
 export type PushScreen =
   | 'session' | 'speaker' | 'myschedule' | 'notifications' | 'sponsors'
   | 'ticket' | 'feedback' | 'info' | 'settings' | 'admin'
-  | 'activities' | 'survey' | 'exhibitor' | 'conversation'
+  | 'activities' | 'survey' | 'exhibitor' | 'conversation' | 'scanner'
 export type HomeVariant = 'classic' | 'cards' | 'bold'
 
 export interface EventInfoItem { id: string; icon: string; label: string; detail: string }
@@ -55,6 +55,7 @@ export interface AppCtx {
   userId: string
   me: Me
   isAdmin: boolean
+  isStaff: boolean
   updateProfile: (patch: Partial<Me>) => Promise<void>
   nameFor: (id: string) => string
   // bookmarks (per account)
@@ -114,7 +115,7 @@ const mapSession = (r: SessionRow): Session => ({
 
 interface ProfileRow {
   id: string; name: string; initials: string; role: string; org: string; color: string
-  ticket: string; badge_id: string; interests: string[]; is_admin: boolean; avatar_url: string | null
+  ticket: string; badge_id: string; interests: string[]; is_admin: boolean; is_staff?: boolean; avatar_url: string | null
   delegate_type: string | null; gala: boolean | null
 }
 const mapProfile = (r: ProfileRow): Me => ({
@@ -175,6 +176,7 @@ export function useAppState(): AppCtx {
   // identity / user data
   const [me, setMe] = useState<Me>(EMPTY_ME)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isStaff, setIsStaff] = useState(false)
   const [bookmarkSet, setBookmarkSet] = useState<Set<string>>(new Set())
   const [announcements, setAnnouncements] = useState<AppNotification[]>([])
   const [readSet, setReadSet] = useState<Set<string>>(new Set())
@@ -254,6 +256,7 @@ export function useAppState(): AppCtx {
       const p = prof.data as ProfileRow
       setMe(mapProfile(p))
       setIsAdmin(p.is_admin)
+      setIsStaff(p.is_staff ?? false)
     }
     if (bm.data) setBookmarkSet(new Set((bm.data as { session_id: string }[]).map((x) => x.session_id)))
     if (ann.data)
@@ -605,6 +608,7 @@ export function useAppState(): AppCtx {
     userId,
     me,
     isAdmin,
+    isStaff,
     updateProfile,
     nameFor: (id) =>
       id === userId ? me.name : attendees.find((a) => a.id === id)?.name || 'A delegate',

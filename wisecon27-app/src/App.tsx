@@ -32,6 +32,7 @@ import { Activities } from './screens/Activities'
 import { Survey } from './screens/Survey'
 import { ExhibitorDetail } from './screens/ExhibitorDetail'
 import { Conversation } from './screens/Conversation'
+import { ScannerScreen } from './screens/Scan'
 
 const TABS: { id: TabId; icon: IconName; label: string }[] = [
   { id: 'home', icon: 'home', label: 'Home' },
@@ -56,6 +57,7 @@ const PUSH_SCREENS: Record<PushScreen, (p: { ctx: AppCtx }) => JSX.Element> = {
   survey: Survey,
   exhibitor: ExhibitorDetail,
   conversation: Conversation,
+  scanner: ScannerScreen,
 }
 
 const TAB_SCREENS: Record<Exclude<TabId, 'home'>, (p: { ctx: AppCtx }) => JSX.Element> = {

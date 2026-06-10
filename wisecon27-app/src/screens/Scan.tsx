@@ -12,7 +12,7 @@ import { T } from '../theme'
 import type { AppCtx } from '../appState'
 import { BADGE_TYPES, asDelegateType } from '../badgeTypes'
 import { Icon } from '../components/Icon'
-import { Avatar, Btn, Eyebrow } from '../components/primitives'
+import { AppHeader, Avatar, Btn, Eyebrow } from '../components/primitives'
 
 interface ScannedProfile {
   id: string
@@ -124,11 +124,12 @@ export function Scan({ ctx }: { ctx: AppCtx }) {
   const checkIn = async (p: ScannedProfile) => {
     if (saving) return
     setSaving(true)
-    const now = new Date().toISOString()
-    const { error } = await supabase.from('profiles').update({ checked_in_at: now }).eq('id', p.id)
+    // RPC instead of a direct table update: it is the only write the Staff
+    // role can perform (stamps checked_in_at, nothing else)
+    const { data, error } = await supabase.rpc('check_in', { p_badge: p.badge_id })
     setSaving(false)
     if (error) return ctx.toast(error.message)
-    setState({ kind: 'found', p: { ...p, checked_in_at: now }, justCheckedIn: true })
+    setState({ kind: 'found', p: { ...p, checked_in_at: (data as string) ?? new Date().toISOString() }, justCheckedIn: true })
   }
 
   return (
@@ -209,6 +210,19 @@ export function Scan({ ctx }: { ctx: AppCtx }) {
       {state.kind === 'scanning' && (
         <Eyebrow style={{ textAlign: 'center', display: 'block' }}>Entrance check-in · duplicate scans are flagged</Eyebrow>
       )}
+    </div>
+  )
+}
+
+/** Standalone scanner for the Staff role (pushed from Profile) — same scanner,
+ *  no other admin tools around it. */
+export function ScannerScreen({ ctx }: { ctx: AppCtx }) {
+  return (
+    <div>
+      <AppHeader title="Entrance scanning" sub="Scan a delegate's badge QR" onBack={ctx.back} />
+      <div style={{ padding: '14px 16px 24px' }}>
+        <Scan ctx={ctx} />
+      </div>
     </div>
   )
 }

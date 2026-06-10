@@ -82,13 +82,14 @@ function StatTile({ n, label }: { n: number | string; label: string }) {
     </div>
   )
 }
-interface DashStats { delegates: number; bookmarks: number; avg: number; fbCount: number; survey: number; signups: number; top: [string, number][] }
+interface DashStats { delegates: number; checkedIn: number; bookmarks: number; avg: number; fbCount: number; survey: number; signups: number; top: [string, number][] }
 function Dashboard({ ctx }: { ctx: AppCtx }) {
   const [s, setS] = useState<DashStats | null>(null)
   useEffect(() => {
     ;(async () => {
-      const [delegates, bms, fb, survey, signups] = await Promise.all([
+      const [delegates, checkedIn, bms, fb, survey, signups] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).not('checked_in_at', 'is', null),
         supabase.from('bookmarks').select('session_id'),
         supabase.from('session_feedback').select('stars'),
         supabase.from('survey_responses').select('user_id', { count: 'exact', head: true }),
@@ -100,7 +101,7 @@ function Dashboard({ ctx }: { ctx: AppCtx }) {
       const top = Object.entries(tally).sort((a, b) => b[1] - a[1]).slice(0, 5)
       const stars = ((fb.data ?? []) as { stars: number }[]).map((r) => r.stars)
       const avg = stars.length ? stars.reduce((a, b) => a + b, 0) / stars.length : 0
-      setS({ delegates: delegates.count ?? 0, bookmarks: bmRows.length, avg, fbCount: stars.length, survey: survey.count ?? 0, signups: signups.count ?? 0, top })
+      setS({ delegates: delegates.count ?? 0, checkedIn: checkedIn.count ?? 0, bookmarks: bmRows.length, avg, fbCount: stars.length, survey: survey.count ?? 0, signups: signups.count ?? 0, top })
     })()
   }, [])
   if (!s) return <div style={{ fontFamily: T.sig, color: T.muted, padding: 20, textAlign: 'center' }}>Loading…</div>
@@ -109,6 +110,7 @@ function Dashboard({ ctx }: { ctx: AppCtx }) {
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
         <StatTile n={s.delegates} label="Delegates" />
+        <StatTile n={s.checkedIn} label="Checked in" />
         <StatTile n={ctx.sessions.length} label="Sessions" />
         <StatTile n={ctx.speakers.length} label="Speakers" />
         <StatTile n={s.bookmarks} label="Bookmarks" />
@@ -144,7 +146,8 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
   const [busy, setBusy] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
-  const [extras, setExtras] = useState<Record<string, { delegate_type: string; gala: boolean; checked_in_at: string | null }>>({})
+  const [extras, setExtras] = useState<Record<string, { delegate_type: string; gala: boolean; checked_in_at: string | null; is_staff: boolean }>>({})
+  const [attFilter, setAttFilter] = useState<'all' | 'in' | 'out'>('all')
 
   const syncHubspot = async () => {
     if (syncing) return
@@ -162,14 +165,14 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
     setLoading(true)
     const [{ data, error }, profs] = await Promise.all([
       supabase.functions.invoke('import-delegates', { body: { action: 'list' } }),
-      supabase.from('profiles').select('id, delegate_type, gala, checked_in_at'),
+      supabase.from('profiles').select('id, delegate_type, gala, checked_in_at, is_staff'),
     ])
     setLoading(false)
     if (error) return ctx.toast(error.message)
     setRoster(((data as { delegates: DelegateRow[] }).delegates) ?? [])
     const map: typeof extras = {}
-    for (const p of (profs.data ?? []) as { id: string; delegate_type: string | null; gala: boolean | null; checked_in_at: string | null }[]) {
-      map[p.id] = { delegate_type: p.delegate_type ?? 'delegate', gala: p.gala ?? false, checked_in_at: p.checked_in_at }
+    for (const p of (profs.data ?? []) as { id: string; delegate_type: string | null; gala: boolean | null; checked_in_at: string | null; is_staff: boolean | null }[]) {
+      map[p.id] = { delegate_type: p.delegate_type ?? 'delegate', gala: p.gala ?? false, checked_in_at: p.checked_in_at, is_staff: p.is_staff ?? false }
     }
     setExtras(map)
   }
@@ -201,7 +204,12 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
     load()
   }
 
-  const filtered = roster.filter((d) => (d.name + d.email + d.org).toLowerCase().includes(q.toLowerCase()))
+  const filtered = roster.filter((d) => {
+    if (!(d.name + d.email + d.org).toLowerCase().includes(q.toLowerCase())) return false
+    const inAt = extras[d.id]?.checked_in_at
+    return attFilter === 'all' ? true : attFilter === 'in' ? !!inAt : !inAt
+  })
+  const checkedInCount = roster.filter((d) => extras[d.id]?.checked_in_at).length
   const initials = (d: DelegateRow) => (d.name || d.email).trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
 
   return (
@@ -222,6 +230,11 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
         </div>
       )}
 
+      <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+        {([['all', `All · ${roster.length}`], ['in', `Checked in · ${checkedInCount}`], ['out', `Not yet · ${roster.length - checkedInCount}`]] as const).map(([k, l]) => (
+          <Press key={k} onClick={() => setAttFilter(k)} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5, borderRadius: 999, padding: '6px 12px', background: attFilter === k ? T.green9 : '#fff', color: attFilter === k ? '#fff' : T.body, boxShadow: attFilter === k ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>{l}</Press>
+        ))}
+      </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 'var(--radius-4)', padding: '0 12px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', marginBottom: 12 }}>
         <Icon name="search" size={18} style={{ color: T.muted }} />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search delegates" style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 0', fontFamily: T.sig, fontSize: 15, color: T.ink, background: 'transparent' }} />
@@ -229,7 +242,7 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
 
       <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
         {filtered.map((d, i) => {
-          const ex = extras[d.id] ?? { delegate_type: 'delegate', gala: false, checked_in_at: null }
+          const ex = extras[d.id] ?? { delegate_type: 'delegate', gala: false, checked_in_at: null, is_staff: false }
           const bt = BADGE_TYPES[asDelegateType(ex.delegate_type)]
           const setExtra = async (patch: Partial<typeof ex>) => {
             setExtras((m) => ({ ...m, [d.id]: { ...ex, ...patch } }))
@@ -244,12 +257,13 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
                   <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink, display: 'flex', alignItems: 'center', gap: 6 }}>
                     {d.name || d.email.split('@')[0]}
                     {d.is_admin && <span style={{ fontFamily: T.onest, fontSize: 10, color: T.green10, background: T.green1, borderRadius: 999, padding: '1px 7px' }}>ADMIN</span>}
+                    {ex.is_staff && !d.is_admin && <span style={{ fontFamily: T.onest, fontSize: 10, color: 'var(--wf-blue-10)', background: 'var(--wf-blue-1)', borderRadius: 999, padding: '1px 7px' }}>STAFF</span>}
                     {ex.delegate_type !== 'delegate' && <span style={{ fontFamily: T.onest, fontSize: 10, color: bt.chipText, background: bt.chipBg, borderRadius: 999, padding: '1px 7px', whiteSpace: 'nowrap' }}>{bt.label.toUpperCase()}</span>}
                     {ex.gala && <Icon name="star" size={12} style={{ color: '#c9a227', flexShrink: 0 }} />}
                   </div>
                   <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.email}{d.org ? ' · ' + d.org : ''}</div>
                 </Press>
-                <span style={{ fontFamily: T.onest, fontSize: 10.5, color: d.signed_in ? T.green10 : T.subtle, whiteSpace: 'nowrap' }}>{d.signed_in ? 'Signed in' : 'Not yet'}</span>
+                <span style={{ fontFamily: T.onest, fontSize: 10.5, color: ex.checked_in_at ? T.green10 : d.signed_in ? T.body : T.subtle, whiteSpace: 'nowrap', fontWeight: ex.checked_in_at ? 700 : 400 }}>{ex.checked_in_at ? '✓ In ' + new Date(ex.checked_in_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.signed_in ? 'Signed in' : 'Not yet'}</span>
                 <Press onClick={() => remove(d)} style={{ color: confirmId === d.id ? 'var(--wf-negative-9)' : T.line2, padding: 4, fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>
                   {confirmId === d.id ? 'Remove?' : <Icon name="close" size={17} />}
                 </Press>
@@ -267,6 +281,9 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
                   </select>
                   <Btn kind={ex.gala ? 'dark' : 'outline'} size="sm" icon="star" onClick={() => setExtra({ gala: !ex.gala })}>
                     {ex.gala ? 'Gala ✓' : 'Gala'}
+                  </Btn>
+                  <Btn kind={ex.is_staff ? 'secondary' : 'outline'} size="sm" icon="qr" onClick={() => setExtra({ is_staff: !ex.is_staff })}>
+                    {ex.is_staff ? 'Staff ✓' : 'Staff'}
                   </Btn>
                 </div>
               )}
