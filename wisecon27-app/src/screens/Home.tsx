@@ -1,5 +1,5 @@
 // WISEcon27 — Home (Bold layout).
-import { CLOCK, TRACKS } from '../data'
+import { TRACKS } from '../data'
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { IconName } from '../components/Icon'
@@ -7,6 +7,7 @@ import { Icon } from '../components/Icon'
 import { BookmarkBtn, Eyebrow, IconBtn, Press, TrackTag } from '../components/primitives'
 import { InstallBanner } from '../install'
 import { useEventClock, type EventClock } from '../eventClock'
+import type { Session } from '../types'
 
 // Real-time header bits derived from the event clock + live day list.
 function eventHeader(ctx: AppCtx, clock: EventClock) {
@@ -24,13 +25,39 @@ function eventHeader(ctx: AppCtx, clock: EventClock) {
   return { todayLong, dateLine, status, line }
 }
 
-function planForHome(ctx: AppCtx) {
-  const { today, now } = CLOCK
-  const mine = ctx.sessions.filter((s) => ctx.isBookmarked(s.id) && s.day === today).sort((a, b) =>
-    a.start.localeCompare(b.start),
-  )
-  const upNext = mine.find((s) => s.start >= now) || mine[0]
-  const later = mine.filter((s) => s !== upNext)
+interface PlanItem {
+  id: string
+  start: string
+  end: string
+  title: string
+  place: string
+  kind: 'session' | 'activity'
+  session?: Session
+}
+
+// The delegate's plan = bookmarked sessions + activity sign-ups, for the
+// current event day against the real clock. Before the event this previews
+// day 1; while live it follows the actual day, and "up next" is the first
+// item that hasn't finished yet.
+function planForHome(ctx: AppCtx, clock: EventClock) {
+  const dayId =
+    clock.phase === 'before'
+      ? ctx.days[0]?.id
+      : ctx.days[Math.min(Math.max(clock.dayIndex, 1), Math.max(ctx.days.length, 1)) - 1]?.id
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const now =
+    clock.phase === 'live' ? `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`
+    : clock.phase === 'ended' ? '23:59'
+    : '00:00'
+  const sess: PlanItem[] = ctx.sessions
+    .filter((s) => ctx.isBookmarked(s.id) && s.day === dayId)
+    .map((s) => ({ id: s.id, start: s.start, end: s.end, title: s.title, place: s.room, kind: 'session', session: s }))
+  const acts: PlanItem[] = ctx.activities
+    .filter((a) => a.signedUp && a.day === dayId)
+    .map((a) => ({ id: a.id, start: a.start, end: a.end, title: a.title, place: a.location, kind: 'activity' }))
+  const mine = [...sess, ...acts].sort((a, b) => a.start.localeCompare(b.start))
+  const upNext = mine.find((i) => i.end > now) || mine[0]
+  const later = mine.filter((i) => i !== upNext)
   return { mine, upNext, later }
 }
 
@@ -38,10 +65,11 @@ interface QuickAction {
   icon: IconName
   label: string
   tab?: 'agenda' | 'speakers' | 'connect'
-  push?: 'ticket' | 'info'
+  push?: 'ticket' | 'info' | 'activities'
 }
 const QUICK: QuickAction[] = [
   { icon: 'calendar', label: 'Agenda', tab: 'agenda' },
+  { icon: 'sparkles', label: 'Activities', push: 'activities' },
   { icon: 'speakers', label: 'Speakers', tab: 'speakers' },
   { icon: 'connect', label: 'Connect', tab: 'connect' },
   { icon: 'qr', label: 'My badge', push: 'ticket' },
@@ -60,9 +88,9 @@ function HeroStat({ n, label }: { n: number; label: string }) {
 
 /* ════════ Home (Bold) ════════ */
 function HomeBold({ ctx }: { ctx: AppCtx }) {
-  const { upNext, later, mine } = planForHome(ctx)
-  const t = upNext && TRACKS[upNext.track]
   const clock = useEventClock(ctx.event.startISO, ctx.event.endISO, ctx.days.length)
+  const { upNext, later, mine } = planForHome(ctx, clock)
+  const t = upNext && upNext.kind === 'session' && upNext.session ? TRACKS[upNext.session.track] : null
   const h = eventHeader(ctx, clock)
   const live = clock.phase === 'live'
   return (
@@ -118,20 +146,28 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
         <div style={{ padding: '0 16px' }}>
           <InstallBanner />
         </div>
-        {upNext && t && (
+        {upNext && (
           <div style={{ padding: '0 16px' }}>
             <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }} color={T.subtle}>Up next at {upNext.start}</Eyebrow>
-            <Press onClick={() => ctx.openSession(upNext)} style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', overflow: 'hidden', boxShadow: 'var(--shadow-card)', display: 'flex' }}>
-              <div style={{ width: 6, background: t.dot, flexShrink: 0 }} />
+            <Press onClick={() => (upNext.kind === 'session' ? ctx.openSession(upNext.session!) : ctx.push('activities', {}))} style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', overflow: 'hidden', boxShadow: 'var(--shadow-card)', display: 'flex' }}>
+              <div style={{ width: 6, background: t ? t.dot : T.green9, flexShrink: 0 }} />
               <div style={{ flex: 1, padding: 18 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <TrackTag track={upNext.track} size="lg" />
-                  <BookmarkBtn on={ctx.isBookmarked(upNext.id)} onClick={() => ctx.toggleBookmark(upNext.id)} />
+                  {upNext.kind === 'session' ? (
+                    <TrackTag track={upNext.session!.track} size="lg" />
+                  ) : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: T.onest, fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', color: T.green10, background: T.green1, borderRadius: 999, padding: '4px 11px' }}>
+                      <Icon name="sparkles" size={13} /> Activity
+                    </span>
+                  )}
+                  {upNext.kind === 'session' && (
+                    <BookmarkBtn on={ctx.isBookmarked(upNext.id)} onClick={() => ctx.toggleBookmark(upNext.id)} />
+                  )}
                 </div>
                 <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 21, color: T.ink, lineHeight: 1.2 }}>{upNext.title}</div>
                 <div style={{ display: 'flex', gap: 16, marginTop: 12, fontFamily: T.sig, fontSize: 13.5, color: T.muted }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="clock" size={15} />{upNext.start}–{upNext.end}</span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="pin" size={15} />{upNext.room}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="pin" size={15} />{upNext.place}</span>
                 </div>
               </div>
             </Press>
@@ -140,60 +176,20 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
 
         <div className="wc-noscroll" style={{ display: 'flex', gap: 10, padding: '18px 16px 0', overflowX: 'auto' }}>
           {QUICK.map((q, i) => (
-            <Press key={q.label} onClick={() => runQuick(ctx, q)} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12, padding: 14, borderRadius: 'var(--radius-4)', background: i === 0 ? T.green9 : 'var(--wf-surface)', color: i === 0 ? '#fff' : T.ink, boxShadow: i === 0 ? 'none' : 'var(--shadow-sm)' }}>
+            <Press key={q.label} onClick={() => runQuick(ctx, q)} style={{ flex: '1 0 92px', display: 'flex', flexDirection: 'column', gap: 12, padding: 14, borderRadius: 'var(--radius-4)', background: i === 0 ? T.green9 : 'var(--wf-surface)', color: i === 0 ? '#fff' : T.ink, boxShadow: i === 0 ? 'none' : 'var(--shadow-sm)' }}>
               <Icon name={q.icon} size={22} style={{ color: i === 0 ? '#fff' : T.green10 }} />
               <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>{q.label}</span>
             </Press>
           ))}
         </div>
 
-        {ctx.activities.length > 0 && (
-          <div style={{ paddingTop: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0 16px', marginBottom: 4 }}>
-              <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink }}>Interactive activities</div>
-              <Press onClick={() => ctx.push('activities', {})} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.green10 }}>See all</Press>
-            </div>
-            <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, padding: '0 16px', marginBottom: 12, lineHeight: 1.4 }}>
-              Sign up while there's space — spots are limited.
-            </div>
-            <div className="wc-noscroll" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 16px 4px' }}>
-              {ctx.activities.map((a) => {
-                const dayLabel = ctx.days.find((d) => d.id === a.day)?.date ?? ''
-                const spotsLeft = a.capacity != null ? Math.max(0, a.capacity - a.going) : null
-                return (
-                  <Press key={a.id} onClick={() => ctx.push('activities', {})} style={{ width: 220, flexShrink: 0, background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', padding: 14, boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 6 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: T.onest, fontSize: 11, fontWeight: 600, color: T.muted }}>
-                        <Icon name="sparkles" size={13} style={{ color: T.green10 }} />
-                        {[dayLabel, a.start].filter(Boolean).join(' · ')}
-                      </span>
-                      {a.signedUp ? (
-                        <span style={{ fontFamily: T.onest, fontSize: 10.5, fontWeight: 700, color: T.green10, background: T.green1, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>✓ SIGNED UP</span>
-                      ) : a.full ? (
-                        <span style={{ fontFamily: T.onest, fontSize: 10.5, fontWeight: 700, color: T.muted, background: 'var(--wf-grey-4)', borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>FULL</span>
-                      ) : spotsLeft != null && spotsLeft <= 10 ? (
-                        <span style={{ fontFamily: T.onest, fontSize: 10.5, fontWeight: 700, color: 'var(--wf-orange-11)', background: 'var(--wf-orange-2)', borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>{spotsLeft} SPOTS LEFT</span>
-                      ) : null}
-                    </div>
-                    <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink, lineHeight: 1.25, minHeight: 38 }}>{a.title}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 9, color: T.muted, fontFamily: T.sig, fontSize: 12.5 }}>
-                      <Icon name="pin" size={14} />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.location}</span>
-                    </div>
-                  </Press>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
         <div style={{ padding: '24px 16px 0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink }}>Your bookmarked sessions</div>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink }}>Your plan</div>
             <Press onClick={() => ctx.setTab('agenda')} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.green10 }}>Full programme</Press>
           </div>
           <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginBottom: 12, lineHeight: 1.4 }}>
-            {live ? 'Sessions you’ve saved for today — this isn’t the full schedule. Browse every session in the Agenda.' : 'Sessions you’ve saved. Browse the full programme in the Agenda.'}
+            {live ? 'Your bookmarked sessions and activity sign-ups for today — not the full schedule.' : 'Your bookmarked sessions and activity sign-ups. Browse the full programme in the Agenda.'}
           </div>
           {mine.length === 0 ? (
             <Press onClick={() => ctx.setTab('agenda')} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 16, boxShadow: 'var(--shadow-sm)' }}>
@@ -206,19 +202,23 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
             </Press>
           ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {later.map((s) => {
-              const tt = TRACKS[s.track]
+            {later.map((item) => {
+              const dot = item.kind === 'session' && item.session ? TRACKS[item.session.track].dot : T.green9
               return (
-                <Press key={s.id} onClick={() => ctx.openSession(s)} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)' }}>
+                <Press key={item.id} onClick={() => (item.kind === 'session' ? ctx.openSession(item.session!) : ctx.push('activities', {}))} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)' }}>
                   <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                    <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16, color: T.ink }}>{s.start}</div>
-                    <div style={{ width: 8, height: 8, borderRadius: 999, background: tt.dot, margin: '4px auto 0' }} />
+                    <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16, color: T.ink }}>{item.start}</div>
+                    <div style={{ width: 8, height: 8, borderRadius: 999, background: dot, margin: '4px auto 0' }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15.5, color: T.ink, lineHeight: 1.25 }}>{s.title}</div>
-                    <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 3 }}>{s.room}</div>
+                    <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15.5, color: T.ink, lineHeight: 1.25 }}>{item.title}</div>
+                    <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 3 }}>{item.place}</div>
                   </div>
-                  <BookmarkBtn on={ctx.isBookmarked(s.id)} onClick={() => ctx.toggleBookmark(s.id)} />
+                  {item.kind === 'session' ? (
+                    <BookmarkBtn on={ctx.isBookmarked(item.id)} onClick={() => ctx.toggleBookmark(item.id)} />
+                  ) : (
+                    <Icon name="sparkles" size={18} style={{ color: T.green10 }} />
+                  )}
                 </Press>
               )
             })}
