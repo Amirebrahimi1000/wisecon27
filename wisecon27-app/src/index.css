@@ -73,6 +73,7 @@
   --wf-ink: #000;
   --wf-surface: #fff;
   --wf-glass: rgba(255,255,255,0.9);
+  --wf-nav-solid: #ffffff;
   color-scheme: light;
 
   /* ── Radii ── */
@@ -132,7 +133,11 @@ button { font-family: inherit; }
    measured in JS (initAppHeight), which iOS reports correctly. */
 @media (max-width: 459px) {
   html, body, #root { height: var(--app-height, 100vh); overflow: hidden; }
-  body { background: var(--wf-grey-2); }
+  /* iOS 26.x sizes the web-app window one status-bar height SHORT of the
+     screen (window 873 on a 932 screen) — the strip below the window is
+     unreachable by web content, but iOS paints it with the page background.
+     Match it to the tab bar so it reads as chrome, not as a defect. */
+  html, body { background: var(--wf-nav-solid); }
   .wc-stage { height: var(--app-height, 100vh); background: var(--wf-grey-2); }
   .wc-device { height: var(--app-height, 100vh); }
 }
@@ -215,6 +220,7 @@ html[data-mode="dark"] {
   --wf-ink: #f5f5f6;
   --wf-surface: #232326;
   --wf-glass: rgba(22,22,24,0.88);
+  --wf-nav-solid: #1a1a1d;
   color-scheme: dark;
 
   --wf-grey-1:  #131315;
