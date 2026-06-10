@@ -125,19 +125,20 @@ button { font-family: inherit; }
   background:
     radial-gradient(120% 80% at 50% -10%, #2c2c2e 0%, #161617 60%, #0e0e0f 100%);
 }
-/* phones: pin the app to the physical screen edges. position:fixed inset:0
-   bypasses the html/body height chain entirely — iOS standalone PWAs report
-   percentage/viewport-unit heights inconsistently, which left a band at the
-   bottom; a fixed-position stage cannot. */
+/* phones: fill the screen edge-to-edge. iOS standalone PWAs LETTERBOX the
+   page (a band at the bottom) when html/body use height:100% — percentage
+   heights break viewport-fit=cover; 100dvh reports wrong values on cold
+   start. 100vh is the only unit that reliably spans the full screen. */
 @media (max-width: 459px) {
+  html, body, #root { height: 100vh; overflow: hidden; }
   body { background: var(--wf-grey-2); }
   .wc-stage {
     position: fixed;
     inset: 0;
-    height: auto;
+    height: 100vh;
     background: var(--wf-grey-2);
   }
-  .wc-device { height: 100%; }
+  .wc-device { height: 100vh; }
 }
 .wc-device {
   position: relative;
