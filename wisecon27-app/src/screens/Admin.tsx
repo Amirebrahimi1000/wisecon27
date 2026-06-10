@@ -13,6 +13,7 @@ import { AppHeader, Avatar, Btn, Eyebrow, Press } from '../components/primitives
 import { uploadSlides, uploadSpeakerPhoto } from '../lib/storage'
 import { BADGE_TYPES, asDelegateType, type DelegateType } from '../badgeTypes'
 import { Scan } from './Scan'
+import { Reports } from './Reports'
 
 /* ── small field helpers ── */
 const inputStyle: CSSProperties = {
@@ -43,11 +44,11 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   )
 }
 
-type AdminTab = 'dashboard' | 'scan' | 'event' | 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'activities' | 'info' | 'delegates' | 'import'
+type AdminTab = 'dashboard' | 'reports' | 'scan' | 'event' | 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'activities' | 'info' | 'delegates' | 'import'
 
 export function Admin({ ctx }: { ctx: AppCtx }) {
   const [tab, setTab] = useState<AdminTab>('dashboard')
-  const TABS: [AdminTab, string][] = [['dashboard', 'Dashboard'], ['scan', 'Scan'], ['event', 'Event'], ['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['activities', 'Activities'], ['delegates', 'Delegates'], ['info', 'Info'], ['import', 'Import']]
+  const TABS: [AdminTab, string][] = [['dashboard', 'Dashboard'], ['reports', 'Reports'], ['scan', 'Scan'], ['event', 'Event'], ['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['activities', 'Activities'], ['delegates', 'Delegates'], ['info', 'Info'], ['import', 'Import']]
   return (
     <div>
       <AppHeader title="Admin" sub="Organiser tools" onBack={ctx.back} />
@@ -58,6 +59,7 @@ export function Admin({ ctx }: { ctx: AppCtx }) {
       </div>
       <div style={{ padding: '16px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {tab === 'dashboard' && <Dashboard ctx={ctx} />}
+        {tab === 'reports' && <Reports ctx={ctx} />}
         {tab === 'scan' && <Scan ctx={ctx} />}
         {tab === 'event' && <EventSettings ctx={ctx} />}
         {tab === 'announce' && <Announce ctx={ctx} />}
