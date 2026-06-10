@@ -462,6 +462,12 @@ export function useAppState(): AppCtx {
     const rows = announcements.map((a) => ({ user_id: userId, announcement_id: a.id }))
     setReadSet(new Set(announcements.map((a) => a.id)))
     if (rows.length) supabase.from('notification_reads').upsert(rows).then()
+    // also clear unread direct messages (they feed the same bell badge)
+    if (messages.some((m) => m.recipientId === userId && !m.readAt)) {
+      const now = new Date().toISOString()
+      setMessages((prev) => prev.map((m) => (m.recipientId === userId && !m.readAt ? { ...m, readAt: now } : m)))
+      supabase.from('messages').update({ read_at: now }).eq('recipient_id', userId).is('read_at', null).then()
+    }
   }
 
   // best-effort device push to one delegate (no-op if function/subscription absent)
@@ -514,20 +520,16 @@ export function useAppState(): AppCtx {
   }
 
   const markThreadRead = (peerId: string) => {
+    // decide from current state, NOT inside the setState updater — updaters run
+    // during the next render, so a flag set there is never visible here and the
+    // DB write would be skipped (read state then resets on next sign-in)
+    const unread = messages.some((m) => m.senderId === peerId && m.recipientId === userId && !m.readAt)
+    if (!unread) return
     const now = new Date().toISOString()
-    let changed = false
     setMessages((prev) =>
-      prev.map((m) => {
-        if (m.senderId === peerId && m.recipientId === userId && !m.readAt) {
-          changed = true
-          return { ...m, readAt: now }
-        }
-        return m
-      }),
+      prev.map((m) => (m.senderId === peerId && m.recipientId === userId && !m.readAt ? { ...m, readAt: now } : m)),
     )
-    if (changed) {
-      supabase.from('messages').update({ read_at: now }).eq('sender_id', peerId).eq('recipient_id', userId).is('read_at', null).then()
-    }
+    supabase.from('messages').update({ read_at: now }).eq('sender_id', peerId).eq('recipient_id', userId).is('read_at', null).then()
   }
 
   const updateProfile = async (patch: Partial<Me>) => {

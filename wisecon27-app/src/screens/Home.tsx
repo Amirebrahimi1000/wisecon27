@@ -40,13 +40,14 @@ interface QuickAction {
   icon: IconName
   label: string
   tab?: 'agenda' | 'speakers' | 'connect'
-  push?: 'ticket'
+  push?: 'ticket' | 'info'
 }
 const QUICK: QuickAction[] = [
   { icon: 'calendar', label: 'Agenda', tab: 'agenda' },
   { icon: 'speakers', label: 'Speakers', tab: 'speakers' },
   { icon: 'connect', label: 'Connect', tab: 'connect' },
   { icon: 'qr', label: 'My badge', push: 'ticket' },
+  { icon: 'info', label: 'Info', push: 'info' },
 ]
 const runQuick = (ctx: AppCtx, q: QuickAction) => (q.tab ? ctx.setTab(q.tab) : ctx.push(q.push!, {}))
 
@@ -183,7 +184,7 @@ function HomeCards({ ctx }: { ctx: AppCtx }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, padding: '16px 16px 0' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 8, padding: '16px 16px 0' }}>
         {QUICK.map((q) => (
           <Press key={q.label} onClick={() => runQuick(ctx, q)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '14px 4px', borderRadius: 'var(--radius-4)', background: '#fff', boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: T.green1, display: 'grid', placeItems: 'center', color: T.green10 }}>
