@@ -178,6 +178,11 @@ button { font-family: inherit; }
   50%      { transform: translateY(7px); }
 }
 .wc-bounce-y { animation: wc-bounce-y 1.1s var(--ease-out) infinite; }
+@keyframes wc-nudge-x {
+  0%, 100% { transform: translateX(0); opacity: 0.7; }
+  50%      { transform: translateX(4px); opacity: 1; }
+}
+.wc-nudge-x { animation: wc-nudge-x 1.4s var(--ease-out) infinite; }
 
 /* ── pull-to-refresh spinner ── */
 @keyframes wc-spin { to { transform: rotate(360deg); } }

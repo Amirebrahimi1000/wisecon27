@@ -1,4 +1,5 @@
 // WISEcon27 — Home (Bold layout).
+import { useEffect, useRef, useState } from 'react'
 import { TRACKS } from '../data'
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
@@ -89,6 +90,18 @@ function HeroStat({ n, label }: { n: number; label: string }) {
 /* ════════ Home (Bold) ════════ */
 function HomeBold({ ctx }: { ctx: AppCtx }) {
   const clock = useEventClock(ctx.event.startISO, ctx.event.endISO, ctx.days.length)
+  // show a "more tiles this way" hint until the quick-action row is scrolled to the end
+  const quickRef = useRef<HTMLDivElement>(null)
+  const [moreQuick, setMoreQuick] = useState(false)
+  const checkQuick = () => {
+    const el = quickRef.current
+    if (el) setMoreQuick(el.scrollLeft + el.clientWidth < el.scrollWidth - 8)
+  }
+  useEffect(() => {
+    checkQuick()
+    window.addEventListener('resize', checkQuick)
+    return () => window.removeEventListener('resize', checkQuick)
+  }, [])
   const { upNext, later, mine } = planForHome(ctx, clock)
   const t = upNext && upNext.kind === 'session' && upNext.session ? TRACKS[upNext.session.track] : null
   const h = eventHeader(ctx, clock)
@@ -174,13 +187,22 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
           </div>
         )}
 
-        <div className="wc-noscroll" style={{ display: 'flex', gap: 10, padding: '18px 16px 0', overflowX: 'auto' }}>
-          {QUICK.map((q, i) => (
-            <Press key={q.label} onClick={() => runQuick(ctx, q)} style={{ flex: '1 0 92px', display: 'flex', flexDirection: 'column', gap: 12, padding: 14, borderRadius: 'var(--radius-4)', background: i === 0 ? T.green9 : 'var(--wf-surface)', color: i === 0 ? '#fff' : T.ink, boxShadow: i === 0 ? 'none' : 'var(--shadow-sm)' }}>
-              <Icon name={q.icon} size={22} style={{ color: i === 0 ? '#fff' : T.green10 }} />
-              <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>{q.label}</span>
-            </Press>
-          ))}
+        <div style={{ position: 'relative' }}>
+          <div ref={quickRef} onScroll={checkQuick} className="wc-noscroll" style={{ display: 'flex', gap: 10, padding: '18px 16px 0', overflowX: 'auto' }}>
+            {QUICK.map((q, i) => (
+              <Press key={q.label} onClick={() => runQuick(ctx, q)} style={{ flex: '1 0 92px', display: 'flex', flexDirection: 'column', gap: 12, padding: 14, borderRadius: 'var(--radius-4)', background: i === 0 ? T.green9 : 'var(--wf-surface)', color: i === 0 ? '#fff' : T.ink, boxShadow: i === 0 ? 'none' : 'var(--shadow-sm)' }}>
+                <Icon name={q.icon} size={22} style={{ color: i === 0 ? '#fff' : T.green10 }} />
+                <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>{q.label}</span>
+              </Press>
+            ))}
+          </div>
+          {moreQuick && (
+            <div style={{ position: 'absolute', top: 18, bottom: 0, right: 0, width: 54, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 3, background: 'linear-gradient(90deg, transparent, var(--wf-grey-2) 75%)' }}>
+              <span className="wc-nudge-x" style={{ display: 'inline-flex', color: T.muted }}>
+                <Icon name="chevronRight" size={18} stroke={2.2} />
+              </span>
+            </div>
+          )}
         </div>
 
         <div style={{ padding: '24px 16px 0' }}>
