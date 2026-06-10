@@ -128,14 +128,17 @@ button { font-family: inherit; }
 .wc-device {
   position: relative;
   width: 100%;
-  max-width: 430px;
   height: 100%;
-  max-height: 932px;
   background: var(--wf-surface);
   overflow: hidden;
 }
+/* desktop only: present the app in a phone-sized frame; on real phones the
+   app fills the entire screen (no max-height cap → no black band on tall
+   displays) */
 @media (min-width: 460px) {
   .wc-device {
+    max-width: 430px;
+    max-height: 932px;
     border-radius: 44px;
     box-shadow: 0 40px 120px rgba(0,0,0,0.55), 0 0 0 11px #0a0a0b, 0 0 0 12px #2a2a2c;
   }
