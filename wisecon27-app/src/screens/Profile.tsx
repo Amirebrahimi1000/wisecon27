@@ -76,7 +76,7 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
   return (
     <div>
       <AppHeader title="Profile" />
-      <div style={{ padding: '8px 16px ' + (TABBAR_H + 16) + 'px' }}>
+      <div style={{ padding: '8px 16px', paddingBottom: 'calc(' + (TABBAR_H + 24) + 'px + env(safe-area-inset-bottom, 0px))' }}>
         {/* identity */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '8px 4px 18px' }}>
           <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto} style={{ display: 'none' }} />
