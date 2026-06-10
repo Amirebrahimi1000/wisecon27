@@ -115,10 +115,12 @@ const mapSession = (r: SessionRow): Session => ({
 interface ProfileRow {
   id: string; name: string; initials: string; role: string; org: string; color: string
   ticket: string; badge_id: string; interests: string[]; is_admin: boolean; avatar_url: string | null
+  delegate_type: string | null; gala: boolean | null
 }
 const mapProfile = (r: ProfileRow): Me => ({
   name: r.name, initials: r.initials, role: r.role, org: r.org, color: r.color,
   ticket: r.ticket, badgeId: r.badge_id, bookmarks: [], avatarUrl: r.avatar_url,
+  delegateType: r.delegate_type ?? 'delegate', gala: r.gala ?? false,
 })
 
 interface ActivityRow {
@@ -150,7 +152,7 @@ const shortTime = (iso: string) => {
 
 const EMPTY_ME: Me = {
   name: '', initials: '', role: '', org: '', color: 'var(--wf-blue-9)',
-  ticket: 'Full delegate', badgeId: '', bookmarks: [],
+  ticket: 'Full delegate', badgeId: '', bookmarks: [], delegateType: 'delegate', gala: false,
 }
 
 export function useAppState(): AppCtx {

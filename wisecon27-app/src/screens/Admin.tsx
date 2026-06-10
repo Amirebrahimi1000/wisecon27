@@ -11,6 +11,8 @@ import type { Activity, Day, Session, Speaker, Sponsor, SponsorTier, TrackId, Se
 import { Icon, type IconName } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Eyebrow, Press } from '../components/primitives'
 import { uploadSlides, uploadSpeakerPhoto } from '../lib/storage'
+import { BADGE_TYPES, asDelegateType, type DelegateType } from '../badgeTypes'
+import { Scan } from './Scan'
 
 /* ── small field helpers ── */
 const inputStyle: CSSProperties = {
@@ -41,11 +43,11 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   )
 }
 
-type AdminTab = 'dashboard' | 'event' | 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'activities' | 'info' | 'delegates' | 'import'
+type AdminTab = 'dashboard' | 'scan' | 'event' | 'announce' | 'sessions' | 'speakers' | 'sponsors' | 'activities' | 'info' | 'delegates' | 'import'
 
 export function Admin({ ctx }: { ctx: AppCtx }) {
   const [tab, setTab] = useState<AdminTab>('dashboard')
-  const TABS: [AdminTab, string][] = [['dashboard', 'Dashboard'], ['event', 'Event'], ['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['activities', 'Activities'], ['delegates', 'Delegates'], ['info', 'Info'], ['import', 'Import']]
+  const TABS: [AdminTab, string][] = [['dashboard', 'Dashboard'], ['scan', 'Scan'], ['event', 'Event'], ['announce', 'Announce'], ['sessions', 'Sessions'], ['speakers', 'Speakers'], ['sponsors', 'Sponsors'], ['activities', 'Activities'], ['delegates', 'Delegates'], ['info', 'Info'], ['import', 'Import']]
   return (
     <div>
       <AppHeader title="Admin" sub="Organiser tools" onBack={ctx.back} />
@@ -56,6 +58,7 @@ export function Admin({ ctx }: { ctx: AppCtx }) {
       </div>
       <div style={{ padding: '16px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {tab === 'dashboard' && <Dashboard ctx={ctx} />}
+        {tab === 'scan' && <Scan ctx={ctx} />}
         {tab === 'event' && <EventSettings ctx={ctx} />}
         {tab === 'announce' && <Announce ctx={ctx} />}
         {tab === 'sessions' && <Sessions ctx={ctx} />}
@@ -140,6 +143,8 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [extras, setExtras] = useState<Record<string, { delegate_type: string; gala: boolean; checked_in_at: string | null }>>({})
 
   const syncHubspot = async () => {
     if (syncing) return
@@ -155,10 +160,18 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
 
   const load = async () => {
     setLoading(true)
-    const { data, error } = await supabase.functions.invoke('import-delegates', { body: { action: 'list' } })
+    const [{ data, error }, profs] = await Promise.all([
+      supabase.functions.invoke('import-delegates', { body: { action: 'list' } }),
+      supabase.from('profiles').select('id, delegate_type, gala, checked_in_at'),
+    ])
     setLoading(false)
     if (error) return ctx.toast(error.message)
     setRoster(((data as { delegates: DelegateRow[] }).delegates) ?? [])
+    const map: typeof extras = {}
+    for (const p of (profs.data ?? []) as { id: string; delegate_type: string | null; gala: boolean | null; checked_in_at: string | null }[]) {
+      map[p.id] = { delegate_type: p.delegate_type ?? 'delegate', gala: p.gala ?? false, checked_in_at: p.checked_in_at }
+    }
+    setExtras(map)
   }
   useEffect(() => { load() }, [])
 
@@ -215,22 +228,51 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
       </div>
 
       <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
-        {filtered.map((d, i) => (
-          <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderBottom: i === filtered.length - 1 ? 'none' : '1px solid ' + T.line }}>
-            <Avatar initials={initials(d)} color={d.is_admin ? 'var(--wf-green-9)' : 'var(--wf-blue-9)'} size={38} src={d.avatar_url} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink, display: 'flex', alignItems: 'center', gap: 6 }}>
-                {d.name || d.email.split('@')[0]}
-                {d.is_admin && <span style={{ fontFamily: T.onest, fontSize: 10, color: T.green10, background: T.green1, borderRadius: 999, padding: '1px 7px' }}>ADMIN</span>}
+        {filtered.map((d, i) => {
+          const ex = extras[d.id] ?? { delegate_type: 'delegate', gala: false, checked_in_at: null }
+          const bt = BADGE_TYPES[asDelegateType(ex.delegate_type)]
+          const setExtra = async (patch: Partial<typeof ex>) => {
+            setExtras((m) => ({ ...m, [d.id]: { ...ex, ...patch } }))
+            const { error } = await supabase.from('profiles').update(patch).eq('id', d.id)
+            if (error) ctx.toast(error.message)
+          }
+          return (
+            <div key={d.id} style={{ borderBottom: i === filtered.length - 1 ? 'none' : '1px solid ' + T.line }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px' }}>
+                <Avatar initials={initials(d)} color={d.is_admin ? 'var(--wf-green-9)' : 'var(--wf-blue-9)'} size={38} src={d.avatar_url} />
+                <Press onClick={() => setEditId(editId === d.id ? null : d.id)} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                  <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {d.name || d.email.split('@')[0]}
+                    {d.is_admin && <span style={{ fontFamily: T.onest, fontSize: 10, color: T.green10, background: T.green1, borderRadius: 999, padding: '1px 7px' }}>ADMIN</span>}
+                    {ex.delegate_type !== 'delegate' && <span style={{ fontFamily: T.onest, fontSize: 10, color: bt.chipText, background: bt.chipBg, borderRadius: 999, padding: '1px 7px', whiteSpace: 'nowrap' }}>{bt.label.toUpperCase()}</span>}
+                    {ex.gala && <Icon name="star" size={12} style={{ color: '#c9a227', flexShrink: 0 }} />}
+                  </div>
+                  <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.email}{d.org ? ' · ' + d.org : ''}</div>
+                </Press>
+                <span style={{ fontFamily: T.onest, fontSize: 10.5, color: d.signed_in ? T.green10 : T.subtle, whiteSpace: 'nowrap' }}>{d.signed_in ? 'Signed in' : 'Not yet'}</span>
+                <Press onClick={() => remove(d)} style={{ color: confirmId === d.id ? 'var(--wf-negative-9)' : T.line2, padding: 4, fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>
+                  {confirmId === d.id ? 'Remove?' : <Icon name="close" size={17} />}
+                </Press>
               </div>
-              <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.email}{d.org ? ' · ' + d.org : ''}</div>
+              {editId === d.id && (
+                <div style={{ padding: '0 14px 13px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select
+                    value={asDelegateType(ex.delegate_type)}
+                    onChange={(e) => setExtra({ delegate_type: e.target.value as DelegateType })}
+                    style={{ ...inputStyle, flex: 1, padding: '9px 10px', fontSize: 13.5 }}
+                  >
+                    {(Object.keys(BADGE_TYPES) as DelegateType[]).map((k) => (
+                      <option key={k} value={k}>{BADGE_TYPES[k].label}</option>
+                    ))}
+                  </select>
+                  <Btn kind={ex.gala ? 'dark' : 'outline'} size="sm" icon="star" onClick={() => setExtra({ gala: !ex.gala })}>
+                    {ex.gala ? 'Gala ✓' : 'Gala'}
+                  </Btn>
+                </div>
+              )}
             </div>
-            <span style={{ fontFamily: T.onest, fontSize: 10.5, color: d.signed_in ? T.green10 : T.subtle, whiteSpace: 'nowrap' }}>{d.signed_in ? 'Signed in' : 'Not yet'}</span>
-            <Press onClick={() => remove(d)} style={{ color: confirmId === d.id ? 'var(--wf-negative-9)' : T.line2, padding: 4, fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>
-              {confirmId === d.id ? 'Remove?' : <Icon name="close" size={17} />}
-            </Press>
-          </div>
-        ))}
+          )
+        })}
         {!loading && filtered.length === 0 && <div style={{ padding: 20, textAlign: 'center', fontFamily: T.sig, fontSize: 14, color: T.muted }}>{roster.length === 0 ? 'No delegates yet — import your list.' : 'No matches.'}</div>}
       </div>
     </div>

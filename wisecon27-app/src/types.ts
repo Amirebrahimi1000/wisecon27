@@ -141,6 +141,8 @@ export interface Me {
   badgeId: string
   bookmarks: string[]
   avatarUrl?: string | null
+  delegateType: string
+  gala: boolean
 }
 
 export interface Activity {

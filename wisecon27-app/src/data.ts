@@ -116,6 +116,7 @@ export const ME: Me = {
   name: 'Maria Nielsen', initials: 'MN', role: 'Assessment Lead', org: 'Aarhus University',
   color: 'var(--wf-blue-9)', ticket: 'Full delegate', badgeId: 'WC27-1482',
   bookmarks: ['s102', 's104', 's106', 's110', 's202'],
+  delegateType: 'delegate', gala: false,
 }
 
 // "Now"/"today" is pinned to Day 1 @ 10:50 (as in the prototype) so the
