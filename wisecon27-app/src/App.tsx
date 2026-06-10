@@ -76,7 +76,7 @@ const TAB_SCREENS: Record<Exclude<TabId, 'home'>, (p: { ctx: AppCtx }) => JSX.El
 
 function BottomNav({ active, onSelect, unread }: { active: TabId; onSelect: (t: TabId) => void; unread: number }) {
   return (
-    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 40, paddingBottom: 'calc(22px + env(safe-area-inset-bottom, 0px))', background: 'var(--wf-glass)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', borderTop: '1px solid ' + T.line, display: 'flex' }}>
+    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 40, paddingBottom: 'calc(22px + var(--nav-safe, env(safe-area-inset-bottom, 0px)))', background: 'var(--wf-glass)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', borderTop: '1px solid ' + T.line, display: 'flex' }}>
       {TABS.map((t) => {
         const on = active === t.id
         return (

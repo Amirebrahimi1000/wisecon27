@@ -72,7 +72,13 @@ export function initTextSize() {
    reports the true height, so we measure it and drive layout from a
    custom property instead of CSS units. */
 export function initAppHeight() {
-  const set = () => document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px')
+  const set = () => {
+    document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px')
+    // when iOS cuts the window short (the band bug), the home indicator sits
+    // OUTSIDE the window — safe-area nav padding would be dead space
+    const cutShort = screen.height - window.innerHeight > 40
+    document.documentElement.style.setProperty('--nav-safe', cutShort ? '0px' : 'env(safe-area-inset-bottom, 0px)')
+  }
   set()
   // iOS reports stale values on cold start — re-measure a few times
   setTimeout(set, 100)

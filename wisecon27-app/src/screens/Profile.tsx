@@ -1,5 +1,5 @@
 // WISEcon27 — Profile: identity, badge card, list menu, sign out.
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx, PushScreen, TabId } from '../appState'
 import type { IconName } from '../components/Icon'
@@ -9,39 +9,8 @@ import { QR } from '../components/QR'
 import { uploadAvatar } from '../lib/storage'
 import { useAuth } from '../auth'
 
-// TEMPORARY viewport diagnostics for the iOS bottom-band investigation —
-// measures what iOS actually gives the web layer. Remove once solved.
-function measureEnv(prop: string): number {
-  const el = document.createElement('div')
-  el.style.cssText = `position:fixed;top:0;left:0;width:0;height:env(${prop}, 0px);visibility:hidden;pointer-events:none`
-  document.body.appendChild(el)
-  const v = el.offsetHeight
-  el.remove()
-  return v
-}
-function useViewportDiag(): string {
-  const [diag, setDiag] = useState('')
-  useEffect(() => {
-    const update = () => {
-      const standalone = (window.navigator as unknown as { standalone?: boolean }).standalone ? 'app' : 'browser'
-      const vv = window.visualViewport ? Math.round(window.visualViewport.height) : 0
-      setDiag(
-        `win ${window.innerWidth}×${window.innerHeight} · screen ${screen.width}×${screen.height} · vv ${vv} · ` +
-        `doc ${document.documentElement.clientHeight} · sat ${measureEnv('safe-area-inset-top')} sab ${measureEnv('safe-area-inset-bottom')} · ${standalone}`,
-      )
-    }
-    update()
-    const t1 = setTimeout(update, 500)
-    const t2 = setTimeout(update, 1500)
-    window.addEventListener('resize', update)
-    return () => { clearTimeout(t1); clearTimeout(t2); window.removeEventListener('resize', update) }
-  }, [])
-  return diag
-}
-
 export function Profile({ ctx }: { ctx: AppCtx }) {
   const { signOut } = useAuth()
-  const diag = useViewportDiag()
   const me = ctx.me
   const count = ctx.sessions.filter((s) => ctx.isBookmarked(s.id)).length
   const connectedCount = ctx.attendees.filter((a) => a.status === 'connected').length
@@ -121,7 +90,6 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
           <Btn kind="danger" icon="logout" onClick={() => signOut()}>Sign out</Btn>
         </div>
         <div style={{ textAlign: 'center', fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 18 }}>WISEcon27 · {__APP_VERSION__} · Powered by UNIwise</div>
-        <div style={{ textAlign: 'center', fontFamily: T.onest, fontSize: 10, color: T.muted, marginTop: 6, opacity: 0.8 }}>{diag}</div>
       </div>
     </div>
   )
