@@ -125,20 +125,16 @@ button { font-family: inherit; }
   background:
     radial-gradient(120% 80% at 50% -10%, #2c2c2e 0%, #161617 60%, #0e0e0f 100%);
 }
-/* phones: fill the screen edge-to-edge. iOS standalone PWAs LETTERBOX the
-   page (a band at the bottom) when html/body use height:100% — percentage
-   heights break viewport-fit=cover; 100dvh reports wrong values on cold
-   start. 100vh is the only unit that reliably spans the full screen. */
+/* phones: fill the screen edge-to-edge. iOS 26 standalone web apps resolve
+   ALL CSS height units (100%, 100vh, 100dvh) to window height minus the
+   status bar while drawing from the top edge — a status-bar-sized band at
+   the bottom that no unit can fix. --app-height is window.innerHeight,
+   measured in JS (initAppHeight), which iOS reports correctly. */
 @media (max-width: 459px) {
-  html, body, #root { height: 100vh; overflow: hidden; }
+  html, body, #root { height: var(--app-height, 100vh); overflow: hidden; }
   body { background: var(--wf-grey-2); }
-  .wc-stage {
-    position: fixed;
-    inset: 0;
-    height: 100vh;
-    background: var(--wf-grey-2);
-  }
-  .wc-device { height: 100vh; }
+  .wc-stage { height: var(--app-height, 100vh); background: var(--wf-grey-2); }
+  .wc-device { height: var(--app-height, 100vh); }
 }
 .wc-device {
   position: relative;

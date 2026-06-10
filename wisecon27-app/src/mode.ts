@@ -64,3 +64,20 @@ export function setTextSize(size: TextSize) {
 export function initTextSize() {
   document.documentElement.setAttribute('data-textsize', getTextSize())
 }
+
+/* ── Real app height ──────────────────────────────────────────────
+   iOS 26 standalone web apps resolve 100% / 100vh / 100dvh to the
+   window height MINUS the status bar while still drawing from the top
+   edge — leaving a status-bar-sized band at the bottom. window.innerHeight
+   reports the true height, so we measure it and drive layout from a
+   custom property instead of CSS units. */
+export function initAppHeight() {
+  const set = () => document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px')
+  set()
+  // iOS reports stale values on cold start — re-measure a few times
+  setTimeout(set, 100)
+  setTimeout(set, 500)
+  setTimeout(set, 1500)
+  window.addEventListener('resize', set)
+  window.addEventListener('orientationchange', () => setTimeout(set, 300))
+}

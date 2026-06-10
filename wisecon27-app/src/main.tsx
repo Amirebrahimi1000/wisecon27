@@ -3,11 +3,12 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { AuthProvider } from './auth'
 import { watchForAppUpdates } from './swUpdate'
-import { initMode, initTextSize } from './mode'
+import { initAppHeight, initMode, initTextSize } from './mode'
 import './index.css'
 
 initMode()
 initTextSize()
+initAppHeight()
 watchForAppUpdates()
 
 createRoot(document.getElementById('root')!).render(
