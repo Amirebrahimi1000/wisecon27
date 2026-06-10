@@ -87,7 +87,7 @@ export function SignIn() {
               onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 10)); if (error) setError('') }}
               onKeyDown={(e) => e.key === 'Enter' && verify()}
               placeholder="Enter code"
-              style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center', letterSpacing: '0.25em', border: 'none', outline: 'none', background: '#fff', borderRadius: 'var(--radius-4)', padding: '16px 0', marginTop: 18, fontFamily: T.onest, fontWeight: 700, fontSize: 24, color: T.ink, boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}
+              style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center', letterSpacing: '0.25em', border: 'none', outline: 'none', background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '16px 0', marginTop: 18, fontFamily: T.onest, fontWeight: 700, fontSize: 24, color: T.ink, boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}
             />
             {error && <div style={{ fontFamily: T.sig, fontSize: 13, color: 'var(--wf-negative-9)', marginTop: 8, textAlign: 'center' }}>{error}</div>}
             <Btn kind="primary" full size="lg" onClick={verify} disabled={code.length < 6 || verifying} style={{ marginTop: 16 }}>
@@ -107,7 +107,7 @@ export function SignIn() {
               Enter your email and we'll send a sign-in code — no password needed.
             </p>
             <div style={{ marginTop: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', borderRadius: 'var(--radius-4)', padding: '0 14px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '0 14px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}>
                 <Icon name="message" size={18} style={{ color: T.muted }} />
                 <input
                   type="email"

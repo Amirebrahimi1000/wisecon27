@@ -18,10 +18,10 @@ export function Ticket({ ctx }: { ctx: AppCtx }) {
       </div>
       <div style={{ padding: '20px 22px' }}>
         <div style={{ background: '#fff', borderRadius: 22, overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.3)' }}>
-          <div style={{ padding: '22px 22px 16px', textAlign: 'center', borderBottom: '2px dashed ' + T.line }}>
+          <div style={{ padding: '22px 22px 16px', textAlign: 'center', borderBottom: '2px dashed #e6e6e6' }}>
             <Eyebrow style={{ marginBottom: 6 }} color={bt.chipText}>{['WISEcon27', ctx.event.location].filter(Boolean).join(' · ')}</Eyebrow>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 24, color: T.ink }}>{ME.name}</div>
-            <div style={{ fontFamily: T.sig, fontSize: 14.5, color: T.body, marginTop: 2 }}>{ME.org}</div>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 24, color: '#111' }}>{ME.name}</div>
+            <div style={{ fontFamily: T.sig, fontSize: 14.5, color: '#474748', marginTop: 2 }}>{ME.org}</div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
               <span style={{ display: 'inline-flex', background: bt.chipBg, color: bt.chipText, fontFamily: T.sig, fontWeight: 600, fontSize: 13, borderRadius: 999, padding: '5px 14px' }}>{bt.label}</span>
               {ME.gala && (
@@ -33,8 +33,8 @@ export function Ticket({ ctx }: { ctx: AppCtx }) {
           </div>
           <div style={{ padding: 24, display: 'grid', placeItems: 'center' }}>
             <QR value={ME.badgeId} size={200} />
-            <div style={{ fontFamily: T.onest, fontSize: 13, letterSpacing: '0.18em', color: T.body, marginTop: 16 }}>{ME.badgeId}</div>
-            <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 4 }}>Scan at registration & session doors</div>
+            <div style={{ fontFamily: T.onest, fontSize: 13, letterSpacing: '0.18em', color: '#474748', marginTop: 16 }}>{ME.badgeId}</div>
+            <div style={{ fontFamily: T.sig, fontSize: 12.5, color: '#8c8c8c', marginTop: 4 }}>Scan at registration & session doors</div>
           </div>
         </div>
       </div>

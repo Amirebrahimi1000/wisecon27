@@ -46,7 +46,7 @@ export function SpeakerProfile({ ctx }: { ctx: AppCtx }) {
         {sessions.length > 0 && (
           <div>
             <Eyebrow style={{ marginBottom: 10 }}>Sessions ({sessions.length})</Eyebrow>
-            <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
               {sessions.map((s, i) => (
                 <div key={s.id} style={{ borderBottom: i === sessions.length - 1 ? 'none' : '1px solid ' + T.line }}>
                   <SessionRow s={s} bookmarked={ctx.isBookmarked(s.id)} onToggle={() => ctx.toggleBookmark(s.id)} onOpen={ctx.openSession} />

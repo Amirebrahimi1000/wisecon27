@@ -52,7 +52,7 @@ export function SessionDetail({ ctx }: { ctx: AppCtx }) {
 
       {/* action bar */}
       {!isBreak && (
-        <div style={{ display: 'flex', gap: 10, padding: '14px 16px', background: '#fff', borderBottom: '1px solid ' + T.line }}>
+        <div style={{ display: 'flex', gap: 10, padding: '14px 16px', background: 'var(--wf-surface)', borderBottom: '1px solid ' + T.line }}>
           <Btn kind={bm ? 'default' : 'primary'} full icon={bm ? 'check' : 'plus'} onClick={() => ctx.toggleBookmark(s.id)}>
             {bm ? 'In my schedule' : 'Add to schedule'}
           </Btn>
@@ -64,7 +64,7 @@ export function SessionDetail({ ctx }: { ctx: AppCtx }) {
 
       {/* tabs */}
       {!isBreak && (
-        <div style={{ display: 'flex', gap: 4, padding: '12px 16px 0', background: '#fff', position: 'sticky', top: 0, zIndex: 20 }}>
+        <div style={{ display: 'flex', gap: 4, padding: '12px 16px 0', background: 'var(--wf-surface)', position: 'sticky', top: 0, zIndex: 20 }}>
           {([['details', 'Details'], ['qa', 'Q&A'], ['poll', 'Live poll']] as const).map(([k, label]) => (
             <Press key={k} onClick={() => setTab(k)} style={{ flex: 1, textAlign: 'center', paddingBottom: 10, fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: tab === k ? T.green10 : T.muted, borderBottom: '2.5px solid ' + (tab === k ? T.green9 : 'transparent') }}>
               {label}
@@ -99,7 +99,7 @@ function DetailsTab({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppCtx }) 
           <Eyebrow style={{ marginBottom: 10 }}>{sp.length > 1 ? 'Speakers' : 'Speaker'}</Eyebrow>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {sp.map((p) => (
-              <Press key={p.id} onClick={() => ctx.push('speaker', { speaker: p })} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', borderRadius: 'var(--radius-4)', padding: 12, boxShadow: 'var(--shadow-sm)' }}>
+              <Press key={p.id} onClick={() => ctx.push('speaker', { speaker: p })} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 12, boxShadow: 'var(--shadow-sm)' }}>
                 <Avatar initials={p.initials} color={p.color} size={44} src={p.photoUrl} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{p.name}</div>
@@ -121,7 +121,7 @@ function DetailsTab({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppCtx }) 
           href={slidesPublicUrl(s.slidesPath)}
           target="_blank"
           rel="noreferrer"
-          style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)', textDecoration: 'none' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)', textDecoration: 'none' }}
         >
           <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-3)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center' }}><Icon name="download" size={20} /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -214,7 +214,7 @@ function QATab({ ctx, qa }: { ctx: AppCtx; qa: ReturnType<typeof useQA> }) {
         </div>
       )}
       {qa.items.map((it) => (
-        <div key={it.id} style={{ display: 'flex', gap: 12, background: '#fff', borderRadius: 'var(--radius-4)', padding: '13px 14px', boxShadow: 'var(--shadow-sm)' }}>
+        <div key={it.id} style={{ display: 'flex', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '13px 14px', boxShadow: 'var(--shadow-sm)' }}>
           <Press
             onClick={() => qa.toggleVote(it)}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: 38, flexShrink: 0, color: it.voted ? T.green9 : T.muted, background: it.voted ? T.green1 : T.sunken, borderRadius: 'var(--radius-3)', padding: '6px 0' }}
@@ -255,7 +255,7 @@ function PollTab({ sessionId, ctx }: { sessionId: string; ctx: AppCtx }) {
           const pct = poll.total ? Math.round((o.votes / poll.total) * 100) : 0
           const mine = picked === o.id
           return (
-            <Press key={o.id} onClick={() => !picked && poll.vote(poll.pollId!, o.id)} style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-4)', border: '1.5px solid ' + (mine ? T.green9 : 'var(--wf-grey-6)'), padding: '13px 14px', background: '#fff' }}>
+            <Press key={o.id} onClick={() => !picked && poll.vote(poll.pollId!, o.id)} style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-4)', border: '1.5px solid ' + (mine ? T.green9 : 'var(--wf-grey-6)'), padding: '13px 14px', background: 'var(--wf-surface)' }}>
               {picked && <div style={{ position: 'absolute', inset: 0, width: pct + '%', background: mine ? T.green1 : T.sunken, transition: 'width .6s var(--ease-out)' }} />}
               <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink, display: 'flex', alignItems: 'center', gap: 8 }}>

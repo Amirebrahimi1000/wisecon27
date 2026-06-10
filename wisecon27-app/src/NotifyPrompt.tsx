@@ -70,7 +70,7 @@ export function NotifyPrompt({ userId, onToast }: { userId: string; onToast: (ms
       <div
         className="wc-sheet-up"
         onClick={(e) => e.stopPropagation()}
-        style={{ background: '#fff', borderRadius: '22px 22px 0 0', padding: '22px 20px 26px', boxShadow: '0 -16px 40px rgba(0,0,0,0.25)' }}
+        style={{ background: 'var(--wf-surface)', borderRadius: '22px 22px 0 0', padding: '22px 20px 26px', boxShadow: '0 -16px 40px rgba(0,0,0,0.25)' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
           <div style={{ width: 46, height: 46, borderRadius: 12, background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}>

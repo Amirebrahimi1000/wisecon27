@@ -10,7 +10,7 @@ import { Icon } from '../components/Icon'
 import { Btn, Eyebrow } from '../components/primitives'
 
 /* ── shared bits ── */
-const card: React.CSSProperties = { background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16, marginBottom: 18 }
+const card: React.CSSProperties = { background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16, marginBottom: 18 }
 const h2: React.CSSProperties = { fontFamily: T.sig, fontWeight: 700, fontSize: 17, color: T.ink }
 
 function Bar({ label, n, max, suffix }: { label: string; n: number; max: number; suffix?: string }) {

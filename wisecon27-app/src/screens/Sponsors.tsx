@@ -20,7 +20,7 @@ export function Sponsors({ ctx }: { ctx: AppCtx }) {
               <Eyebrow style={{ marginBottom: 10 }}>{tier}</Eyebrow>
               <div style={{ display: 'grid', gridTemplateColumns: big ? '1fr' : '1fr 1fr', gap: 10 }}>
                 {list.map((sp) => (
-                  <Press key={sp.name} onClick={() => ctx.push('exhibitor', { sponsor: sp })} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', borderRadius: 'var(--radius-5)', padding: big ? 16 : 13, boxShadow: 'var(--shadow-card)' }}>
+                  <Press key={sp.name} onClick={() => ctx.push('exhibitor', { sponsor: sp })} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', padding: big ? 16 : 13, boxShadow: 'var(--shadow-card)' }}>
                     <div style={{ width: big ? 48 : 40, height: big ? 48 : 40, borderRadius: 'var(--radius-3)', background: sp.color, color: '#fff', display: 'grid', placeItems: 'center', fontFamily: T.onest, fontWeight: 700, fontSize: big ? 17 : 14, flexShrink: 0 }}>{sp.initials}</div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: big ? 16 : 14, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sp.name}</div>

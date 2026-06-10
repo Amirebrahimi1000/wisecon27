@@ -14,7 +14,7 @@ export function Activities({ ctx }: { ctx: AppCtx }) {
         {ctx.activities.map((a) => {
           const spotsLeft = a.capacity != null ? Math.max(0, a.capacity - a.going) : null
           return (
-            <div key={a.id} style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16 }}>
+            <div key={a.id} style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 17, color: T.ink, lineHeight: 1.25 }}>{a.title}</div>

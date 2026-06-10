@@ -27,7 +27,7 @@ export function ProfileSetup({ ctx }: { ctx: AppCtx }) {
         value={value}
         onChange={(e) => set(e.target.value)}
         placeholder={placeholder}
-        style={{ width: '100%', boxSizing: 'border-box', border: 'none', outline: 'none', background: '#fff', borderRadius: 'var(--radius-4)', padding: '13px 14px', fontFamily: T.sig, fontSize: 15.5, color: T.ink, boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}
+        style={{ width: '100%', boxSizing: 'border-box', border: 'none', outline: 'none', background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '13px 14px', fontFamily: T.sig, fontSize: 15.5, color: T.ink, boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}
       />
     </div>
   )

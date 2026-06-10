@@ -69,7 +69,7 @@ const TAB_SCREENS: Record<Exclude<TabId, 'home'>, (p: { ctx: AppCtx }) => JSX.El
 
 function BottomNav({ active, onSelect, unread }: { active: TabId; onSelect: (t: TabId) => void; unread: number }) {
   return (
-    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 40, paddingBottom: 22, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', borderTop: '1px solid ' + T.line, display: 'flex' }}>
+    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 40, paddingBottom: 22, background: 'var(--wf-glass)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', borderTop: '1px solid ' + T.line, display: 'flex' }}>
       {TABS.map((t) => {
         const on = active === t.id
         return (
@@ -160,13 +160,13 @@ function AuthedApp() {
   if (!ctx.me.name.trim()) return <ProfileSetup ctx={ctx} />
 
   return (
-    <div style={{ height: '100%', position: 'relative', background: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100%', position: 'relative', background: 'var(--wf-grey-2)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* pull-to-refresh indicator */}
       {(pull > 0 || refreshing) && (
         <div style={{ position: 'absolute', top: 0, left: '50%', zIndex: 50, transform: `translate(-50%, ${(refreshing ? PULL_TRIGGER : pull) - 36}px)`, transition: pullStart.current == null ? 'transform .25s var(--ease-out)' : 'none', pointerEvents: 'none' }}>
           <div
             className={refreshing ? 'wc-spin' : ''}
-            style={{ width: 30, height: 30, borderRadius: '50%', background: '#fff', boxShadow: 'var(--shadow-card)', border: '2.5px solid var(--wf-grey-5)', borderTopColor: 'var(--wf-green-9)', transform: refreshing ? undefined : `rotate(${pull * 4}deg)` }}
+            style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--wf-surface)', boxShadow: 'var(--shadow-card)', border: '2.5px solid var(--wf-grey-5)', borderTopColor: 'var(--wf-green-9)', transform: refreshing ? undefined : `rotate(${pull * 4}deg)` }}
           />
         </div>
       )}

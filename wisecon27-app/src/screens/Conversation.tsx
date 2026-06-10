@@ -90,7 +90,7 @@ export function Conversation({ ctx }: { ctx: AppCtx }) {
 
       {/* composer — floats just above the tab bar */}
       <div style={{ position: 'sticky', bottom: TABBAR_H, marginTop: 12, padding: '10px 12px', background: 'var(--wf-grey-2)' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, background: '#fff', borderRadius: 22, padding: '6px 6px 6px 14px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, background: 'var(--wf-surface)', borderRadius: 22, padding: '6px 6px 6px 14px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}

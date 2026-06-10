@@ -146,7 +146,7 @@ export function InstallCard({ compact = false }: { compact?: boolean }) {
   if (mode === 'installed') return null
 
   const card: React.CSSProperties = {
-    background: '#fff',
+    background: 'var(--wf-surface)',
     borderRadius: 'var(--radius-4)',
     padding: compact ? '14px 16px' : '18px',
     boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)',
@@ -332,7 +332,7 @@ export function InstallSheet() {
         className="wc-sheet-up"
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#fff',
+          background: 'var(--wf-surface)',
           borderRadius: '22px 22px 0 0',
           padding: '20px 20px 26px',
           boxShadow: '0 -16px 40px rgba(0,0,0,0.25)',

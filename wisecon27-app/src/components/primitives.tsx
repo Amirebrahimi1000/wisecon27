@@ -180,7 +180,7 @@ export function Btn({
     secondary: { background: 'var(--wf-blue-9)', color: '#fff' },
     default: { background: 'var(--wf-grey-4)', color: T.ink },
     ghost: { background: 'transparent', color: T.green10 },
-    outline: { background: '#fff', color: T.ink, boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' },
+    outline: { background: 'var(--wf-surface)', color: T.ink, boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' },
     danger: { background: 'transparent', color: 'var(--wf-negative-9)', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' },
   }
   return (
@@ -285,7 +285,7 @@ export function SessionRow({
   const isBreak = s.type === 'break' || s.type === 'social'
   const sp = speakersOf(s)
   return (
-    <Press onClick={() => onOpen(s)} style={{ display: 'flex', gap: 12, padding: '14px 16px', alignItems: 'stretch', background: '#fff' }}>
+    <Press onClick={() => onOpen(s)} style={{ display: 'flex', gap: 12, padding: '14px 16px', alignItems: 'stretch', background: 'var(--wf-surface)' }}>
       <div style={{ width: 52, flexShrink: 0, textAlign: 'right', paddingTop: 1 }}>
         <div style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.ink }}>{s.start}</div>
         <div style={{ fontFamily: T.onest, fontSize: 11, color: T.muted }}>{s.end}</div>
@@ -338,7 +338,7 @@ export function Card({
   onClick?: () => void
   pad?: number
 }) {
-  const inner: CSSProperties = { background: '#fff', borderRadius: 'var(--radius-5)', padding: pad, boxShadow: 'var(--shadow-card)', ...style }
+  const inner: CSSProperties = { background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', padding: pad, boxShadow: 'var(--shadow-card)', ...style }
   return onClick ? (
     <Press onClick={onClick} style={inner}>
       {children}
@@ -366,7 +366,7 @@ export function AppHeader({
   sub?: string
 }) {
   return (
-    <div style={{ position: 'sticky', top: 0, zIndex: 30, background: 'rgba(255,255,255,0.86)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', borderBottom: '1px solid ' + T.line, paddingTop: STATUS_INSET }}>
+    <div style={{ position: 'sticky', top: 0, zIndex: 30, background: 'var(--wf-glass)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', borderBottom: '1px solid ' + T.line, paddingTop: STATUS_INSET }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px 12px', minHeight: 44 }}>
         {onBack && <IconBtn name="chevronLeft" onClick={onBack} size={38} stroke={2.2} />}
         <div style={{ flex: 1, minWidth: 0, paddingLeft: onBack ? 0 : 8 }}>

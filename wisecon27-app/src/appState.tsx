@@ -15,7 +15,6 @@ export type PushScreen =
   | 'session' | 'speaker' | 'myschedule' | 'notifications' | 'sponsors'
   | 'ticket' | 'feedback' | 'info' | 'settings' | 'admin'
   | 'activities' | 'survey' | 'exhibitor' | 'conversation' | 'scanner'
-export type HomeVariant = 'classic' | 'cards' | 'bold'
 
 export interface EventInfoItem { id: string; icon: string; label: string; detail: string }
 export interface EventMeta { dateline: string; location: string; startISO: string; endISO: string }
@@ -29,8 +28,6 @@ export interface NavParams {
   _fromTab?: boolean
 }
 interface StackEntry { screen: PushScreen; params: NavParams }
-
-const HOME_KEY = 'wc27.homeVariant'
 
 export interface AppCtx {
   // nav
@@ -92,9 +89,6 @@ export interface AppCtx {
   // toast
   toast: (msg: string) => void
   toastMsg: string | null
-  // home variant
-  homeVariant: HomeVariant
-  setHomeVariant: (v: HomeVariant) => void
 }
 
 /* ── row → app-type mappers ────────────────────────────────────── */
@@ -193,13 +187,6 @@ export function useAppState(): AppCtx {
   const [myFeedback, setMyFeedback] = useState<Record<string, { stars: number; tags: string[]; comment: string }>>({})
 
   // ui
-  const [homeVariant, setHomeVariantState] = useState<HomeVariant>(() => {
-    const raw = localStorage.getItem(HOME_KEY)
-    if (!raw) return 'bold'
-    // tolerate the old JSON-quoted format ("\"bold\"") as well as a raw value
-    const v = (raw.startsWith('"') ? raw.replace(/^"|"$/g, '') : raw) as HomeVariant
-    return v === 'bold' || v === 'cards' || v === 'classic' ? v : 'bold'
-  })
   const [toastMsg, setToastMsg] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -549,11 +536,6 @@ export function useAppState(): AppCtx {
       .eq('id', userId)
   }
 
-  const setHomeVariant = (v: HomeVariant) => {
-    setHomeVariantState(v)
-    localStorage.setItem(HOME_KEY, v)
-  }
-
   const setAvatar = (url: string) => {
     setMe((m) => ({ ...m, avatarUrl: url }))
     supabase.from('profiles').update({ avatar_url: url }).eq('id', userId).then()
@@ -637,7 +619,5 @@ export function useAppState(): AppCtx {
     setAvatar,
     toast,
     toastMsg,
-    homeVariant,
-    setHomeVariant,
   }
 }

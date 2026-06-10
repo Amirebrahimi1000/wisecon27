@@ -73,7 +73,7 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
           <Icon name="qr" size={22} style={{ color: 'rgba(255,255,255,0.7)' }} />
         </Press>
         {/* list */}
-        <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
           {rows.map((r, i) => (
             <Press key={r.label} onClick={r.to} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: i === rows.length - 1 ? 'none' : '1px solid ' + T.line }}>
               <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-3)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}>

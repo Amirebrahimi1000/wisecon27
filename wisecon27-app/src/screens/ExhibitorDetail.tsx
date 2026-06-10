@@ -24,7 +24,7 @@ export function ExhibitorDetail({ ctx }: { ctx: AppCtx }) {
 
       <div style={{ padding: '20px 16px 0', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {sp.booth && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-3)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}><Icon name="pin" size={18} /></div>
             <div>
               <Eyebrow>Find them at</Eyebrow>

@@ -11,7 +11,7 @@ export function Info({ ctx }: { ctx: AppCtx }) {
     <div>
       <AppHeader title="Event info" onBack={ctx.back} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
-        <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
           {items.map((it, i) => (
             <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: i === items.length - 1 ? 'none' : '1px solid ' + T.line }}>
               <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-3)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}>

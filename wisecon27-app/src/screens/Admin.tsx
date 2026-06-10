@@ -17,7 +17,7 @@ import { Reports } from './Reports'
 
 /* ── small field helpers ── */
 const inputStyle: CSSProperties = {
-  width: '100%', boxSizing: 'border-box', border: 'none', outline: 'none', background: '#fff',
+  width: '100%', boxSizing: 'border-box', border: 'none', outline: 'none', background: 'var(--wf-surface)',
   borderRadius: 'var(--radius-4)', padding: '12px 13px', fontFamily: T.sig, fontSize: 15, color: T.ink,
   boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)',
 }
@@ -78,7 +78,7 @@ export function Admin({ ctx }: { ctx: AppCtx }) {
 /* ════════ Organiser dashboard ════════ */
 function StatTile({ n, label }: { n: number | string; label: string }) {
   return (
-    <div style={{ background: '#fff', borderRadius: 'var(--radius-4)', boxShadow: 'var(--shadow-sm)', padding: '14px 16px' }}>
+    <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', boxShadow: 'var(--shadow-sm)', padding: '14px 16px' }}>
       <div style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 26, color: T.ink, lineHeight: 1 }}>{n}</div>
       <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 4 }}>{label}</div>
     </div>
@@ -122,7 +122,7 @@ function Dashboard({ ctx }: { ctx: AppCtx }) {
         <StatTile n={ctx.attendees.filter((a) => a.status === 'connected').length} label="Your connections" />
       </div>
       <Eyebrow style={{ marginBottom: 10 }}>Most bookmarked sessions</Eyebrow>
-      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
         {s.top.length === 0 && <div style={{ padding: 16, fontFamily: T.sig, fontSize: 14, color: T.muted }}>No bookmarks yet.</div>}
         {s.top.map(([id, n], i) => (
           <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: i === s.top.length - 1 ? 'none' : '1px solid ' + T.line }}>
@@ -225,7 +225,7 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
       </div>
 
       {showImport && (
-        <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 16 }}>
+        <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 16 }}>
           <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.subtle, marginBottom: 8 }}>CSV columns: email (required), name, role, org</div>
           <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={'email,name,role,org\njane@uni.edu,Jane Doe,Lecturer,Example University'} rows={6} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: 13, lineHeight: 1.5 }} />
           <Btn kind="primary" full onClick={runImport} disabled={busy || !text.trim()} style={{ marginTop: 10 }}>{busy ? 'Importing…' : 'Import delegates'}</Btn>
@@ -237,12 +237,12 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
           <Press key={k} onClick={() => setAttFilter(k)} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5, borderRadius: 999, padding: '6px 12px', background: attFilter === k ? T.green9 : '#fff', color: attFilter === k ? '#fff' : T.body, boxShadow: attFilter === k ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>{l}</Press>
         ))}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 'var(--radius-4)', padding: '0 12px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '0 12px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', marginBottom: 12 }}>
         <Icon name="search" size={18} style={{ color: T.muted }} />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search delegates" style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 0', fontFamily: T.sig, fontSize: 15, color: T.ink, background: 'transparent' }} />
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
         {filtered.map((d, i) => {
           const ex = extras[d.id] ?? { delegate_type: 'delegate', gala: false, checked_in_at: null, is_staff: false }
           const bt = BADGE_TYPES[asDelegateType(ex.delegate_type)]
@@ -445,7 +445,7 @@ function EventSettings({ ctx }: { ctx: AppCtx }) {
   return (
     <div>
       <Eyebrow style={{ marginBottom: 10 }}>Event headline</Eyebrow>
-      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16, marginBottom: 10 }}>
+      <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16, marginBottom: 10 }}>
         <Field label="Dates (shown on sign-in, agenda & badge)"><Text value={dateline} onChange={setDateline} placeholder="e.g. 2–3 March 2027" /></Field>
         <Field label="Location"><Text value={location} onChange={setLocation} placeholder="e.g. Aarhus" /></Field>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -467,7 +467,7 @@ function EventSettings({ ctx }: { ctx: AppCtx }) {
       <Eyebrow style={{ marginBottom: 10 }}>Days</Eyebrow>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 12 }}>
         {days.map((d, i) => (
-          <div key={d.id} style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14 }}>
+          <div key={d.id} style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 12, color: T.muted }}>Day {i + 1}{sessionsOnDay(d.id) ? ` · ${sessionsOnDay(d.id)} session(s)` : ''}</span>
               <Press onClick={() => removeDay(i)} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13, color: 'var(--wf-negative-9)' }}>Remove</Press>
@@ -536,7 +536,7 @@ function EventInfo({ ctx }: { ctx: AppCtx }) {
   return (
     <div>
       <Btn kind="primary" full icon="plus" onClick={() => setEditing({ icon: 'info', label: '', detail: '' })} style={{ marginBottom: 14 }}>New info item</Btn>
-      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
         {ctx.eventInfo.map((it, i) => (
           <Press key={it.id} onClick={() => setEditing(it)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: i === ctx.eventInfo.length - 1 ? 'none' : '1px solid ' + T.line }}>
             <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-3)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}><Icon name={it.icon as IconName} size={16} /></div>
@@ -585,7 +585,7 @@ function AdminActivities({ ctx }: { ctx: AppCtx }) {
   return (
     <div>
       <Btn kind="primary" full icon="plus" onClick={() => setEditing({ title: '', description: '', location: '', day: ctx.days[0]?.id ?? null, start: '', end: '', capacity: null })} style={{ marginBottom: 14 }}>New activity</Btn>
-      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
         {ctx.activities.map((a, i) => (
           <Press key={a.id} onClick={() => setEditing(a)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: i === ctx.activities.length - 1 ? 'none' : '1px solid ' + T.line }}>
             <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{a.title}</span>
@@ -649,7 +649,7 @@ function Sessions({ ctx }: { ctx: AppCtx }) {
         return (
           <div key={d.id} style={{ marginBottom: 14 }}>
             <Eyebrow style={{ marginBottom: 8 }}>{d.long}</Eyebrow>
-            <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
               {list.map((s, i) => (
                 <Press key={s.id} onClick={() => setEditing(s)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: i === list.length - 1 ? 'none' : '1px solid ' + T.line }}>
                   <span style={{ fontFamily: T.onest, fontSize: 12, color: T.muted, width: 42 }}>{s.start}</span>
@@ -766,7 +766,7 @@ function SessionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
       {/* slides upload */}
       <Eyebrow style={{ marginBottom: 8 }}>Speaker slides</Eyebrow>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 42, padding: '0 16px', borderRadius: 'var(--radius-2)', background: '#fff', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.ink, cursor: 'pointer' }}>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 42, padding: '0 16px', borderRadius: 'var(--radius-2)', background: 'var(--wf-surface)', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.ink, cursor: 'pointer' }}>
           <Icon name="download" size={16} stroke={2} />{uploadingSlides ? 'Uploading…' : slides.path ? 'Replace file' : 'Upload slides'}
           <input type="file" accept=".pdf,.ppt,.pptx,.key" onChange={onPickSlides} style={{ display: 'none' }} />
         </label>
@@ -791,7 +791,7 @@ function SessionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
 
       {/* live poll builder */}
       <Eyebrow style={{ marginBottom: 8 }}>Live poll (optional)</Eyebrow>
-      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 18 }}>
+      <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 18 }}>
         <Text value={pollQuestion} onChange={setPollQuestion} placeholder="Poll question (leave blank for none)" />
         <div style={{ height: 10 }} />
         {pollOpts.map((o, i) => (
@@ -817,7 +817,7 @@ function Speakers({ ctx }: { ctx: AppCtx }) {
   return (
     <div>
       <Btn kind="primary" full icon="plus" onClick={() => setEditing({ name: '', role: '', org: '', bio: '', topics: [], color: 'var(--wf-green-9)' })} style={{ marginBottom: 14 }}>New speaker</Btn>
-      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
         {ctx.speakers.map((p, i) => (
           <Press key={p.id} onClick={() => setEditing(p)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: i === ctx.speakers.length - 1 ? 'none' : '1px solid ' + T.line }}>
             <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{p.name}</span>
@@ -866,7 +866,7 @@ function SpeakerEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
       <Press onClick={onDone} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.green10, marginBottom: 12 }}>‹ Back to list</Press>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
         <Avatar initials={initials || '·'} color={p.color ?? 'var(--wf-green-9)'} size={60} src={photoUrl} />
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 14px', borderRadius: 'var(--radius-2)', background: '#fff', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.ink, cursor: 'pointer' }}>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 14px', borderRadius: 'var(--radius-2)', background: 'var(--wf-surface)', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.ink, cursor: 'pointer' }}>
           {uploadingPhoto ? 'Uploading…' : photoUrl ? 'Replace photo' : 'Upload photo'}
           <input type="file" accept="image/*" onChange={onPickPhoto} style={{ display: 'none' }} />
         </label>
@@ -888,7 +888,7 @@ function Sponsors({ ctx }: { ctx: AppCtx }) {
   return (
     <div>
       <Btn kind="primary" full icon="plus" onClick={() => setEditing({ name: '', tier: 'Gold', blurb: '', color: 'var(--wf-green-7)' })} style={{ marginBottom: 14 }}>New sponsor</Btn>
-      <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
         {ctx.sponsors.map((sp, i) => (
           <Press key={sp.name} onClick={() => setEditing(sp)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: i === ctx.sponsors.length - 1 ? 'none' : '1px solid ' + T.line }}>
             <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{sp.name}</span>

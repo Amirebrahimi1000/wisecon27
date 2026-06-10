@@ -154,7 +154,7 @@ export function Scan({ ctx }: { ctx: AppCtx }) {
 
       {/* result */}
       {state.kind === 'notfound' && (
-        <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 18, textAlign: 'center' }}>
+        <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 18, textAlign: 'center' }}>
           <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'var(--wf-tomato-2)', color: 'var(--wf-tomato-9)', display: 'grid', placeItems: 'center', margin: '0 auto 10px' }}>
             <Icon name="close" size={24} />
           </div>
@@ -169,7 +169,7 @@ export function Scan({ ctx }: { ctx: AppCtx }) {
         const bt = BADGE_TYPES[asDelegateType(p.delegate_type)]
         const already = !!p.checked_in_at && !state.justCheckedIn
         return (
-          <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
             <div style={{ height: 8, background: bt.bg }} />
             <div style={{ padding: 18 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>

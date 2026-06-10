@@ -1,22 +1,22 @@
-// WISEcon27 — Settings (pushed): home layout direction.
-// The product decision is "Bold" (default); Classic and Cards are exposed here
-// per the handoff, which documents them as a possible setting / A/B.
+// WISEcon27 — Settings: push notifications + appearance (light/dark).
 import { useEffect, useState } from 'react'
 import { T, TABBAR_H } from '../theme'
-import type { AppCtx, HomeVariant } from '../appState'
+import type { AppCtx } from '../appState'
 import { Icon } from '../components/Icon'
 import { AppHeader, Btn, Eyebrow, Press } from '../components/primitives'
 import { enablePush, isPushEnabled, pushSupported } from '../push'
+import { getMode, setMode, type AppMode } from '../mode'
 
-const OPTIONS: { id: HomeVariant; name: string; desc: string }[] = [
-  { id: 'bold', name: 'Bold', desc: 'Energetic — full-bleed green hero (default)' },
-  { id: 'cards', name: 'Cards', desc: 'Warm, balanced — track-coloured up-next hero' },
-  { id: 'classic', name: 'Classic', desc: 'Restrained, institutional — white background' },
+const MODES: { id: AppMode; name: string; desc: string }[] = [
+  { id: 'system', name: 'Automatic', desc: 'Follows your device’s light/dark setting' },
+  { id: 'light', name: 'Light', desc: 'Always light' },
+  { id: 'dark', name: 'Dark', desc: 'Always dark — easier on the eyes in dim rooms' },
 ]
 
 export function Settings({ ctx }: { ctx: AppCtx }) {
   const [pushOn, setPushOn] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [mode, setModeState] = useState<AppMode>(() => getMode())
   useEffect(() => {
     isPushEnabled().then(setPushOn)
   }, [])
@@ -30,13 +30,17 @@ export function Settings({ ctx }: { ctx: AppCtx }) {
       ctx.toast('Push notifications enabled')
     }
   }
+  const pick = (m: AppMode) => {
+    setModeState(m)
+    setMode(m)
+  }
   return (
     <div>
       <AppHeader title="Settings" onBack={ctx.back} />
       <div style={{ padding: '16px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {/* push notifications */}
         <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }}>Notifications</Eyebrow>
-        <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16, marginBottom: 24 }}>
+        <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16, marginBottom: 24 }}>
           {!pushSupported() ? (
             <div style={{ fontFamily: T.sig, fontSize: 14, color: T.muted, lineHeight: 1.5 }}>
               This device doesn't support push. On iPhone, add WISEcon27 to your Home Screen first, then enable it here.
@@ -58,15 +62,16 @@ export function Settings({ ctx }: { ctx: AppCtx }) {
           )}
         </div>
 
-        <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }}>Home layout</Eyebrow>
-        <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
-          {OPTIONS.map((o, i) => {
-            const on = ctx.homeVariant === o.id
+        {/* appearance */}
+        <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }}>Appearance</Eyebrow>
+        <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+          {MODES.map((o, i) => {
+            const on = mode === o.id
             return (
               <Press
                 key={o.id}
-                onClick={() => { ctx.setHomeVariant(o.id); ctx.toast(`Home set to ${o.name}`) }}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: i === OPTIONS.length - 1 ? 'none' : '1px solid ' + T.line }}
+                onClick={() => pick(o.id)}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: i === MODES.length - 1 ? 'none' : '1px solid ' + T.line }}
               >
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15.5, color: T.ink }}>{o.name}</div>

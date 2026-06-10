@@ -42,7 +42,7 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
           <div
             key={s.id}
             style={{
-              background: '#fff',
+              background: 'var(--wf-surface)',
               borderRadius:
                 i === 0
                   ? 'var(--radius-5) var(--radius-5) 0 0'

@@ -12,7 +12,7 @@ export function Speakers({ ctx }: { ctx: AppCtx }) {
     <div>
       <AppHeader title="Speakers" sub={`${ctx.speakers.length} speakers`} />
       <div style={{ padding: '12px 16px 4px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 'var(--radius-4)', padding: '0 12px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '0 12px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}>
           <Icon name="search" size={18} style={{ color: T.muted }} />
           <input
             value={q}

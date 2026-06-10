@@ -15,7 +15,7 @@ export function MySchedule({ ctx }: { ctx: AppCtx }) {
           return (
             <div key={d.id} style={{ marginBottom: 18 }}>
               <Eyebrow style={{ padding: '8px 6px 10px' }}>{d.long}</Eyebrow>
-              <div style={{ background: '#fff', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+              <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
                 {day.map((s, i) => (
                   <div key={s.id} style={{ borderBottom: i === day.length - 1 ? 'none' : '1px solid ' + T.line }}>
                     <SessionRow s={s} bookmarked onToggle={() => ctx.toggleBookmark(s.id)} onOpen={ctx.openSession} />
