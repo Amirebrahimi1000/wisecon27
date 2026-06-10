@@ -401,7 +401,7 @@ export function Chip({
   return (
     <Press
       onClick={onClick}
-      style={{ flexShrink: 0, height: 34, padding: '0 14px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, background: active ? '#111' : '#fff', color: active ? '#fff' : T.body, boxShadow: active ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)', whiteSpace: 'nowrap' }}
+      style={{ flexShrink: 0, height: 34, padding: '0 14px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, background: active ? 'var(--wf-grey-12)' : 'var(--wf-surface)', color: active ? 'var(--wf-grey-1)' : T.body, boxShadow: active ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)', whiteSpace: 'nowrap' }}
     >
       {color && <span style={{ width: 7, height: 7, borderRadius: 999, background: color }} />}
       {children}

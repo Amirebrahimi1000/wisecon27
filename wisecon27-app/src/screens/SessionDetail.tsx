@@ -164,7 +164,7 @@ function SessionFeedback({ s, ctx }: { s: Session; ctx: AppCtx }) {
         <>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
             {FB_CHIPS.map((c) => (
-              <Press key={c} onClick={() => { toggle(c); setSaved(false) }} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13, padding: '6px 12px', borderRadius: 999, background: tags.includes(c) ? T.green9 : '#fff', color: tags.includes(c) ? '#fff' : T.body, boxShadow: tags.includes(c) ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>{c}</Press>
+              <Press key={c} onClick={() => { toggle(c); setSaved(false) }} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13, padding: '6px 12px', borderRadius: 999, background: tags.includes(c) ? T.green9 : 'var(--wf-surface)', color: tags.includes(c) ? '#fff' : T.body, boxShadow: tags.includes(c) ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>{c}</Press>
             ))}
           </div>
           <textarea

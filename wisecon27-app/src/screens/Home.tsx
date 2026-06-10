@@ -140,7 +140,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
 
         <div className="wc-noscroll" style={{ display: 'flex', gap: 10, padding: '18px 16px 0', overflowX: 'auto' }}>
           {QUICK.map((q, i) => (
-            <Press key={q.label} onClick={() => runQuick(ctx, q)} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12, padding: 14, borderRadius: 'var(--radius-4)', background: i === 0 ? T.green9 : '#fff', color: i === 0 ? '#fff' : T.ink, boxShadow: i === 0 ? 'none' : 'var(--shadow-sm)' }}>
+            <Press key={q.label} onClick={() => runQuick(ctx, q)} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12, padding: 14, borderRadius: 'var(--radius-4)', background: i === 0 ? T.green9 : 'var(--wf-surface)', color: i === 0 ? '#fff' : T.ink, boxShadow: i === 0 ? 'none' : 'var(--shadow-sm)' }}>
               <Icon name={q.icon} size={22} style={{ color: i === 0 ? '#fff' : T.green10 }} />
               <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>{q.label}</span>
             </Press>

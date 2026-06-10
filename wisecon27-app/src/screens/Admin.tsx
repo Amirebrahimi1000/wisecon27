@@ -234,7 +234,7 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
         {([['all', `All · ${roster.length}`], ['in', `Checked in · ${checkedInCount}`], ['out', `Not yet · ${roster.length - checkedInCount}`]] as const).map(([k, l]) => (
-          <Press key={k} onClick={() => setAttFilter(k)} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5, borderRadius: 999, padding: '6px 12px', background: attFilter === k ? T.green9 : '#fff', color: attFilter === k ? '#fff' : T.body, boxShadow: attFilter === k ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>{l}</Press>
+          <Press key={k} onClick={() => setAttFilter(k)} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5, borderRadius: 999, padding: '6px 12px', background: attFilter === k ? T.green9 : 'var(--wf-surface)', color: attFilter === k ? '#fff' : T.body, boxShadow: attFilter === k ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>{l}</Press>
         ))}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '0 12px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', marginBottom: 12 }}>
@@ -782,7 +782,7 @@ function SessionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
         {ctx.speakers.map((p) => {
           const on = speakerIds.includes(p.id)
           return (
-            <Press key={p.id} onClick={() => toggleSpeaker(p.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 999, fontFamily: T.sig, fontWeight: 600, fontSize: 13, background: on ? T.green9 : '#fff', color: on ? '#fff' : T.body, boxShadow: on ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>
+            <Press key={p.id} onClick={() => toggleSpeaker(p.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 999, fontFamily: T.sig, fontWeight: 600, fontSize: 13, background: on ? T.green9 : 'var(--wf-surface)', color: on ? '#fff' : T.body, boxShadow: on ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>
               {on && <Icon name="check" size={13} stroke={2.6} />}{p.name}
             </Press>
           )

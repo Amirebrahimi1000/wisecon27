@@ -64,7 +64,7 @@ export function Conversation({ ctx }: { ctx: AppCtx }) {
                   <div
                     style={{
                       maxWidth: '78%',
-                      background: mine ? T.green9 : '#fff',
+                      background: mine ? T.green9 : 'var(--wf-surface)',
                       color: mine ? '#fff' : T.ink,
                       borderRadius: mine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                       padding: '9px 13px',
