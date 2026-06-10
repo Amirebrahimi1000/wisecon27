@@ -97,6 +97,11 @@ export function SignIn() {
             <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 16, lineHeight: 1.5, textAlign: 'center' }}>
               Always enter the code here in the app — don't tap the link in the email (it opens a browser instead of the app).
             </div>
+            <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 8, lineHeight: 1.5, textAlign: 'center' }}>
+              {isStandalone()
+                ? 'You only need to do this once — the app keeps you signed in.'
+                : 'Signed in here in the browser? Installing the app later needs one more code — the app keeps you signed in from then on.'}
+            </div>
             <Press onClick={() => { setStatus('idle'); setCode(''); setError('') }} style={{ display: 'block', marginTop: 16, fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.green10, textAlign: 'center' }}>
               Use a different email
             </Press>
