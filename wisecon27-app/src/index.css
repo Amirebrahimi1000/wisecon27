@@ -125,13 +125,19 @@ button { font-family: inherit; }
   background:
     radial-gradient(120% 80% at 50% -10%, #2c2c2e 0%, #161617 60%, #0e0e0f 100%);
 }
-/* phones: fill the real (dynamic) viewport and never show the dark stage */
+/* phones: pin the app to the physical screen edges. position:fixed inset:0
+   bypasses the html/body height chain entirely — iOS standalone PWAs report
+   percentage/viewport-unit heights inconsistently, which left a band at the
+   bottom; a fixed-position stage cannot. */
 @media (max-width: 459px) {
   body { background: var(--wf-grey-2); }
-  .wc-stage { background: var(--wf-grey-2); }
-  @supports (height: 100dvh) {
-    html, body, #root, .wc-stage, .wc-device { height: 100dvh; }
+  .wc-stage {
+    position: fixed;
+    inset: 0;
+    height: auto;
+    background: var(--wf-grey-2);
   }
+  .wc-device { height: 100%; }
 }
 .wc-device {
   position: relative;

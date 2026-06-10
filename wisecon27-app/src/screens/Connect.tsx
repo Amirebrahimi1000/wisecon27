@@ -58,6 +58,12 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
         </Press>
       </div>
 
+      {/* primary networking actions — labelled, hard to miss */}
+      <div style={{ display: 'flex', gap: 8, padding: '10px 16px 0' }}>
+        <Btn kind="outline" icon="qr" onClick={() => ctx.push('ticket', {})} style={{ flex: 1 }}>My badge</Btn>
+        <Btn kind="primary" icon="qr" onClick={() => ctx.push('scanconnect', {})} style={{ flex: 1 }}>Scan to connect</Btn>
+      </div>
+
       {/* tabs */}
       <div style={{ display: 'flex', gap: 4, padding: '14px 16px 0' }}>
         {tabs.map(([k, l]) => (
