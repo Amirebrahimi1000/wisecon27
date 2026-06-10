@@ -42,7 +42,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
 
   return (
     <div>
-      <AppHeader title="Connect" sub="Meet fellow delegates" right={<IconBtn name="search" onClick={() => ctx.toast('Search coming soon')} />} />
+      <AppHeader title="Connect" sub="Meet fellow delegates" right={<IconBtn name="qr" onClick={() => ctx.push('scanconnect', {})} />} />
 
       {/* your badge card */}
       <div style={{ padding: '12px 16px 0' }}>
@@ -98,11 +98,11 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
           ) : (
             ctx.incomingRequests.map((p) => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 6px', borderBottom: '1px solid ' + T.line }}>
-                <Avatar initials={p.initials} color={p.color} size={46} src={p.avatarUrl} />
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <Press onClick={() => ctx.push('delegate', { peerId: p.id })}><Avatar initials={p.initials} color={p.color} size={46} src={p.avatarUrl} /></Press>
+                <Press onClick={() => ctx.push('delegate', { peerId: p.id })} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
                   <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{p.name}</div>
                   <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.role}{p.org ? ' · ' + p.org : ''}</div>
-                </div>
+                </Press>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <Btn kind="default" size="sm" onClick={() => ctx.declineConnection(p.id)}>Ignore</Btn>
                   <Btn kind="primary" size="sm" onClick={() => ctx.acceptConnection(p.id)}>Accept</Btn>
@@ -115,8 +115,8 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
         ) : (
           discover.map((p) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 6px', borderBottom: '1px solid ' + T.line }}>
-              <Avatar initials={p.initials} color={p.color} size={46} src={p.avatarUrl} />
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <Press onClick={() => ctx.push('delegate', { peerId: p.id })}><Avatar initials={p.initials} color={p.color} size={46} src={p.avatarUrl} /></Press>
+              <Press onClick={() => ctx.push('delegate', { peerId: p.id })} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
                 <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{p.name}</div>
                 <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.role}{p.org ? ' · ' + p.org : ''}</div>
                 {p.mutual > 0 && (
@@ -124,7 +124,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
                     <span style={{ fontFamily: T.onest, fontSize: 11, color: T.green10, background: T.green1, borderRadius: 999, padding: '2px 8px' }}>{p.mutual} shared interests</span>
                   </div>
                 )}
-              </div>
+              </Press>
               {p.status === 'connected' ? (
                 <Btn kind="outline" size="sm" icon="message" onClick={() => openConversation(p.id)}>Message</Btn>
               ) : p.status === 'pending' ? (

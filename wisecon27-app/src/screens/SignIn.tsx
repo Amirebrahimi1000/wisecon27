@@ -53,14 +53,15 @@ export function SignIn() {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--wf-grey-2)' }}>
       {/* brand hero */}
-      <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)', padding: STATUS_INSET + 'px 24px 48px' }}>
-        <div style={{ position: 'relative', paddingTop: 28 }}>
+      <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)', padding: STATUS_INSET + 'px 26px 58px' }}>
+        <div style={{ position: 'relative', paddingTop: 40 }}>
           <img
             src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'}
             alt="WISEcon27 — Connect. Create. Transform Assessment."
-            style={{ width: 250, maxWidth: '78%', display: 'block', filter: 'brightness(0) invert(1)' }}
+            style={{ width: 280, maxWidth: '84%', display: 'block', filter: 'brightness(0) invert(1)' }}
           />
-          <div style={{ fontFamily: T.sig, fontSize: 15, color: 'rgba(255,255,255,0.9)', marginTop: 18, lineHeight: 1.5 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 26, fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: 'rgba(255,255,255,0.95)', background: 'rgba(255,255,255,0.14)', borderRadius: 999, padding: '7px 16px', backdropFilter: 'blur(4px)' }}>
+            <Icon name="calendar" size={15} />
             {[dateline, location].filter(Boolean).join(' · ')}
           </div>
         </div>
@@ -75,7 +76,7 @@ export function SignIn() {
             </div>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 21, color: T.ink, textAlign: 'center' }}>Check your email</div>
             <p style={{ fontFamily: T.sig, fontSize: 14.5, color: T.body, marginTop: 8, lineHeight: 1.55, textAlign: 'center' }}>
-              Sent to <b style={{ color: T.ink }}>{email.trim()}</b>. Enter the code from the email below to stay in the app — or tap the sign-in link.
+              Sent to <b style={{ color: T.ink }}>{email.trim()}</b>. Type the code from the email here to sign in.
             </p>
             <p style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginTop: 6, lineHeight: 1.5, textAlign: 'center' }}>
               It can take a minute to arrive — and please check your spam / junk folder.
@@ -94,7 +95,7 @@ export function SignIn() {
               {verifying ? 'Signing in…' : 'Sign in'}
             </Btn>
             <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 16, lineHeight: 1.5, textAlign: 'center' }}>
-              On an iPhone home-screen app, the code keeps you in the app; the link opens Safari.
+              Always enter the code here in the app — don't tap the link in the email (it opens a browser instead of the app).
             </div>
             <Press onClick={() => { setStatus('idle'); setCode(''); setError('') }} style={{ display: 'block', marginTop: 16, fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.green10, textAlign: 'center' }}>
               Use a different email

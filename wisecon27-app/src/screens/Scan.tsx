@@ -5,14 +5,14 @@
 //
 // Uses the native BarcodeDetector where available (Android/Chrome) and falls
 // back to jsQR frame decoding elsewhere (iPhone Safari).
-import { useEffect, useRef, useState } from 'react'
-import jsQR from 'jsqr'
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../theme'
 import type { AppCtx } from '../appState'
 import { BADGE_TYPES, asDelegateType } from '../badgeTypes'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Eyebrow } from '../components/primitives'
+import { QrCamera } from '../components/QrCamera'
 
 interface ScannedProfile {
   id: string
@@ -28,14 +28,8 @@ interface ScannedProfile {
 
 type ScanState =
   | { kind: 'scanning' }
-  | { kind: 'error'; message: string }
   | { kind: 'notfound'; code: string }
   | { kind: 'found'; p: ScannedProfile; justCheckedIn: boolean }
-
-interface DetectorLike {
-  detect: (source: CanvasImageSource) => Promise<{ rawValue: string }[]>
-}
-declare const BarcodeDetector: { new (opts?: { formats?: string[] }): DetectorLike } | undefined
 
 const fmtTime = (iso: string) => {
   const d = new Date(iso)
@@ -43,82 +37,22 @@ const fmtTime = (iso: string) => {
 }
 
 export function Scan({ ctx }: { ctx: AppCtx }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-  const pausedRef = useRef(false)
   const [state, setState] = useState<ScanState>({ kind: 'scanning' })
   const [saving, setSaving] = useState(false)
 
-  // camera + detection loop
-  useEffect(() => {
-    let cancelled = false
-    let timer: ReturnType<typeof setInterval> | undefined
-    const canvas = document.createElement('canvas')
-
-    const onCode = async (raw: string) => {
-      pausedRef.current = true
-      const code = raw.trim()
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, name, org, role, delegate_type, gala, checked_in_at, badge_id, avatar_url')
-        .eq('badge_id', code)
-        .maybeSingle()
-      if (cancelled) return
-      if (!data) setState({ kind: 'notfound', code })
-      else setState({ kind: 'found', p: data as ScannedProfile, justCheckedIn: false })
-    }
-
-    const start = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
-          audio: false,
-        })
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop())
-          return
-        }
-        streamRef.current = stream
-        const video = videoRef.current
-        if (!video) return
-        video.srcObject = stream
-        await video.play()
-
-        const native = typeof BarcodeDetector !== 'undefined' ? new BarcodeDetector({ formats: ['qr_code'] }) : null
-        timer = setInterval(async () => {
-          if (pausedRef.current || cancelled || !video.videoWidth) return
-          try {
-            if (native) {
-              const codes = await native.detect(video)
-              if (codes.length && codes[0].rawValue) onCode(codes[0].rawValue)
-            } else {
-              canvas.width = video.videoWidth
-              canvas.height = video.videoHeight
-              const g = canvas.getContext('2d', { willReadFrequently: true })!
-              g.drawImage(video, 0, 0)
-              const img = g.getImageData(0, 0, canvas.width, canvas.height)
-              const hit = jsQR(img.data, img.width, img.height)
-              if (hit?.data) onCode(hit.data)
-            }
-          } catch {
-            /* skip frame */
-          }
-        }, 250)
-      } catch {
-        if (!cancelled) setState({ kind: 'error', message: 'Camera access was denied. Allow camera access for this app and try again.' })
-      }
-    }
-    start()
-    return () => {
-      cancelled = true
-      if (timer) clearInterval(timer)
-      streamRef.current?.getTracks().forEach((t) => t.stop())
-    }
-  }, [])
+  const onCode = async (code: string) => {
+    if (state.kind !== 'scanning') return
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, name, org, role, delegate_type, gala, checked_in_at, badge_id, avatar_url')
+      .eq('badge_id', code)
+      .maybeSingle()
+    if (!data) setState({ kind: 'notfound', code })
+    else setState({ kind: 'found', p: data as ScannedProfile, justCheckedIn: false })
+  }
 
   const scanNext = () => {
     setState({ kind: 'scanning' })
-    pausedRef.current = false
   }
 
   const checkIn = async (p: ScannedProfile) => {
@@ -134,23 +68,7 @@ export function Scan({ ctx }: { ctx: AppCtx }) {
 
   return (
     <div>
-      {/* camera viewport */}
-      <div style={{ position: 'relative', borderRadius: 'var(--radius-5)', overflow: 'hidden', background: '#000', aspectRatio: '4 / 5', marginBottom: 14 }}>
-        <video ref={videoRef} muted playsInline style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-        {state.kind === 'scanning' && (
-          <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
-            <div style={{ width: '62%', aspectRatio: '1', border: '3px solid rgba(255,255,255,0.85)', borderRadius: 18, boxShadow: '0 0 0 2000px rgba(0,0,0,0.35)' }} />
-            <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, textAlign: 'center', fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
-              Point at a delegate's badge QR
-            </div>
-          </div>
-        )}
-        {state.kind === 'error' && (
-          <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', padding: 24, textAlign: 'center', fontFamily: T.sig, fontSize: 14, color: '#fff', background: 'rgba(0,0,0,0.75)' }}>
-            {state.message}
-          </div>
-        )}
-      </div>
+      <QrCamera onCode={onCode} paused={state.kind !== 'scanning'} hint="Point at a delegate's badge QR" />
 
       {/* result */}
       {state.kind === 'notfound' && (

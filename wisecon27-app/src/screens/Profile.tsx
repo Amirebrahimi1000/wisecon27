@@ -28,6 +28,7 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
 
   interface Row { icon: IconName; label: string; detail?: string; to: () => void }
   const rows: Row[] = [
+    { icon: 'user', label: 'Edit my profile', detail: 'About, sharing', to: () => ctx.push('editprofile', {}) },
     { icon: 'calendar', label: 'My schedule', detail: count + ' saved', to: () => ctx.push('myschedule', {}) },
     { icon: 'bell', label: 'Notifications', detail: ctx.unread > 0 ? ctx.unread + ' new' : '', to: () => ctx.push('notifications', {}) },
     { icon: 'connect', label: 'My connections', detail: String(connectedCount), to: () => ctx.setTab('connect' as TabId) },
