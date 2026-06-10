@@ -37,7 +37,7 @@ import { ScannerScreen } from './screens/Scan'
 const TABS: { id: TabId; icon: IconName; label: string }[] = [
   { id: 'home', icon: 'home', label: 'Home' },
   { id: 'agenda', icon: 'calendar', label: 'Agenda' },
-  { id: 'speakers', icon: 'speakers', label: 'Speakers' },
+  { id: 'activities', icon: 'sparkles', label: 'Activities' },
   { id: 'connect', icon: 'connect', label: 'Connect' },
   { id: 'profile', icon: 'user', label: 'Profile' },
 ]
@@ -62,6 +62,7 @@ const PUSH_SCREENS: Record<PushScreen, (p: { ctx: AppCtx }) => JSX.Element> = {
 
 const TAB_SCREENS: Record<Exclude<TabId, 'home'>, (p: { ctx: AppCtx }) => JSX.Element> = {
   agenda: Agenda,
+  activities: Activities,
   speakers: Speakers,
   connect: Connect,
   profile: Profile,

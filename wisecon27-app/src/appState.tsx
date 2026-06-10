@@ -10,7 +10,7 @@ import type {
   Activity, AppNotification, Attendee, ConnectStatus, Conversation, Day, Me, Message, Session, Speaker, Sponsor, SurveyQuestion,
 } from './types'
 
-export type TabId = 'home' | 'agenda' | 'speakers' | 'connect' | 'profile'
+export type TabId = 'home' | 'agenda' | 'activities' | 'speakers' | 'connect' | 'profile'
 export type PushScreen =
   | 'session' | 'speaker' | 'myschedule' | 'notifications' | 'sponsors'
   | 'ticket' | 'feedback' | 'info' | 'settings' | 'admin'

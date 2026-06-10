@@ -65,12 +65,12 @@ function planForHome(ctx: AppCtx, clock: EventClock) {
 interface QuickAction {
   icon: IconName
   label: string
-  tab?: 'agenda' | 'speakers' | 'connect'
+  tab?: 'agenda' | 'speakers' | 'connect' | 'activities'
   push?: 'ticket' | 'info' | 'activities'
 }
 const QUICK: QuickAction[] = [
   { icon: 'calendar', label: 'Agenda', tab: 'agenda' },
-  { icon: 'sparkles', label: 'Activities', push: 'activities' },
+  { icon: 'sparkles', label: 'Activities', tab: 'activities' },
   { icon: 'speakers', label: 'Speakers', tab: 'speakers' },
   { icon: 'connect', label: 'Connect', tab: 'connect' },
   { icon: 'qr', label: 'My badge', push: 'ticket' },

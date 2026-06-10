@@ -1,15 +1,14 @@
 // WISEcon27 — Interactive activities with sign-up + capacity (realtime).
-import { DAYS } from '../data'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { Icon } from '../components/Icon'
 import { AppHeader, Btn, Empty, Eyebrow } from '../components/primitives'
 
 export function Activities({ ctx }: { ctx: AppCtx }) {
-  const dayLong = (id: string | null) => (id ? DAYS.find((d) => d.id === id)?.long ?? '' : '')
+  const dayLong = (id: string | null) => (id ? ctx.days.find((d) => d.id === id)?.long ?? '' : '')
   return (
     <div>
-      <AppHeader title="Activities" sub="Hands-on & social — sign up to join" onBack={ctx.params._fromTab ? null : ctx.back} />
+      <AppHeader title="Activities" sub="Hands-on & social — sign up to join" onBack={ctx.stack.length ? ctx.back : null} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {ctx.activities.map((a) => {
           const spotsLeft = a.capacity != null ? Math.max(0, a.capacity - a.going) : null
