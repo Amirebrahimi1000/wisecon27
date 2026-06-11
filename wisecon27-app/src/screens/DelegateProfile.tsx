@@ -63,7 +63,7 @@ export function DelegateProfile({ ctx }: { ctx: AppCtx }) {
               )}
 
               {/* actions */}
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
                 {incoming ? (
                   <>
                     <Btn kind="default" size="sm" onClick={() => { ctx.declineConnection(p.id); ctx.back() }}>Ignore</Btn>
@@ -75,6 +75,9 @@ export function DelegateProfile({ ctx }: { ctx: AppCtx }) {
                   <Btn kind="default" size="sm" onClick={() => ctx.setConnection(p.id, 'connect')}>Requested — cancel</Btn>
                 ) : (
                   <Btn kind="primary" size="sm" icon="connect" onClick={() => { ctx.setConnection(p.id, 'pending'); ctx.toast('Request sent') }}>Connect</Btn>
+                )}
+                {!incoming && (
+                  <Btn kind="outline" size="sm" icon="calendar" onClick={() => ctx.push('meetingrequest', { peerId: p.id })}>Suggest meeting</Btn>
                 )}
               </div>
             </div>

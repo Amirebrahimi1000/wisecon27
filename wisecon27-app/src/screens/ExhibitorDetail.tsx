@@ -2,7 +2,7 @@
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { Icon } from '../components/Icon'
-import { Eyebrow, IconBtn } from '../components/primitives'
+import { Eyebrow, IconBtn, Press } from '../components/primitives'
 
 export function ExhibitorDetail({ ctx }: { ctx: AppCtx }) {
   const sp = ctx.params.sponsor!
@@ -24,13 +24,15 @@ export function ExhibitorDetail({ ctx }: { ctx: AppCtx }) {
 
       <div style={{ padding: '20px 16px 0', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {sp.booth && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)' }}>
+          <Press onClick={() => ctx.push('venuemap', { booth: sp.booth })} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-3)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}><Icon name="pin" size={18} /></div>
-            <div>
+            <div style={{ flex: 1 }}>
               <Eyebrow>Find them at</Eyebrow>
-              <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15.5, color: T.ink, marginTop: 2 }}>Booth {sp.booth}</div>
+              <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15.5, color: T.ink, marginTop: 2 }}>Booth {sp.booth} · Expo Hall</div>
             </div>
-          </div>
+            <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13, color: T.green10 }}>Map</span>
+            <Icon name="chevronRight" size={17} stroke={2} style={{ color: T.line2 }} />
+          </Press>
         )}
         {sp.description && (
           <div>

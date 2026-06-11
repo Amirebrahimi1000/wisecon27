@@ -63,6 +63,13 @@ export interface Session {
 
 export type ConnectStatus = 'connect' | 'pending' | 'connected'
 
+/** One day's 1:1 meeting availability; a missing day means available all day. */
+export interface DayWindow {
+  available: boolean
+  start: string
+  end: string
+}
+
 export interface Attendee {
   id: string
   name: string
@@ -75,6 +82,7 @@ export interface Attendee {
   status: ConnectStatus
   avatarUrl?: string | null
   hidden?: boolean
+  meetingAvailability?: Record<string, DayWindow>
 }
 
 export type NotificationType =
@@ -84,6 +92,7 @@ export type NotificationType =
   | 'social'
   | 'feedback'
   | 'message'
+  | 'meeting'
 
 export interface AppNotification {
   id: string
@@ -93,7 +102,7 @@ export interface AppNotification {
   time: string
   unread: boolean
   // 'announcement' (default, global) vs per-user derived items that navigate on tap
-  kind?: 'announcement' | 'request' | 'message'
+  kind?: 'announcement' | 'request' | 'message' | 'meeting'
   peerId?: string
 }
 
@@ -144,6 +153,38 @@ export interface Me {
   avatarUrl?: string | null
   delegateType: string
   gala: boolean
+  interests: string[]
+}
+
+/* ── 1:1 meetings (Brella-style time-slotted networking) ── */
+export type MeetingStatus = 'pending' | 'accepted' | 'declined' | 'cancelled'
+
+export interface MeetingPoint {
+  id: string
+  label: string
+}
+
+export interface Meeting {
+  id: string
+  requesterId: string
+  inviteeId: string
+  day: string
+  start: string
+  end: string
+  pointId: string | null
+  message: string
+  status: MeetingStatus
+  createdAt: string
+}
+
+/* ── community feed ── */
+export interface FeedPost {
+  id: string
+  userId: string | null
+  body: string
+  createdAt: string
+  likes: number
+  liked: boolean
 }
 
 export interface Activity {

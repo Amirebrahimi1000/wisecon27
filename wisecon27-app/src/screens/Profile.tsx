@@ -14,6 +14,8 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
   const me = ctx.me
   const count = ctx.sessions.filter((s) => ctx.isBookmarked(s.id)).length
   const connectedCount = ctx.attendees.filter((a) => a.status === 'connected').length
+  const pendingMeetings = ctx.meetings.filter((m) => m.status === 'pending' && m.inviteeId === ctx.userId).length
+  const confirmedMeetings = ctx.meetings.filter((m) => m.status === 'accepted').length
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const pickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,6 +34,9 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
     { icon: 'calendar', label: 'My schedule', detail: count + ' saved', to: () => ctx.push('myschedule', {}) },
     { icon: 'bell', label: 'Notifications', detail: ctx.unread > 0 ? ctx.unread + ' new' : '', to: () => ctx.push('notifications', {}) },
     { icon: 'connect', label: 'My connections', detail: String(connectedCount), to: () => ctx.setTab('connect' as TabId) },
+    { icon: 'clock', label: 'My meetings', detail: pendingMeetings > 0 ? pendingMeetings + ' to answer' : String(confirmedMeetings), to: () => ctx.push('meetings', {}) },
+    { icon: 'message', label: 'Community feed', to: () => ctx.push('community', {}) },
+    { icon: 'map', label: 'Venue map', to: () => ctx.push('venuemap', {}) },
     { icon: 'sparkles', label: 'Interactive activities', to: () => ctx.push('activities', {}) },
     { icon: 'grid', label: 'Sponsors & exhibitors', to: () => ctx.push('sponsors', {}) },
     { icon: 'star', label: 'Give feedback', to: () => ctx.push('feedback', {}) },

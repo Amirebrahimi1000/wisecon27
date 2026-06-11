@@ -8,6 +8,7 @@ import { Icon } from '../components/Icon'
 import { Avatar, Btn, Eyebrow, IconBtn, Press, TYPE_META } from '../components/primitives'
 import { useQA, usePoll, type QAItem } from '../sessionLive'
 import { slidesPublicUrl } from '../lib/storage'
+import { shareOrCopy } from '../lib/share'
 
 export function SessionDetail({ ctx }: { ctx: AppCtx }) {
   const s = ctx.params.session!
@@ -18,6 +19,12 @@ export function SessionDetail({ ctx }: { ctx: AppCtx }) {
   const bm = ctx.isBookmarked(s.id)
   const day = ctx.days.find((d) => d.id === s.day)!
   const qa = useQA(s.id, ctx.userId)
+
+  const share = async () => {
+    const r = await shareOrCopy('WISEcon27', `${s.title} — ${day.dow} ${day.date}, ${s.start}–${s.end} in ${s.room} · WISEcon27`)
+    if (r === 'copied') ctx.toast('Session details copied')
+    else if (r === 'failed') ctx.toast('Sharing isn’t available on this device')
+  }
 
   return (
     <div style={{ paddingBottom: TABBAR_H + 16 }}>
@@ -34,7 +41,7 @@ export function SessionDetail({ ctx }: { ctx: AppCtx }) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
           <IconBtn name="chevronLeft" onClick={ctx.back} stroke={2.2} color="#fff" bg="rgba(255,255,255,0.16)" />
-          <IconBtn name="share" onClick={() => ctx.toast('Share link copied')} color="#fff" bg="rgba(255,255,255,0.16)" />
+          <IconBtn name="share" onClick={share} color="#fff" bg="rgba(255,255,255,0.16)" />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.2)', borderRadius: 999, padding: '4px 11px', fontFamily: T.onest, fontWeight: 600, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -46,7 +53,9 @@ export function SessionDetail({ ctx }: { ctx: AppCtx }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', marginTop: 14, fontFamily: T.sig, fontSize: 14, color: 'rgba(255,255,255,0.92)' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="calendar" size={16} />{day.dow} {day.date}</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="clock" size={16} />{s.start}–{s.end}</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="pin" size={16} />{s.room}</span>
+          <Press onClick={() => ctx.push('venuemap', { room: s.room })} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'underline dotted', textUnderlineOffset: 3 }}>
+            <Icon name="pin" size={16} />{s.room}
+          </Press>
         </div>
       </div>
 

@@ -36,6 +36,11 @@ import { ScannerScreen } from './screens/Scan'
 import { EditProfile } from './screens/EditProfile'
 import { DelegateProfile } from './screens/DelegateProfile'
 import { ScanConnect } from './screens/ScanConnect'
+import { Meetings } from './screens/Meetings'
+import { MeetingRequest } from './screens/MeetingRequest'
+import { Availability } from './screens/Availability'
+import { Community } from './screens/Community'
+import { VenueMap } from './screens/VenueMap'
 
 const TABS: { id: TabId; icon: IconName; label: string }[] = [
   { id: 'home', icon: 'home', label: 'Home' },
@@ -64,6 +69,11 @@ const PUSH_SCREENS: Record<PushScreen, (p: { ctx: AppCtx }) => JSX.Element> = {
   editprofile: EditProfile,
   delegate: DelegateProfile,
   scanconnect: ScanConnect,
+  meetings: Meetings,
+  meetingrequest: MeetingRequest,
+  availability: Availability,
+  community: Community,
+  venuemap: VenueMap,
 }
 
 const TAB_SCREENS: Record<Exclude<TabId, 'home'>, (p: { ctx: AppCtx }) => JSX.Element> = {

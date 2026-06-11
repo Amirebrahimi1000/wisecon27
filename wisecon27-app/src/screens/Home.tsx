@@ -1,13 +1,16 @@
 // WISEcon27 — Home (Bold layout).
 import { useEffect, useRef, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { TRACKS } from '../data'
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
-import { BookmarkBtn, Eyebrow, IconBtn, Press, TrackTag } from '../components/primitives'
+import { Avatar, BookmarkBtn, Btn, Eyebrow, IconBtn, Press, TrackTag } from '../components/primitives'
 import { InstallBanner } from '../install'
 import { useEventClock, type EventClock } from '../eventClock'
+import { slidesPublicUrl } from '../lib/storage'
+import { downloadCsv } from '../lib/csv'
 import type { Session } from '../types'
 
 // Real-time header bits derived from the event clock + live day list.
@@ -32,7 +35,7 @@ interface PlanItem {
   end: string
   title: string
   place: string
-  kind: 'session' | 'activity'
+  kind: 'session' | 'activity' | 'meeting'
   session?: Session
 }
 
@@ -56,7 +59,15 @@ function planForHome(ctx: AppCtx, clock: EventClock) {
   const acts: PlanItem[] = ctx.activities
     .filter((a) => a.signedUp && a.day === dayId)
     .map((a) => ({ id: a.id, start: a.start, end: a.end, title: a.title, place: a.location, kind: 'activity' }))
-  const mine = [...sess, ...acts].sort((a, b) => a.start.localeCompare(b.start))
+  const mtgs: PlanItem[] = ctx.meetings
+    .filter((m) => m.status === 'accepted' && m.day === dayId)
+    .map((m) => ({
+      id: m.id, start: m.start, end: m.end,
+      title: 'Meeting with ' + ctx.nameFor(m.requesterId === ctx.userId ? m.inviteeId : m.requesterId),
+      place: ctx.meetingPoints.find((p) => p.id === m.pointId)?.label ?? 'Meeting point TBC',
+      kind: 'meeting',
+    }))
+  const mine = [...sess, ...acts, ...mtgs].sort((a, b) => a.start.localeCompare(b.start))
   const upNext = mine.find((i) => i.end > now) || mine[0]
   const later = mine.filter((i) => i !== upNext)
   return { mine, upNext, later }
@@ -66,17 +77,172 @@ interface QuickAction {
   icon: IconName
   label: string
   tab?: 'agenda' | 'speakers' | 'connect' | 'activities'
-  push?: 'ticket' | 'info' | 'activities'
+  push?: 'ticket' | 'info' | 'activities' | 'community' | 'venuemap'
 }
 const QUICK: QuickAction[] = [
   { icon: 'calendar', label: 'Agenda', tab: 'agenda' },
   { icon: 'sparkles', label: 'Activities', tab: 'activities' },
+  { icon: 'message', label: 'Community', push: 'community' },
+  { icon: 'map', label: 'Venue map', push: 'venuemap' },
   { icon: 'speakers', label: 'Speakers', tab: 'speakers' },
   { icon: 'connect', label: 'Connect', tab: 'connect' },
   { icon: 'qr', label: 'My badge', push: 'ticket' },
   { icon: 'info', label: 'Info', push: 'info' },
 ]
 const runQuick = (ctx: AppCtx, q: QuickAction) => (q.tab ? ctx.setTab(q.tab) : ctx.push(q.push!, {}))
+
+/* ════════ Suggested for you (personalised recommendations) ════════ */
+// Sessions are matched against my interests (tags, track name, speaker topics);
+// when I haven't set interests yet, fall back to the most popular sessions.
+function suggestionsFor(ctx: AppCtx) {
+  const myInts = ctx.me.interests.map((i) => i.toLowerCase()).filter(Boolean)
+  const eligible = (s: Session) => !ctx.isBookmarked(s.id) && s.type !== 'break' && s.type !== 'social'
+  const score = (s: Session) => {
+    const hay = [...(s.tags ?? []), TRACKS[s.track].name, ...ctx.speakersOf(s).flatMap((p) => p.topics)].map((x) => x.toLowerCase())
+    return myInts.filter((i) => hay.some((h) => h.includes(i) || i.includes(h))).length
+  }
+  let personal = true
+  let sessions = ctx.sessions
+    .filter(eligible)
+    .map((s) => ({ s, n: score(s) }))
+    .filter((x) => x.n > 0)
+    .sort((a, b) => b.n - a.n || b.s.going - a.s.going)
+    .slice(0, 4)
+    .map((x) => x.s)
+  if (sessions.length === 0) {
+    personal = false
+    sessions = ctx.sessions.filter(eligible).sort((a, b) => b.going - a.going).slice(0, 4)
+  }
+  const people = ctx.attendees
+    .filter((a) => a.status === 'connect' && !a.hidden && a.mutual > 0)
+    .sort((a, b) => b.mutual - a.mutual)
+    .slice(0, 3)
+  return { sessions, people, personal }
+}
+
+function SuggestedSection({ ctx }: { ctx: AppCtx }) {
+  const { sessions, people, personal } = suggestionsFor(ctx)
+  if (sessions.length === 0 && people.length === 0) return null
+  return (
+    <div style={{ paddingTop: 24 }}>
+      <div style={{ padding: '0 16px' }}>
+        <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink, marginBottom: 4 }}>Suggested for you</div>
+        <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginBottom: 12, lineHeight: 1.4 }}>
+          {personal ? 'Matched to the interests on your profile.' : 'Popular with fellow delegates — add interests to your profile to personalise this.'}
+        </div>
+      </div>
+      {sessions.length > 0 && (
+        <div className="wc-noscroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '0 16px' }}>
+          {sessions.map((s) => {
+            const d = ctx.days.find((x) => x.id === s.day)
+            return (
+              <Press key={s.id} onClick={() => ctx.openSession(s)} style={{ flex: '0 0 228px', background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '12px 14px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <TrackTag track={s.track} />
+                  <BookmarkBtn on={ctx.isBookmarked(s.id)} onClick={() => ctx.toggleBookmark(s.id)} size={30} />
+                </div>
+                <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{s.title}</div>
+                <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 'auto' }}>{d?.dow} {s.start} · {s.room}</div>
+              </Press>
+            )
+          })}
+        </div>
+      )}
+      {people.length > 0 && (
+        <div style={{ padding: '16px 16px 0' }}>
+          <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }} color={T.subtle}>People you should meet</Eyebrow>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {people.map((p) => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 12, boxShadow: 'var(--shadow-sm)' }}>
+                <Press onClick={() => ctx.push('delegate', { peerId: p.id })}><Avatar initials={p.initials} color={p.color} size={42} src={p.avatarUrl} /></Press>
+                <Press onClick={() => ctx.push('delegate', { peerId: p.id })} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                  <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>{p.name}</div>
+                  <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {[p.role, p.org].filter(Boolean).join(' · ')}
+                  </div>
+                  <span style={{ display: 'inline-block', marginTop: 4, fontFamily: T.onest, fontSize: 11, color: T.green10, background: T.green1, borderRadius: 999, padding: '2px 8px' }}>{p.mutual} shared interests</span>
+                </Press>
+                <Btn kind="primary" size="sm" onClick={() => { ctx.setConnection(p.id, 'pending'); ctx.toast('Request sent to ' + p.name.split(' ')[0]) }}>Connect</Btn>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ════════ After the event (post-event mode) ════════ */
+function PostEventSection({ ctx }: { ctx: AppCtx }) {
+  const [exporting, setExporting] = useState(false)
+  const slides = ctx.sessions.filter((s) => s.slidesPath).sort((a, b) => (a.day + a.start).localeCompare(b.day + b.start))
+  const connected = ctx.attendees.filter((a) => a.status === 'connected')
+
+  const exportConnections = async () => {
+    if (exporting) return
+    if (!connected.length) return ctx.toast('No connections to export yet')
+    setExporting(true)
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('name, role, org, email')
+      .in('id', connected.map((a) => a.id))
+    setExporting(false)
+    if (error) return ctx.toast(error.message)
+    const rows = (data ?? []) as { name: string; role: string; org: string; email: string }[]
+    downloadCsv('wisecon27-connections.csv', [
+      ['Name', 'Role', 'Organisation', 'Email'],
+      ...rows.map((r) => [r.name, r.role, r.org, r.email]),
+    ])
+    ctx.toast('Connections exported')
+  }
+
+  return (
+    <div style={{ padding: '20px 16px 0' }}>
+      <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink, marginBottom: 4 }}>After the event</div>
+      <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginBottom: 12, lineHeight: 1.4 }}>
+        Slides, your survey, and the people you met — all in one place.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {!ctx.surveyDone && (
+          <Press onClick={() => ctx.push('survey', {})} style={{ display: 'flex', alignItems: 'center', gap: 12, background: T.green9, borderRadius: 'var(--radius-4)', padding: 16, color: '#fff' }}>
+            <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name="poll" size={19} /></div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5 }}>Tell us how it went</div>
+              <div style={{ fontFamily: T.sig, fontSize: 12.5, opacity: 0.85, marginTop: 1 }}>The post-conference survey takes two minutes.</div>
+            </div>
+            <Icon name="chevronRight" size={18} stroke={2} />
+          </Press>
+        )}
+        <Press onClick={exportConnections} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 16, boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name="download" size={19} /></div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>{exporting ? 'Exporting…' : 'Export my connections'}</div>
+            <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 1 }}>{connected.length} contact{connected.length === 1 ? '' : 's'} as a CSV for your address book.</div>
+          </div>
+          <Icon name="chevronRight" size={18} stroke={2} style={{ color: T.muted }} />
+        </Press>
+        {slides.length > 0 && (
+          <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+            <Eyebrow style={{ padding: '14px 16px 4px' }}>Session slides</Eyebrow>
+            {slides.map((s, i) => (
+              <a
+                key={s.id}
+                href={slidesPublicUrl(s.slidesPath!)}
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', textDecoration: 'none', borderBottom: i === slides.length - 1 ? 'none' : '1px solid ' + T.line }}
+              >
+                <Icon name="download" size={17} style={{ color: T.green10, flexShrink: 0 }} />
+                <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
+                <Icon name="chevronRight" size={16} stroke={2} style={{ color: T.line2 }} />
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function HeroStat({ n, label }: { n: number; label: string }) {
   return (
@@ -129,11 +295,15 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
             </div>
           </div>
           <div style={{ marginTop: 26 }}>
-            <div style={{ fontFamily: T.onest, fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>Good morning, {ctx.me.name.split(' ')[0]}</div>
+            <div style={{ fontFamily: T.onest, fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>
+              {clock.phase === 'ended' ? `Thanks for joining, ${ctx.me.name.split(' ')[0]}` : `Good morning, ${ctx.me.name.split(' ')[0]}`}
+            </div>
             <h1 style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 40, color: '#fff', lineHeight: 1.0, letterSpacing: '-0.02em', marginTop: 8 }}>
-              Assessment,
-              <br />
-              reimagined.
+              {clock.phase === 'ended' ? (
+                <>See you at<br />WISEcon28.</>
+              ) : (
+                <>Assessment,<br />reimagined.</>
+              )}
             </h1>
             {h.dateLine && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 12, fontFamily: T.sig, fontSize: 14, color: 'rgba(255,255,255,0.92)' }}>
@@ -165,10 +335,11 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
         <div style={{ padding: '0 16px' }}>
           <InstallBanner />
         </div>
-        {upNext && (
+        {clock.phase === 'ended' && <PostEventSection ctx={ctx} />}
+        {upNext && clock.phase !== 'ended' && (
           <div style={{ padding: '0 16px' }}>
             <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }} color={T.subtle}>Up next at {upNext.start}</Eyebrow>
-            <Press onClick={() => (upNext.kind === 'session' ? ctx.openSession(upNext.session!) : ctx.push('activities', {}))} style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', overflow: 'hidden', boxShadow: 'var(--shadow-card)', display: 'flex' }}>
+            <Press onClick={() => (upNext.kind === 'session' ? ctx.openSession(upNext.session!) : ctx.push(upNext.kind === 'meeting' ? 'meetings' : 'activities', {}))} style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', overflow: 'hidden', boxShadow: 'var(--shadow-card)', display: 'flex' }}>
               <div style={{ width: 6, background: t ? t.dot : T.green9, flexShrink: 0 }} />
               <div style={{ flex: 1, padding: 18 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -176,7 +347,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
                     <TrackTag track={upNext.session!.track} size="lg" />
                   ) : (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: T.onest, fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', color: T.green10, background: T.green1, borderRadius: 999, padding: '4px 11px' }}>
-                      <Icon name="sparkles" size={13} /> Activity
+                      <Icon name={upNext.kind === 'meeting' ? 'connect' : 'sparkles'} size={13} /> {upNext.kind === 'meeting' ? '1:1 meeting' : 'Activity'}
                     </span>
                   )}
                   {upNext.kind === 'session' && (
@@ -211,6 +382,8 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
           )}
         </div>
 
+        {clock.phase !== 'ended' && <SuggestedSection ctx={ctx} />}
+
         <div style={{ padding: '24px 16px 0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink }}>Your plan</div>
@@ -233,7 +406,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
             {later.map((item) => {
               const dot = item.kind === 'session' && item.session ? TRACKS[item.session.track].dot : T.green9
               return (
-                <Press key={item.id} onClick={() => (item.kind === 'session' ? ctx.openSession(item.session!) : ctx.push('activities', {}))} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)' }}>
+                <Press key={item.id} onClick={() => (item.kind === 'session' ? ctx.openSession(item.session!) : ctx.push(item.kind === 'meeting' ? 'meetings' : 'activities', {}))} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)' }}>
                   <div style={{ textAlign: 'center', flexShrink: 0 }}>
                     <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16, color: T.ink }}>{item.start}</div>
                     <div style={{ width: 8, height: 8, borderRadius: 999, background: dot, margin: '4px auto 0' }} />
@@ -245,7 +418,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
                   {item.kind === 'session' ? (
                     <BookmarkBtn on={ctx.isBookmarked(item.id)} onClick={() => ctx.toggleBookmark(item.id)} />
                   ) : (
-                    <Icon name="sparkles" size={18} style={{ color: T.green10 }} />
+                    <Icon name={item.kind === 'meeting' ? 'connect' : 'sparkles'} size={18} style={{ color: T.green10 }} />
                   )}
                 </Press>
               )

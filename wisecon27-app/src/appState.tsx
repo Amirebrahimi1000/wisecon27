@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { useAuth } from './auth'
 import type {
-  Activity, AppNotification, Attendee, ConnectStatus, Conversation, Day, Me, Message, Session, Speaker, Sponsor, SurveyQuestion,
+  Activity, AppNotification, Attendee, ConnectStatus, Conversation, Day, DayWindow, Me, Meeting, MeetingPoint, MeetingStatus, Message, Session, Speaker, Sponsor, SurveyQuestion,
 } from './types'
 
 export type TabId = 'home' | 'agenda' | 'activities' | 'speakers' | 'connect' | 'profile'
@@ -16,6 +16,7 @@ export type PushScreen =
   | 'ticket' | 'feedback' | 'info' | 'settings' | 'admin'
   | 'activities' | 'survey' | 'exhibitor' | 'conversation' | 'scanner'
   | 'editprofile' | 'delegate' | 'scanconnect'
+  | 'meetings' | 'meetingrequest' | 'community' | 'venuemap' | 'availability'
 
 export interface EventInfoItem { id: string; icon: string; label: string; detail: string }
 export interface EventMeta { dateline: string; location: string; startISO: string; endISO: string }
@@ -26,6 +27,9 @@ export interface NavParams {
   sponsor?: Sponsor
   day?: string
   peerId?: string
+  room?: string
+  booth?: string
+  meetingId?: string
   _fromTab?: boolean
 }
 interface StackEntry { screen: PushScreen; params: NavParams }
@@ -55,6 +59,9 @@ export interface AppCtx {
   isAdmin: boolean
   isStaff: boolean
   updateProfile: (patch: Partial<Me>) => Promise<void>
+  // refresh interests in-memory so recommendations and "shared interests"
+  // counts update instantly (the DB write happens in EditProfile)
+  setMyInterests: (interests: string[]) => void
   nameFor: (id: string) => string
   // bookmarks (per account)
   isBookmarked: (id: string) => boolean
@@ -75,6 +82,12 @@ export interface AppCtx {
   messagesWith: (peerId: string) => Message[]
   sendMessage: (peerId: string, body: string) => Promise<void>
   markThreadRead: (peerId: string) => void
+  // 1:1 meetings (Brella-style time-slotted networking)
+  meetings: Meeting[]
+  meetingPoints: MeetingPoint[]
+  requestMeeting: (peerId: string, dayId: string, start: string, end: string, pointId: string, message: string) => Promise<boolean>
+  respondMeeting: (id: string, status: Extract<MeetingStatus, 'accepted' | 'declined'>) => void
+  cancelMeeting: (id: string) => void
   // interactive activities (with sign-up)
   activities: ActivityView[]
   toggleActivitySignup: (id: string) => void
@@ -113,11 +126,24 @@ interface ProfileRow {
   ticket: string; badge_id: string; interests: string[]; is_admin: boolean; is_staff?: boolean; avatar_url: string | null
   delegate_type: string | null; gala: boolean | null
   hidden?: boolean | null; notif_prefs?: Record<string, boolean> | null
+  meeting_availability?: Record<string, DayWindow> | null
 }
 const mapProfile = (r: ProfileRow): Me => ({
   name: r.name, initials: r.initials, role: r.role, org: r.org, color: r.color,
   ticket: r.ticket, badgeId: r.badge_id, bookmarks: [], avatarUrl: r.avatar_url,
   delegateType: r.delegate_type ?? 'delegate', gala: r.gala ?? false,
+  interests: r.interests ?? [],
+})
+
+interface MeetingRow {
+  id: string; requester_id: string; invitee_id: string; day_id: string
+  start: string; end: string; point_id: string | null; message: string
+  status: MeetingStatus; created_at: string
+}
+const mapMeeting = (r: MeetingRow): Meeting => ({
+  id: r.id, requesterId: r.requester_id, inviteeId: r.invitee_id, day: r.day_id,
+  start: r.start, end: r.end, pointId: r.point_id, message: r.message,
+  status: r.status, createdAt: r.created_at,
 })
 
 interface ActivityRow {
@@ -150,6 +176,7 @@ const shortTime = (iso: string) => {
 const EMPTY_ME: Me = {
   name: '', initials: '', role: '', org: '', color: 'var(--wf-blue-9)',
   ticket: 'Full delegate', badgeId: '', bookmarks: [], delegateType: 'delegate', gala: false,
+  interests: [],
 }
 
 export function useAppState(): AppCtx {
@@ -168,6 +195,8 @@ export function useAppState(): AppCtx {
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
   const [eventInfo, setEventInfo] = useState<EventInfoItem[]>([])
   const [event, setEvent] = useState<EventMeta>({ dateline: '', location: '', startISO: '', endISO: '' })
+  const [meetingPoints, setMeetingPoints] = useState<MeetingPoint[]>([])
+  const [meetings, setMeetings] = useState<Meeting[]>([])
 
   // identity / user data
   const [me, setMe] = useState<Me>(EMPTY_ME)
@@ -200,7 +229,7 @@ export function useAppState(): AppCtx {
 
   /* ── load all content + user data ── */
   const loadContent = useCallback(async () => {
-    const [d, sp, se, so, ei, act, sq, st] = await Promise.all([
+    const [d, sp, se, so, ei, act, sq, st, mp] = await Promise.all([
       supabase.from('days').select('*').order('sort'),
       supabase.from('speakers').select('*').order('sort'),
       supabase.from('sessions').select('*, session_speakers(speaker_id, ord)'),
@@ -209,6 +238,7 @@ export function useAppState(): AppCtx {
       supabase.from('activities').select('*').order('sort'),
       supabase.from('survey_questions').select('*').eq('active', true).order('sort'),
       supabase.from('settings').select('key, value'),
+      supabase.from('meeting_points').select('id, label').order('sort'),
     ])
     if (st.data) {
       const m = new Map((st.data as { key: string; value: string }[]).map((r) => [r.key, r.value]))
@@ -226,6 +256,7 @@ export function useAppState(): AppCtx {
     if (ei.data) setEventInfo(ei.data as EventInfoItem[])
     if (act.data) setActivitiesRaw(act.data as ActivityRow[])
     if (sq.data) setSurveyQuestions(sq.data as SurveyQuestion[])
+    if (mp.data) setMeetingPoints(mp.data as MeetingPoint[])
   }, [])
 
   const loadUserData = useCallback(async () => {
@@ -278,6 +309,7 @@ export function useAppState(): AppCtx {
             mutual: p.interests.filter((i) => myInterests.has(i)).length,
             status: statusFor(p.id),
             hidden: p.hidden ?? false,
+            meetingAvailability: p.meeting_availability ?? {},
           })),
       )
     }
@@ -349,6 +381,29 @@ export function useAppState(): AppCtx {
     }
   }, [userId, loadMessages])
 
+  /* ── 1:1 meetings: own loader + realtime ── */
+  const loadMeetings = useCallback(async () => {
+    if (!userId) return
+    const { data } = await supabase
+      .from('meetings')
+      .select('*')
+      .or(`requester_id.eq.${userId},invitee_id.eq.${userId}`)
+      .order('created_at')
+    if (data) setMeetings((data as MeetingRow[]).map(mapMeeting))
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId) return
+    loadMeetings()
+    const ch = supabase
+      .channel('wc27-meetings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, () => loadMeetings())
+      .subscribe()
+    return () => {
+      supabase.removeChannel(ch)
+    }
+  }, [userId, loadMeetings])
+
   /* ── derived ── */
   const attendeeById = useMemo(() => new Map(attendees.map((a) => [a.id, a])), [attendees])
 
@@ -410,9 +465,21 @@ export function useAppState(): AppCtx {
       id: 'req:' + a.id, type: 'connect', kind: 'request', peerId: a.id,
       title: a.name + ' wants to connect', body: [a.role, a.org].filter(Boolean).join(' · '), time: '', unread: true,
     }))
+    const mtgNotifs: AppNotification[] = meetings
+      .filter((m) => m.inviteeId === userId && m.status === 'pending')
+      .map((m) => {
+        const a = attendeeById.get(m.requesterId)
+        const d = days.find((x) => x.id === m.day)
+        return {
+          id: 'mtg:' + m.id, type: 'meeting' as const, kind: 'meeting' as const, peerId: m.requesterId,
+          title: (a?.name ?? 'A delegate') + ' suggested a meeting',
+          body: [[d?.dow, d?.date].filter(Boolean).join(' '), `${m.start}–${m.end}`].filter(Boolean).join(' · '),
+          time: '', unread: true,
+        }
+      })
     const annNotifs: AppNotification[] = announcements.map((n) => ({ ...n, kind: 'announcement', unread: !readSet.has(n.id) }))
-    return [...msgNotifs, ...reqNotifs, ...annNotifs]
-  }, [conversations, incomingRequests, announcements, readSet])
+    return [...msgNotifs, ...reqNotifs, ...mtgNotifs, ...annNotifs]
+  }, [conversations, incomingRequests, meetings, attendeeById, days, userId, announcements, readSet])
 
   const unread = notifications.filter((n) => n.unread).length
   const top = stack[stack.length - 1]
@@ -527,6 +594,43 @@ export function useAppState(): AppCtx {
     supabase.from('messages').update({ read_at: now }).eq('sender_id', peerId).eq('recipient_id', userId).is('read_at', null).then()
   }
 
+  /* ── 1:1 meetings ── */
+  const requestMeeting = async (peerId: string, dayId: string, start: string, end: string, pointId: string, message: string) => {
+    const { data, error } = await supabase
+      .from('meetings')
+      .insert({ requester_id: userId, invitee_id: peerId, day_id: dayId, start, end, point_id: pointId || null, message: message.trim(), status: 'pending' })
+      .select()
+      .single()
+    if (error || !data) {
+      toast('Could not send the meeting request')
+      return false
+    }
+    setMeetings((prev) => [...prev, mapMeeting(data as MeetingRow)])
+    pushTo(peerId, 'connect', (me.name || 'Someone') + ' suggested a meeting', `${start}–${end} — open WISEcon27 to respond.`)
+    return true
+  }
+
+  const respondMeeting = (id: string, status: 'accepted' | 'declined') => {
+    const m = meetings.find((x) => x.id === id)
+    setMeetings((prev) => prev.map((x) => (x.id === id ? { ...x, status } : x)))
+    supabase.from('meetings').update({ status }).eq('id', id).then()
+    if (m && status === 'accepted') {
+      pushTo(m.requesterId, 'connect', (me.name || 'Someone') + ' accepted your meeting', `${m.start}–${m.end} — see My meetings for the spot.`)
+      toast('Meeting confirmed')
+    }
+  }
+
+  const cancelMeeting = (id: string) => {
+    setMeetings((prev) => prev.map((x) => (x.id === id ? { ...x, status: 'cancelled' } : x)))
+    supabase.from('meetings').update({ status: 'cancelled' }).eq('id', id).then()
+  }
+
+  const setMyInterests = (interests: string[]) => {
+    setMe((m) => ({ ...m, interests }))
+    const mySet = new Set(interests)
+    setAttendees((prev) => prev.map((a) => ({ ...a, mutual: a.interests.filter((i) => mySet.has(i)).length })))
+  }
+
   const updateProfile = async (patch: Partial<Me>) => {
     const next = { ...me, ...patch }
     if (patch.name && !patch.initials) next.initials = initialsFrom(patch.name)
@@ -595,6 +699,7 @@ export function useAppState(): AppCtx {
     isAdmin,
     isStaff,
     updateProfile,
+    setMyInterests,
     nameFor: (id) =>
       id === userId ? me.name : attendees.find((a) => a.id === id)?.name || 'A delegate',
     isBookmarked: (id) => bookmarkSet.has(id),
@@ -612,6 +717,11 @@ export function useAppState(): AppCtx {
     messagesWith,
     sendMessage,
     markThreadRead,
+    meetings,
+    meetingPoints,
+    requestMeeting,
+    respondMeeting,
+    cancelMeeting,
     activities,
     toggleActivitySignup,
     myFeedback,

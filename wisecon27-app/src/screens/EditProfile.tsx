@@ -62,6 +62,7 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
       .eq('id', ctx.userId)
     setSaving(false)
     if (error) return ctx.toast(error.message)
+    ctx.setMyInterests(ints) // recommendations + shared-interest counts update immediately
     ctx.toast('Profile updated')
     ctx.back()
   }

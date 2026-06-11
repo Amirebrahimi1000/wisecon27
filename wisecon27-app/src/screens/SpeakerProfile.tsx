@@ -1,11 +1,38 @@
 // WISEcon27 — Speaker Profile (pushed): hero, connect/message, bio, sessions.
+// Connect/Message work against the speaker's delegate profile when they have
+// one (matched by name); otherwise we say so instead of pretending.
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { Avatar, Btn, Eyebrow, IconBtn, SessionRow } from '../components/primitives'
+import { shareOrCopy } from '../lib/share'
+
+const norm = (n: string) => n.toLowerCase().replace(/^(dr|prof)\.?\s+/i, '').trim()
 
 export function SpeakerProfile({ ctx }: { ctx: AppCtx }) {
   const p = ctx.params.speaker!
   const sessions = ctx.sessions.filter((s) => (s.speakers || []).includes(p.id))
+  const delegate = ctx.attendees.find((a) => norm(a.name) === norm(p.name))
+  const first = p.name.replace(/^(Dr\.|Prof\.) /, '').split(' ')[0]
+
+  const share = async () => {
+    const r = await shareOrCopy('WISEcon27', `${p.name} — ${[p.role, p.org].filter(Boolean).join(', ')} · speaking at WISEcon27`)
+    if (r === 'copied') ctx.toast('Speaker details copied')
+    else if (r === 'failed') ctx.toast('Sharing isn’t available on this device')
+  }
+
+  const connect = () => {
+    if (!delegate) return ctx.toast(first + ' isn’t on the delegate list — catch them after their session')
+    if (delegate.status === 'connected') return ctx.toast('You’re already connected with ' + first)
+    if (delegate.status === 'pending') return ctx.toast('Request already sent')
+    ctx.setConnection(delegate.id, 'pending')
+    ctx.toast('Request sent to ' + first)
+  }
+
+  const message = () => {
+    if (!delegate) return ctx.toast(first + ' isn’t on the delegate list — catch them after their session')
+    if (delegate.status !== 'connected') return ctx.toast('Connect with ' + first + ' first to send a message')
+    ctx.push('conversation', { peerId: delegate.id })
+  }
   return (
     <div style={{ paddingBottom: TABBAR_H + 16 }}>
       <div
@@ -18,7 +45,7 @@ export function SpeakerProfile({ ctx }: { ctx: AppCtx }) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 18 }}>
           <IconBtn name="chevronLeft" onClick={ctx.back} stroke={2.2} color="#fff" bg="rgba(255,255,255,0.16)" />
-          <IconBtn name="share" onClick={() => ctx.toast('Profile link copied')} color="#fff" bg="rgba(255,255,255,0.16)" />
+          <IconBtn name="share" onClick={share} color="#fff" bg="rgba(255,255,255,0.16)" />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <Avatar initials={p.initials} color="rgba(255,255,255,0.22)" size={72} src={p.photoUrl} style={{ boxShadow: '0 0 0 2px rgba(255,255,255,0.4)' }} />
@@ -30,8 +57,16 @@ export function SpeakerProfile({ ctx }: { ctx: AppCtx }) {
         </div>
       </div>
       <div style={{ padding: '16px 16px 0', display: 'flex', gap: 10 }}>
-        <Btn kind="primary" full icon="connect" onClick={() => ctx.toast('Connection request sent')}>Connect</Btn>
-        <Btn kind="outline" icon="message" onClick={() => ctx.toast('Messaging coming soon')} style={{ flexShrink: 0 }}>Message</Btn>
+        {delegate?.status === 'connected' ? (
+          <Btn kind="primary" full icon="message" onClick={message}>Message</Btn>
+        ) : (
+          <>
+            <Btn kind={delegate?.status === 'pending' ? 'default' : 'primary'} full icon={delegate?.status === 'pending' ? 'check' : 'connect'} onClick={connect}>
+              {delegate?.status === 'pending' ? 'Requested' : 'Connect'}
+            </Btn>
+            <Btn kind="outline" icon="message" onClick={message} style={{ flexShrink: 0 }}>Message</Btn>
+          </>
+        )}
       </div>
       <div style={{ padding: '20px 16px 0', display: 'flex', flexDirection: 'column', gap: 22 }}>
         <div>
