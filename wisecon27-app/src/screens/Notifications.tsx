@@ -1,4 +1,7 @@
 // WISEcon27 — Notifications (pushed): typed icons, unread highlight, mark read.
+// Long announcements keep their line breaks and clamp to a few lines with a
+// "Read more" toggle so the list stays scannable.
+import { useState } from 'react'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { NotificationType } from '../types'
@@ -13,9 +16,22 @@ const META: Record<NotificationType, { icon: IconName; color: string; bg: string
   social: { icon: 'heart', color: 'var(--wf-tomato-9)', bg: 'var(--wf-tomato-2)' },
   feedback: { icon: 'star', color: 'var(--wf-orange-9)', bg: 'var(--wf-orange-2)' },
   message: { icon: 'message', color: 'var(--wf-green-10)', bg: 'var(--wf-green-1)' },
+  meeting: { icon: 'calendar', color: 'var(--wf-blue-9)', bg: 'var(--wf-blue-1)' },
 }
 
+const CLAMP_LINES = 4
+// roughly more than CLAMP_LINES lines of text, or any explicit line breaks
+const isLong = (body: string) => body.length > 170 || body.includes('\n')
+
 export function Notifications({ ctx }: { ctx: AppCtx }) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const toggle = (id: string) =>
+    setExpanded((prev) => {
+      const n = new Set(prev)
+      n.has(id) ? n.delete(id) : n.add(id)
+      return n
+    })
+
   return (
     <div>
       <AppHeader
@@ -28,10 +44,16 @@ export function Notifications({ ctx }: { ctx: AppCtx }) {
       <div style={{ padding: '8px 12px ' + (TABBAR_H + 16) + 'px' }}>
         {ctx.notifications.map((n) => {
           const m = META[n.type]
+          const long = isLong(n.body)
+          const open = expanded.has(n.id)
           const onTap = () => {
             if (n.kind === 'message' && n.peerId) ctx.push('conversation', { peerId: n.peerId })
             else if (n.kind === 'request') ctx.setTab('connect')
-            else ctx.readOne(n.id)
+            else if (n.kind === 'meeting') ctx.push('meetings', {})
+            else {
+              ctx.readOne(n.id)
+              if (long) toggle(n.id)
+            }
           }
           return (
             <Press key={n.id} onClick={onTap} style={{ display: 'flex', gap: 12, padding: '14px 10px', borderBottom: '1px solid ' + T.line, background: n.unread ? T.green1 + '55' : 'transparent', borderRadius: 'var(--radius-3)' }}>
@@ -43,7 +65,22 @@ export function Notifications({ ctx }: { ctx: AppCtx }) {
                   <span style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>{n.title}</span>
                   <span style={{ fontFamily: T.onest, fontSize: 11, color: T.muted, flexShrink: 0 }}>{n.time}</span>
                 </div>
-                <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.body, marginTop: 2, lineHeight: 1.4 }}>{n.body}</div>
+                <div
+                  style={{
+                    fontFamily: T.sig, fontSize: 13.5, color: T.body, marginTop: 2, lineHeight: 1.45,
+                    whiteSpace: 'pre-wrap', overflowWrap: 'anywhere',
+                    ...(long && !open
+                      ? { display: '-webkit-box', WebkitLineClamp: CLAMP_LINES, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }
+                      : {}),
+                  }}
+                >
+                  {n.body}
+                </div>
+                {long && (
+                  <div style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5, color: T.green10, marginTop: 5 }}>
+                    {open ? 'Show less' : 'Read more'}
+                  </div>
+                )}
               </div>
               {n.unread && <span style={{ width: 8, height: 8, borderRadius: 999, background: T.green9, flexShrink: 0, marginTop: 6 }} />}
             </Press>

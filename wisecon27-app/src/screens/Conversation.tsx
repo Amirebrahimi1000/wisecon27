@@ -73,6 +73,7 @@ export function Conversation({ ctx }: { ctx: AppCtx }) {
                       lineHeight: 1.4,
                       boxShadow: mine ? 'none' : 'var(--shadow-sm)',
                       wordBreak: 'break-word',
+                      whiteSpace: 'pre-wrap',
                     }}
                   >
                     {m.body}
