@@ -121,7 +121,10 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
                 : ctx.event.dateline}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <IconBtn name="qr" onClick={() => ctx.push('ticket', {})} color="#fff" bg="rgba(255,255,255,0.16)" />
+              <Press onClick={() => ctx.push('ticket', {})} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 14px', borderRadius: 999, background: 'rgba(255,255,255,0.16)', color: '#fff' }}>
+                <Icon name="qr" size={18} />
+                <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, letterSpacing: '0.01em' }}>Badge</span>
+              </Press>
               <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} color="#fff" bg="rgba(255,255,255,0.16)" />
             </div>
           </div>
