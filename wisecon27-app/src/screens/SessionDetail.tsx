@@ -1,5 +1,7 @@
 // WISEcon27 — Session Detail: hero, action bar, Details / Q&A / Live poll tabs.
-import { useState } from 'react'
+// Speakers linked to a delegate account can share slides/resources here.
+import { useRef, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { TRACKS } from '../data'
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
@@ -7,7 +9,7 @@ import type { Session, Speaker } from '../types'
 import { Icon } from '../components/Icon'
 import { Avatar, Btn, Eyebrow, IconBtn, Press, TYPE_META } from '../components/primitives'
 import { useQA, usePoll, type QAItem } from '../sessionLive'
-import { slidesPublicUrl } from '../lib/storage'
+import { slidesPublicUrl, uploadResource } from '../lib/storage'
 import { shareOrCopy } from '../lib/share'
 
 export function SessionDetail({ ctx }: { ctx: AppCtx }) {
@@ -125,22 +127,138 @@ function DetailsTab({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppCtx }) 
           <Icon name="speakers" size={17} /> {s.going.toLocaleString('en')} delegates planning to attend
         </div>
       )}
-      {s.slidesPath && (
-        <a
-          href={slidesPublicUrl(s.slidesPath)}
-          target="_blank"
-          rel="noreferrer"
-          style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)', textDecoration: 'none' }}
-        >
-          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-3)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center' }}><Icon name="download" size={20} /></div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>Download slides</div>
-            <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.slidesName || 'Presentation'}</div>
-          </div>
-          <Icon name="chevronRight" size={18} stroke={2} style={{ color: T.line2 }} />
-        </a>
-      )}
+      <SessionResources s={s} sp={sp} ctx={ctx} />
       <SessionFeedback s={s} ctx={ctx} />
+    </div>
+  )
+}
+
+/* ── slides + resources, with sharing tools for the session's speakers ── */
+function SessionResources({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppCtx }) {
+  const resources = ctx.resourcesOf(s.id)
+  // am I one of this session's speakers? (linked via Admin → Speakers)
+  const amSpeaker = sp.some((p) => p.profileId && p.profileId === ctx.userId)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [linkLabel, setLinkLabel] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
+  const [addingLink, setAddingLink] = useState(false)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+
+  const pickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    const r = await uploadResource(s.id, file)
+    if (r.error) {
+      setUploading(false)
+      return ctx.toast(r.error)
+    }
+    const { error } = await supabase.from('session_resources').insert({ session_id: s.id, label: r.name, path: r.path, created_by: ctx.userId })
+    setUploading(false)
+    if (error) return ctx.toast(error.message)
+    await ctx.refreshContent()
+    ctx.toast('Shared with attendees')
+  }
+
+  const addLink = async () => {
+    const label = linkLabel.trim()
+    const url = linkUrl.trim()
+    if (!label || !url) return
+    const { error } = await supabase.from('session_resources').insert({
+      session_id: s.id, label, url: url.startsWith('http') ? url : 'https://' + url, created_by: ctx.userId,
+    })
+    if (error) return ctx.toast(error.message)
+    setLinkLabel(''); setLinkUrl(''); setAddingLink(false)
+    await ctx.refreshContent()
+    ctx.toast('Link shared with attendees')
+  }
+
+  const remove = async (id: string) => {
+    if (confirmId !== id) return setConfirmId(id)
+    setConfirmId(null)
+    const { error } = await supabase.from('session_resources').delete().eq('id', id)
+    if (error) return ctx.toast(error.message)
+    await ctx.refreshContent()
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', boxSizing: 'border-box', border: 'none', outline: 'none', background: 'var(--wf-surface)',
+    borderRadius: 'var(--radius-3)', padding: '10px 12px', fontFamily: T.sig, fontSize: 14, color: T.ink,
+    boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', marginBottom: 8,
+  }
+
+  if (!s.slidesPath && resources.length === 0 && !amSpeaker) return null
+  return (
+    <div>
+      <Eyebrow style={{ marginBottom: 10 }}>Slides & resources</Eyebrow>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {s.slidesPath && (
+          <a
+            href={slidesPublicUrl(s.slidesPath)}
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)', textDecoration: 'none' }}
+          >
+            <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-3)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center' }}><Icon name="download" size={20} /></div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>Download slides</div>
+              <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.slidesName || 'Presentation'}</div>
+            </div>
+            <Icon name="chevronRight" size={18} stroke={2} style={{ color: T.line2 }} />
+          </a>
+        )}
+        {resources.map((r) => (
+          <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '12px 14px', boxShadow: 'var(--shadow-sm)' }}>
+            <a
+              href={r.path ? slidesPublicUrl(r.path) : r.url ?? '#'}
+              target="_blank"
+              rel="noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, textDecoration: 'none' }}
+            >
+              <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-3)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                <Icon name={r.path ? 'download' : 'arrowRight'} size={18} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</div>
+                <div style={{ fontFamily: T.onest, fontSize: 11, color: T.muted }}>{r.path ? 'File · shared by the speaker' : 'Link · shared by the speaker'}</div>
+              </div>
+            </a>
+            {(amSpeaker || ctx.isAdmin) && (
+              <Press onClick={() => remove(r.id)} style={{ color: confirmId === r.id ? 'var(--wf-negative-9)' : T.line2, padding: 4, fontFamily: T.sig, fontWeight: 600, fontSize: 12.5, flexShrink: 0 }}>
+                {confirmId === r.id ? 'Remove?' : <Icon name="close" size={16} />}
+              </Press>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* speaker tools */}
+      {amSpeaker && (
+        <div style={{ marginTop: 12, background: T.green1, borderRadius: 'var(--radius-4)', padding: 14 }}>
+          <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 13.5, color: T.green11, marginBottom: 10 }}>
+            You're speaking at this session — share materials with attendees.
+          </div>
+          <input ref={fileRef} type="file" onChange={pickFile} style={{ display: 'none' }} />
+          {addingLink ? (
+            <div>
+              <input value={linkLabel} onChange={(e) => setLinkLabel(e.target.value)} placeholder="Label, e.g. Slides on Google Drive" style={inputStyle} />
+              <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://…" style={inputStyle} />
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <Btn kind="default" size="sm" onClick={() => setAddingLink(false)}>Cancel</Btn>
+                <Btn kind="primary" size="sm" onClick={addLink} disabled={!linkLabel.trim() || !linkUrl.trim()}>Share link</Btn>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Btn kind="primary" size="sm" full icon="download" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                {uploading ? 'Uploading…' : 'Upload a file'}
+              </Btn>
+              <Btn kind="outline" size="sm" full icon="share" onClick={() => setAddingLink(true)}>Share a link</Btn>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

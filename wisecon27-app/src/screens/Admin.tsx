@@ -868,6 +868,14 @@ function SpeakerEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
   const [sid] = useState(initial.id ?? 'spx-' + Date.now())
   const [photoUrl, setPhotoUrl] = useState<string | null>(initial.photoUrl ?? null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  // delegate account link — lets the speaker share resources on their sessions
+  const [linkEmail, setLinkEmail] = useState('')
+  useEffect(() => {
+    if (!initial.profileId) return
+    supabase.from('profiles').select('email').eq('id', initial.profileId).maybeSingle().then(({ data }) => {
+      if (data) setLinkEmail((data as { email: string }).email)
+    })
+  }, [initial.profileId])
   const set = (patch: Partial<Speaker>) => setP((x) => ({ ...x, ...patch }))
   const initials = (p.name ?? '').trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
   const onPickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -882,10 +890,22 @@ function SpeakerEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
   const save = async () => {
     if (!p.name?.trim() || saving) return
     setSaving(true)
+    // resolve the delegate link from the email field (blank = unlinked)
+    let profileId: string | null = null
+    const email = linkEmail.trim()
+    if (email) {
+      const { data } = await supabase.from('profiles').select('id').ilike('email', email).maybeSingle()
+      if (!data) {
+        setSaving(false)
+        return ctx.toast('No delegate found with that email')
+      }
+      profileId = (data as { id: string }).id
+    }
     const row = {
       id: sid, name: p.name?.trim(), role: p.role ?? '', org: p.org ?? '',
       initials, color: p.color ?? 'var(--wf-green-9)', bio: p.bio ?? '',
       topics: topics.split(',').map((t) => t.trim()).filter(Boolean), photo_url: photoUrl,
+      profile_id: profileId,
     }
     const { error } = await supabase.from('speakers').upsert(row)
     setSaving(false)
@@ -909,6 +929,9 @@ function SpeakerEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
       <Field label="Organisation"><Text value={p.org ?? ''} onChange={(v) => set({ org: v })} placeholder="University of …" /></Field>
       <Field label="Bio"><Text value={p.bio ?? ''} onChange={(v) => set({ bio: v })} area /></Field>
       <Field label="Topics (comma-separated)"><Text value={topics} onChange={setTopics} placeholder="Integrity, AI" /></Field>
+      <Field label="Linked delegate email (lets them share slides & resources on their sessions)">
+        <Text value={linkEmail} onChange={setLinkEmail} placeholder="speaker@university.edu — blank for no app account" />
+      </Field>
       <Btn kind="primary" full size="lg" onClick={save} disabled={!p.name?.trim() || saving}>{saving ? 'Saving…' : 'Save speaker'}</Btn>
     </div>
   )
