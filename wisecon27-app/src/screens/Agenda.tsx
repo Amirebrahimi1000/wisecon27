@@ -23,9 +23,18 @@ const toMin = (t: string) => +t.slice(0, 2) * 60 + +t.slice(3, 5)
 const PX_PER_MIN = 2.6
 const GUTTER = 44
 
-/* ── Timeline: vertical time axis; parallel sessions as fixed-width columns
-      that scroll horizontally (hour axis stays pinned on the left) ── */
+/* ── Timeline: a true room grid. Every room that day is a column (hour axis
+      pinned, columns scroll horizontally); each session sits under its own
+      room at its real time. Sessions with no room (e.g. lunch) span the
+      whole width as an all-attendee band. ── */
 const COL_W = 158
+const HEADER_H = 30
+
+// order rooms left→right: main stages, then breakouts, then communal spaces
+const roomRank = (r: string) =>
+  /auditorium|main|plenary|hall|stage/i.test(r) ? 0 : /foyer|lobby|atrium|hub/i.test(r) ? 3 : 1
+const byRoom = (a: string, b: string) =>
+  roomRank(a) - roomRank(b) || a.localeCompare(b, undefined, { numeric: true })
 
 function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -39,48 +48,10 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
   const maxEnd = Math.max(...list.map((s) => toMin(s.end)))
   const top = (m: number) => (m - minStart) * PX_PER_MIN
 
-  // cluster transitively-overlapping sessions, assign columns within a cluster
-  const sorted = [...list].sort((a, b) => toMin(a.start) - toMin(b.start) || a.room.localeCompare(b.room))
-  interface Placed { s: Session; col: number; cols: number }
-  const placed: Placed[] = []
-  let cluster: { items: { s: Session; col: number }[]; colEnds: number[]; maxEnd: number } | null = null
-  const flush = () => {
-    if (!cluster) return
-    for (const it of cluster.items) placed.push({ s: it.s, col: it.col, cols: cluster.colEnds.length })
-    cluster = null
-  }
-  for (const s of sorted) {
-    const st = toMin(s.start)
-    if (!cluster || st >= cluster.maxEnd) {
-      flush()
-      cluster = { items: [], colEnds: [], maxEnd: 0 }
-    }
-    const c = cluster!
-    let col = c.colEnds.findIndex((end) => end <= st)
-    if (col === -1) {
-      col = c.colEnds.length
-      c.colEnds.push(0)
-    }
-    c.colEnds[col] = toMin(s.end)
-    c.items.push({ s, col })
-    c.maxEnd = Math.max(c.maxEnd, toMin(s.end))
-  }
-  flush()
-
-  // anchor parallel sessions to consistent room columns across the whole day
-  // (Brella-style): same room = same column everywhere, with a header row
-  const roomCols = [...new Set(placed.filter((p) => p.cols > 1).map((p) => p.s.room))].sort((a, b) =>
-    a.localeCompare(b, undefined, { numeric: true }),
-  )
-  for (const pl of placed) {
-    if (pl.cols > 1) {
-      const idx = roomCols.indexOf(pl.s.room)
-      if (idx !== -1) pl.col = idx
-      pl.cols = Math.max(roomCols.length, pl.cols)
-    }
-  }
-  const maxCols = Math.max(1, roomCols.length, ...placed.map((p) => p.cols))
-  const HEADER_H = roomCols.length > 1 ? 30 : 0
+  // one column per distinct room; roomless sessions become full-width bands
+  const rooms = [...new Set(list.map((s) => s.room).filter(Boolean))].sort(byRoom)
+  const colOf = (room: string) => rooms.indexOf(room)
+  const cols = Math.max(1, rooms.length)
 
   const hours: number[] = []
   for (let h = Math.ceil(minStart / 60); h * 60 <= maxEnd; h++) hours.push(h)
@@ -98,22 +69,22 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
       </div>
       {/* horizontally scrollable columns */}
       <div ref={scrollRef} onScroll={checkMore} className="wc-noscroll" style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden' }}>
-        <div style={{ position: 'relative', height, width: maxCols * COL_W, minWidth: '100%' }}>
+        <div style={{ position: 'relative', height, width: cols * COL_W, minWidth: '100%' }}>
           {hours.map((h) => (
             <div key={h} style={{ position: 'absolute', top: top(h * 60) + HEADER_H, left: 0, right: 0, borderTop: '1px solid ' + T.line }} />
           ))}
-          {roomCols.length > 1 &&
-            roomCols.map((room, i) => (
-              <div key={room} style={{ position: 'absolute', top: 0, left: i * COL_W + (i === 0 ? 0 : 3), width: COL_W - 3, height: HEADER_H - 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'var(--wf-grey-4)', borderRadius: 999, fontFamily: T.onest, fontWeight: 600, fontSize: 10.5, color: T.body, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '0 8px' }}>
-                <Icon name="pin" size={11} style={{ flexShrink: 0, color: T.muted }} />
-                {room}
-              </div>
-            ))}
-          {placed.map(({ s, col, cols }) => {
+          {rooms.map((room, i) => (
+            <div key={room} style={{ position: 'absolute', top: 0, left: i * COL_W + (i === 0 ? 0 : 3), width: COL_W - 3, height: HEADER_H - 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'var(--wf-grey-4)', borderRadius: 999, fontFamily: T.onest, fontWeight: 600, fontSize: 10.5, color: T.body, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '0 8px' }}>
+              <Icon name="pin" size={11} style={{ flexShrink: 0, color: T.muted }} />
+              {room}
+            </div>
+          ))}
+          {list.map((s) => {
             const tr = TRACKS[s.track]
             const isBreak = s.type === 'break'
             const h = Math.max((toMin(s.end) - toMin(s.start)) * PX_PER_MIN - 3, 26)
-            const full = cols === 1
+            const col = colOf(s.room)
+            const full = col === -1 // no room → all-attendee band across every column
             return (
               <Press
                 key={s.id}
@@ -152,7 +123,7 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
         </div>
       </div>
       {/* "more columns this way" hint */}
-      {maxCols > 2 && moreRight && (
+      {cols > 2 && moreRight && (
         <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 46, pointerEvents: 'none', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', paddingTop: 80, background: 'linear-gradient(90deg, transparent, var(--wf-grey-2) 80%)' }}>
           <span className="wc-nudge-x" style={{ display: 'inline-flex', color: T.muted, position: 'sticky', top: 200 }}>
             <Icon name="chevronRight" size={18} stroke={2.2} />

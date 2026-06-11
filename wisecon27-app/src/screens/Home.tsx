@@ -120,7 +120,10 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
                 : clock.phase === 'ended' ? 'Event ended'
                 : ctx.event.dateline}
             </span>
-            <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} color="#fff" bg="rgba(255,255,255,0.16)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <IconBtn name="qr" onClick={() => ctx.push('ticket', {})} color="#fff" bg="rgba(255,255,255,0.16)" />
+              <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} color="#fff" bg="rgba(255,255,255,0.16)" />
+            </div>
           </div>
           <div style={{ marginTop: 26 }}>
             <div style={{ fontFamily: T.onest, fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>Good morning, {ctx.me.name.split(' ')[0]}</div>
