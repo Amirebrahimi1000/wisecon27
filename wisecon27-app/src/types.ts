@@ -203,6 +203,8 @@ export interface FeedPost {
   createdAt: string
   likes: number
   liked: boolean
+  // storage path in the private wall-photos bucket (rendered via signed URL)
+  photoPath?: string | null
 }
 
 export interface Activity {

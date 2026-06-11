@@ -33,6 +33,47 @@ export async function uploadResource(sessionId: string, file: File): Promise<{ p
   return { path, name: file.name, error: null }
 }
 
+/* ── community photo wall (private bucket; delegates-only via signed URLs) ── */
+
+/** Re-encode an image via canvas: strips ALL metadata (EXIF/GPS), fixes
+ *  orientation, caps dimensions, and compresses to JPEG. */
+async function recompressImage(file: File, maxDim = 1600, quality = 0.82): Promise<Blob | null> {
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' })
+    const scale = Math.min(1, maxDim / Math.max(bmp.width, bmp.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(bmp.width * scale))
+    canvas.height = Math.max(1, Math.round(bmp.height * scale))
+    canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height)
+    return await new Promise((res) => canvas.toBlob(res, 'image/jpeg', quality))
+  } catch {
+    return null
+  }
+}
+
+/** Upload a wall photo into the user's own folder of the PRIVATE bucket. */
+export async function uploadWallPhoto(userId: string, file: File): Promise<{ path: string | null; error: string | null }> {
+  const blob = await recompressImage(file)
+  if (!blob) return { path: null, error: 'That image could not be read — try another photo' }
+  const path = `${userId}/${Date.now()}.jpg`
+  const { error } = await supabase.storage.from('wall-photos').upload(path, blob, { contentType: 'image/jpeg' })
+  if (error) return { path: null, error: error.message }
+  return { path, error: null }
+}
+
+/** Short-lived signed URLs so only signed-in delegates can view wall photos. */
+export async function wallPhotoUrls(paths: string[]): Promise<Record<string, string>> {
+  if (!paths.length) return {}
+  const { data } = await supabase.storage.from('wall-photos').createSignedUrls(paths, 60 * 60)
+  const out: Record<string, string> = {}
+  for (const r of data ?? []) if (r.signedUrl && r.path) out[r.path] = r.signedUrl
+  return out
+}
+
+export async function removeWallPhoto(path: string) {
+  await supabase.storage.from('wall-photos').remove([path])
+}
+
 /** Upload a speaker photo (admin only) to the public session-files bucket. */
 export async function uploadSpeakerPhoto(speakerId: string, file: File): Promise<{ url: string | null; error: string | null }> {
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()

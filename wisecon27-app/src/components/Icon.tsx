@@ -9,7 +9,7 @@ export type IconName =
   | 'starFill' | 'send' | 'plus' | 'minus' | 'share' | 'sparkles' | 'shield'
   | 'qr' | 'message' | 'arrowRight' | 'arrowUp' | 'ticket' | 'mic' | 'coffee'
   | 'poll' | 'map' | 'info' | 'logout' | 'settings' | 'heart' | 'grid' | 'list'
-  | 'wifi' | 'download'
+  | 'wifi' | 'download' | 'camera'
 
 interface IconProps {
   name: IconName
@@ -70,6 +70,7 @@ export function Icon({ name, size = 24, stroke = 1.8, style = {} }: IconProps) {
     list: <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" {...P} />,
     wifi: <><path d="M3 9a14 14 0 0 1 18 0M6 12.5a9 9 0 0 1 12 0M9 16a4 4 0 0 1 6 0" {...P} /><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" /></>,
     download: <><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5" {...P} /><path d="M5 19h14" {...P} /></>,
+    camera: <><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.4-2h5.2L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z" {...P} /><circle cx="12" cy="13" r="3.4" {...P} /></>,
   }
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} style={{ display: 'block', flexShrink: 0, ...style }}>
