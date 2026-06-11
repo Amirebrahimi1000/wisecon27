@@ -562,7 +562,7 @@ function Announce({ ctx }: { ctx: AppCtx }) {
 }
 
 /* ════════ Event info & Wi-Fi ════════ */
-const INFO_ICONS: IconName[] = ['wifi', 'shield', 'pin', 'clock', 'coffee', 'info', 'map', 'ticket', 'star', 'heart']
+const INFO_ICONS: IconName[] = ['wifi', 'shield', 'pin', 'clock', 'coffee', 'info', 'map', 'ticket', 'star', 'heart', 'camera']
 function EventInfo({ ctx }: { ctx: AppCtx }) {
   const [editing, setEditing] = useState<(Partial<EventInfoItem> & { id?: string }) | null>(null)
   if (editing) return <EventInfoEditor ctx={ctx} initial={editing} onDone={() => setEditing(null)} />
