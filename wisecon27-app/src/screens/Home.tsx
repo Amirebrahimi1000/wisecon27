@@ -92,8 +92,9 @@ const QUICK: QuickAction[] = [
 const runQuick = (ctx: AppCtx, q: QuickAction) => (q.tab ? ctx.setTab(q.tab) : ctx.push(q.push!, {}))
 
 /* ════════ Suggested for you (personalised recommendations) ════════ */
-// Sessions are matched against my interests (tags, track name, speaker topics);
-// when I haven't set interests yet, fall back to the most popular sessions.
+// Sessions are matched against my interests (tags, track name, speaker topics).
+// No interests = no guessing: we invite the delegate to add some instead of
+// padding the section with generic picks.
 function suggestionsFor(ctx: AppCtx) {
   const myInts = ctx.me.interests.map((i) => i.toLowerCase()).filter(Boolean)
   const eligible = (s: Session) => !ctx.isBookmarked(s.id) && s.type !== 'break' && s.type !== 'social'
@@ -101,34 +102,45 @@ function suggestionsFor(ctx: AppCtx) {
     const hay = [...(s.tags ?? []), TRACKS[s.track].name, ...ctx.speakersOf(s).flatMap((p) => p.topics)].map((x) => x.toLowerCase())
     return myInts.filter((i) => hay.some((h) => h.includes(i) || i.includes(h))).length
   }
-  let personal = true
-  let sessions = ctx.sessions
+  const sessions = ctx.sessions
     .filter(eligible)
     .map((s) => ({ s, n: score(s) }))
     .filter((x) => x.n > 0)
     .sort((a, b) => b.n - a.n || b.s.going - a.s.going)
     .slice(0, 4)
     .map((x) => x.s)
-  if (sessions.length === 0) {
-    personal = false
-    sessions = ctx.sessions.filter(eligible).sort((a, b) => b.going - a.going).slice(0, 4)
-  }
   const people = ctx.attendees
     .filter((a) => a.status === 'connect' && !a.hidden && a.mutual > 0)
     .sort((a, b) => b.mutual - a.mutual)
     .slice(0, 3)
-  return { sessions, people, personal }
+  return { sessions, people, hasInterests: myInts.length > 0 }
 }
 
 function SuggestedSection({ ctx }: { ctx: AppCtx }) {
-  const { sessions, people, personal } = suggestionsFor(ctx)
+  const { sessions, people, hasInterests } = suggestionsFor(ctx)
+  // no interests yet → one honest, actionable card instead of generic picks
+  if (!hasInterests) {
+    return (
+      <div style={{ padding: '24px 16px 0' }}>
+        <Press onClick={() => ctx.push('editprofile', {})} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 16, boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name="sparkles" size={19} /></div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>Get personal suggestions</div>
+            <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginTop: 1, lineHeight: 1.4 }}>Add a few interests to your profile and we'll match sessions and people for you.</div>
+          </div>
+          <Icon name="chevronRight" size={18} stroke={2} style={{ color: T.muted }} />
+        </Press>
+      </div>
+    )
+  }
+  // interests set but nothing matches the programme → show nothing rather than guess
   if (sessions.length === 0 && people.length === 0) return null
   return (
     <div style={{ paddingTop: 24 }}>
       <div style={{ padding: '0 16px' }}>
         <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink, marginBottom: 4 }}>Suggested for you</div>
         <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginBottom: 12, lineHeight: 1.4 }}>
-          {personal ? 'Matched to the interests on your profile.' : 'Popular with fellow delegates — add interests to your profile to personalise this.'}
+          Matched to the interests on your profile.
         </div>
       </div>
       {sessions.length > 0 && (
