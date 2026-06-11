@@ -150,6 +150,20 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
   const [editId, setEditId] = useState<string | null>(null)
   const [extras, setExtras] = useState<Record<string, { delegate_type: string; gala: boolean; checked_in_at: string | null; is_staff: boolean }>>({})
   const [attFilter, setAttFilter] = useState<'all' | 'in' | 'out'>('all')
+  const [adminConfirm, setAdminConfirm] = useState<string | null>(null)
+
+  // promote / demote organiser (admin) — confirmed, and you can't demote yourself
+  const setAdmin = async (d: DelegateRow, next: boolean) => {
+    if (d.id === ctx.userId) { setAdminConfirm(null); return ctx.toast('You can’t change your own organiser access') }
+    setAdminConfirm(null)
+    setRoster((rs) => rs.map((r) => (r.id === d.id ? { ...r, is_admin: next } : r)))
+    const { error } = await supabase.from('profiles').update({ is_admin: next }).eq('id', d.id)
+    if (error) {
+      setRoster((rs) => rs.map((r) => (r.id === d.id ? { ...r, is_admin: !next } : r)))
+      return ctx.toast(error.message)
+    }
+    ctx.toast(next ? `${d.name || d.email} is now an organiser` : `Organiser access removed for ${d.name || d.email}`)
+  }
 
   const syncHubspot = async () => {
     if (syncing) return
@@ -255,7 +269,7 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
             <div key={d.id} style={{ borderBottom: i === filtered.length - 1 ? 'none' : '1px solid ' + T.line }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px' }}>
                 <Avatar initials={initials(d)} color={d.is_admin ? 'var(--wf-green-9)' : 'var(--wf-blue-9)'} size={38} src={d.avatar_url} />
-                <Press onClick={() => setEditId(editId === d.id ? null : d.id)} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                <Press onClick={() => { setAdminConfirm(null); setEditId(editId === d.id ? null : d.id) }} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
                   <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink, display: 'flex', alignItems: 'center', gap: 6 }}>
                     {d.name || d.email.split('@')[0]}
                     {d.is_admin && <span style={{ fontFamily: T.onest, fontSize: 10, color: T.green10, background: T.green1, borderRadius: 999, padding: '1px 7px' }}>ADMIN</span>}
@@ -271,22 +285,41 @@ function Delegates({ ctx }: { ctx: AppCtx }) {
                 </Press>
               </div>
               {editId === d.id && (
-                <div style={{ padding: '0 14px 13px', display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <select
-                    value={asDelegateType(ex.delegate_type)}
-                    onChange={(e) => setExtra({ delegate_type: e.target.value as DelegateType })}
-                    style={{ ...inputStyle, flex: 1, padding: '9px 10px', fontSize: 13.5 }}
-                  >
-                    {(Object.keys(BADGE_TYPES) as DelegateType[]).map((k) => (
-                      <option key={k} value={k}>{BADGE_TYPES[k].label}</option>
-                    ))}
-                  </select>
-                  <Btn kind={ex.gala ? 'dark' : 'outline'} size="sm" icon="star" onClick={() => setExtra({ gala: !ex.gala })}>
-                    {ex.gala ? 'Gala ✓' : 'Gala'}
-                  </Btn>
-                  <Btn kind={ex.is_staff ? 'secondary' : 'outline'} size="sm" icon="qr" onClick={() => setExtra({ is_staff: !ex.is_staff })}>
-                    {ex.is_staff ? 'Staff ✓' : 'Staff'}
-                  </Btn>
+                <div style={{ padding: '0 14px 13px' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <select
+                      value={asDelegateType(ex.delegate_type)}
+                      onChange={(e) => setExtra({ delegate_type: e.target.value as DelegateType })}
+                      style={{ ...inputStyle, flex: '1 1 100%', padding: '9px 10px', fontSize: 13.5 }}
+                    >
+                      {(Object.keys(BADGE_TYPES) as DelegateType[]).map((k) => (
+                        <option key={k} value={k}>{BADGE_TYPES[k].label}</option>
+                      ))}
+                    </select>
+                    <Btn kind={ex.gala ? 'dark' : 'outline'} size="sm" icon="star" onClick={() => setExtra({ gala: !ex.gala })}>
+                      {ex.gala ? 'Gala ✓' : 'Gala'}
+                    </Btn>
+                    <Btn kind={ex.is_staff ? 'secondary' : 'outline'} size="sm" icon="qr" onClick={() => setExtra({ is_staff: !ex.is_staff })}>
+                      {ex.is_staff ? 'Staff ✓' : 'Staff'}
+                    </Btn>
+                    {d.id !== ctx.userId && (
+                      <Btn
+                        kind={adminConfirm === d.id ? 'danger' : d.is_admin ? 'secondary' : 'outline'}
+                        size="sm"
+                        icon="shield"
+                        onClick={() => (adminConfirm === d.id ? setAdmin(d, !d.is_admin) : setAdminConfirm(d.id))}
+                      >
+                        {adminConfirm === d.id ? (d.is_admin ? 'Remove organiser?' : 'Make organiser?') : d.is_admin ? 'Organiser ✓' : 'Organiser'}
+                      </Btn>
+                    )}
+                  </div>
+                  {adminConfirm === d.id && (
+                    <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.subtle, marginTop: 8, lineHeight: 1.45 }}>
+                      {d.is_admin
+                        ? 'Removes full organiser access (reports, delegate data, event editing).'
+                        : 'Grants full organiser access — including delegate data and survey exports. Tap again to confirm, or tap elsewhere to cancel.'}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
