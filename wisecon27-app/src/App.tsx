@@ -179,14 +179,48 @@ function AuthedApp() {
   const [, bumpResume] = useState(0)
   const resumeStep = tourResumeStep()
 
+  // ── notification deep links: '#nav=<target>' from a push notification ──
+  // (latest ctx via ref so the service-worker listener never goes stale)
+  const ctxRef = useRef(ctx)
+  ctxRef.current = ctx
+  const runNav = (nav: string) => {
+    const c = ctxRef.current
+    if (nav === 'connect') c.setTab('connect')
+    else if (nav === 'meetings') c.push('meetings', {})
+    else if (nav === 'notifications') c.push('notifications', {})
+    else if (nav === 'community') c.push('community', {})
+    else if (nav.startsWith('conversation:')) c.push('conversation', { peerId: nav.split(':')[1] })
+  }
+  const navRef = useRef(runNav)
+  navRef.current = runNav
+
+  // while the app is open: the service worker forwards notification taps
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      const d = e.data as { type?: string; url?: string } | null
+      if (d?.type !== 'navigate' || !d.url) return
+      const m = String(d.url).match(/#nav=([^&]+)/)
+      if (m) navRef.current(decodeURIComponent(m[1]))
+    }
+    navigator.serviceWorker?.addEventListener('message', onMsg)
+    return () => navigator.serviceWorker?.removeEventListener('message', onMsg)
+  }, [])
+
   // first sign-in on this device → open the app tour (once; the tour's
-  // "don't show again" checkbox decides whether it returns next session)
+  // "don't show again" checkbox decides whether it returns next session).
+  // A deep-linked launch takes priority: the user arrived with a purpose.
   const tourOpened = useRef(false)
   const profileReady = !ctx.loading && !!ctx.me.name.trim()
   useEffect(() => {
-    if (!profileReady || tourOpened.current || tourSeen()) return
+    if (!profileReady || tourOpened.current) return
     tourOpened.current = true
-    ctx.push('tour', {})
+    const m = window.location.hash.match(/^#nav=(.+)$/)
+    if (m) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      navRef.current(decodeURIComponent(m[1]))
+      return
+    }
+    if (!tourSeen()) ctx.push('tour', {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileReady])
 

@@ -536,9 +536,12 @@ function Announce({ ctx }: { ctx: AppCtx }) {
       setSaving(false)
       return ctx.toast(error.message)
     }
-    // also fire device push (no-op if the edge function isn't deployed yet)
+    // also fire device push (no-op if the edge function isn't deployed yet);
+    // tapping the notification lands on the Notifications feed
     try {
-      await supabase.functions.invoke('send-push', { body: { title: title.trim(), body: body.trim() } })
+      await supabase.functions.invoke('send-push', {
+        body: { title: title.trim(), body: body.trim(), url: window.location.origin + import.meta.env.BASE_URL + '#nav=notifications' },
+      })
     } catch {
       /* in-app announcement already delivered; push is best-effort */
     }

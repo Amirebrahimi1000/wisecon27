@@ -283,6 +283,7 @@ export function SessionRow({
 }) {
   const t = TRACKS[s.track]
   const isBreak = s.type === 'break' || s.type === 'social'
+  const isMeeting = s.id.startsWith('mtg:') // 1:1 meeting riding along in the agenda
   const sp = speakersOf(s)
   return (
     <Press onClick={() => onOpen(s)} style={{ display: 'flex', gap: 12, padding: '14px 16px', alignItems: 'stretch', background: 'var(--wf-surface)' }}>
@@ -293,7 +294,12 @@ export function SessionRow({
       <div style={{ width: 3, borderRadius: 3, background: t.dot, flexShrink: 0, opacity: isBreak ? 0.4 : 1 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-          {!isBreak ? (
+          {isMeeting ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: T.green10, fontFamily: T.onest, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <Icon name="connect" size={14} stroke={2} />
+              1:1 meeting
+            </span>
+          ) : !isBreak ? (
             <TrackTag track={s.track} />
           ) : (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: T.subtle, fontFamily: T.onest, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>

@@ -37,9 +37,14 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close()
   const url = (event.notification.data?.url as string) || self.registration.scope
   event.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then((clients) => {
-      const open = clients.find((c) => 'focus' in c)
-      if (open) return (open as WindowClient).focus()
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const open = clients.find((c) => 'focus' in c) as WindowClient | undefined
+      if (open) {
+        // app already running: focus it and let it route to the right screen
+        open.postMessage({ type: 'navigate', url })
+        return open.focus()
+      }
+      // cold start: the app reads the #nav= hash on load
       return self.clients.openWindow(url)
     }),
   )

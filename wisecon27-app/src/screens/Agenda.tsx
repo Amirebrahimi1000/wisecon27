@@ -24,6 +24,11 @@ const toMin = (t: string) => +t.slice(0, 2) * 60 + +t.slice(3, 5)
 const PX_PER_MIN = 2.6
 const GUTTER = 44
 
+// Accepted 1:1 meetings ride along in every agenda view as pseudo-sessions
+// (id-prefixed); tapping one opens My meetings instead of a session page.
+const isMeetingItem = (s: Session) => s.id.startsWith('mtg:')
+const openItem = (ctx: AppCtx, s: Session) => (isMeetingItem(s) ? ctx.push('meetings', {}) : ctx.openSession(s))
+
 /* ── Timeline: a true room grid. Every room that day is a column (hour axis
       pinned, columns scroll horizontally); each session sits under its own
       room at its real time. Sessions with no room (e.g. lunch) span the
@@ -49,8 +54,9 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
   const maxEnd = Math.max(...list.map((s) => toMin(s.end)))
   const top = (m: number) => (m - minStart) * PX_PER_MIN
 
-  // one column per distinct room; roomless sessions become full-width bands
-  const rooms = [...new Set(list.map((s) => s.room).filter(Boolean))].sort(byRoom)
+  // one column per distinct room; roomless sessions (and 1:1 meetings, whose
+  // "room" is a meeting point) become full-width bands
+  const rooms = [...new Set(list.filter((s) => !isMeetingItem(s)).map((s) => s.room).filter(Boolean))].sort(byRoom)
   const colOf = (room: string) => rooms.indexOf(room)
   const cols = Math.max(1, rooms.length)
 
@@ -89,7 +95,7 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
             return (
               <Press
                 key={s.id}
-                onClick={() => ctx.openSession(s)}
+                onClick={() => openItem(ctx, s)}
                 style={{
                   position: 'absolute',
                   top: top(toMin(s.start)) + HEADER_H,
@@ -100,8 +106,8 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
                   borderRadius: 'var(--radius-3)',
                   overflow: 'hidden',
                   textAlign: 'left',
-                  background: isBreak ? 'var(--wf-grey-3)' : 'var(--wf-surface)',
-                  boxShadow: isBreak ? 'none' : 'var(--shadow-sm), inset 3px 0 0 ' + tr.dot,
+                  background: isMeetingItem(s) ? T.green1 : isBreak ? 'var(--wf-grey-3)' : 'var(--wf-surface)',
+                  boxShadow: isMeetingItem(s) ? 'inset 3px 0 0 ' + T.green9 : isBreak ? 'none' : 'var(--shadow-sm), inset 3px 0 0 ' + tr.dot,
                   padding: '6px 8px 6px 11px',
                 }}
               >
@@ -142,7 +148,7 @@ function CompactList({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
       {list.map((s, i) => {
         const tr = TRACKS[s.track]
         return (
-          <Press key={s.id} onClick={() => ctx.openSession(s)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '9px 12px', borderBottom: i === list.length - 1 ? 'none' : '1px solid ' + T.line }}>
+          <Press key={s.id} onClick={() => openItem(ctx, s)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '9px 12px', background: isMeetingItem(s) ? T.green1 : 'transparent', borderBottom: i === list.length - 1 ? 'none' : '1px solid ' + T.line }}>
             <span style={{ fontFamily: T.onest, fontWeight: 600, fontSize: 12, color: T.body, width: 38, flexShrink: 0 }}>{s.start}</span>
             <span style={{ width: 7, height: 7, borderRadius: 999, background: tr.dot, flexShrink: 0 }} />
             <span style={{ flex: 1, minWidth: 0, fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: s.type === 'break' ? T.muted : T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
@@ -163,9 +169,21 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
     setViewState(v)
     try { localStorage.setItem(VIEW_KEY, v) } catch { /* ignore */ }
   }
-  const list = ctx.sessions.filter((s) => s.day === day && (track === 'all' || s.track === track)).sort((a, b) =>
-    a.start.localeCompare(b.start),
-  )
+  // my accepted 1:1 meetings join the day's programme (track filter doesn't
+  // hide them — they're personal commitments, not programme content)
+  const meetingItems: Session[] = ctx.meetings
+    .filter((m) => m.status === 'accepted' && m.day === day)
+    .map((m) => ({
+      id: 'mtg:' + m.id, day: m.day, start: m.start, end: m.end,
+      title: 'Meeting with ' + ctx.nameFor(m.requesterId === ctx.userId ? m.inviteeId : m.requesterId),
+      type: 'social' as const, track: 'plenary' as const,
+      room: ctx.meetingPoints.find((p) => p.id === m.pointId)?.label ?? 'Meeting point TBC',
+      speakers: [], desc: '', going: 0,
+    }))
+  const list = [
+    ...ctx.sessions.filter((s) => s.day === day && (track === 'all' || s.track === track)),
+    ...meetingItems,
+  ].sort((a, b) => a.start.localeCompare(b.start))
   const VIEWS: { id: AgendaView; label: string }[] = [
     { id: 'timeline', label: 'Timeline' },
     { id: 'linear', label: 'Linear' },
@@ -227,7 +245,7 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
                 borderBottom: i === list.length - 1 ? 'none' : '1px solid ' + T.line,
               }}
             >
-              <SessionRow s={s} bookmarked={ctx.isBookmarked(s.id)} onToggle={() => ctx.toggleBookmark(s.id)} onOpen={ctx.openSession} />
+              <SessionRow s={s} bookmarked={ctx.isBookmarked(s.id)} onToggle={() => ctx.toggleBookmark(s.id)} onOpen={(x) => openItem(ctx, x)} />
             </div>
           ))}
         {list.length === 0 && (

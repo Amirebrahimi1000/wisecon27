@@ -5,6 +5,7 @@ import type { AppCtx } from '../appState'
 import type { Meeting } from '../types'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Empty, Eyebrow, Press } from '../components/primitives'
+import { FirstTimeHint } from '../components/Hint'
 
 function MeetingCard({ ctx, m }: { ctx: AppCtx; m: Meeting }) {
   const incoming = m.inviteeId === ctx.userId
@@ -72,6 +73,7 @@ export function Meetings({ ctx }: { ctx: AppCtx }) {
   return (
     <div>
       <AppHeader title="My meetings" sub="1:1 networking" onBack={ctx.back} />
+      <FirstTimeHint id="meetings" text="Confirmed meetings appear in your agenda, on Home and in your calendar export — and if a suggested time doesn't fit, reply with a new one." />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {/* when can people book me? */}
         <Press onClick={() => ctx.push('availability', {})} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 18 }}>

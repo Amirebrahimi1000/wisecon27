@@ -547,10 +547,12 @@ export function useAppState(): AppCtx {
     }
   }
 
-  // best-effort device push to one delegate (no-op if function/subscription absent)
-  const pushTo = (toUserId: string, kind: 'connect' | 'message', title: string, body: string) => {
+  // best-effort device push to one delegate (no-op if function/subscription
+  // absent). `nav` deep-links the notification tap to a screen via #nav=…
+  const pushTo = (toUserId: string, kind: 'connect' | 'message', title: string, body: string, nav?: string) => {
+    const url = window.location.origin + import.meta.env.BASE_URL + (nav ? '#nav=' + nav : '')
     supabase.functions
-      .invoke('notify-user', { body: { toUserId, kind, title, body, url: import.meta.env.BASE_URL } })
+      .invoke('notify-user', { body: { toUserId, kind, title, body, url } })
       .catch(() => {})
   }
 
@@ -562,7 +564,7 @@ export function useAppState(): AppCtx {
     } else {
       setConnRows((prev) => [...prev.filter((c) => !(c.requester_id === userId && c.target_id === id)), { requester_id: userId, target_id: id, status }])
       supabase.from('connections').upsert({ requester_id: userId, target_id: id, status }).then()
-      if (status === 'pending') pushTo(id, 'connect', (me.name || 'Someone') + ' wants to connect', 'Open WISEcon27 to view the request.')
+      if (status === 'pending') pushTo(id, 'connect', (me.name || 'Someone') + ' wants to connect', 'Open WISEcon27 to view the request.', 'connect')
     }
   }
 
@@ -570,7 +572,7 @@ export function useAppState(): AppCtx {
     setConnRows((prev) => prev.map((c) => (c.requester_id === id && c.target_id === userId ? { ...c, status: 'connected' } : c)))
     setAttendees((prev) => prev.map((a) => (a.id === id ? { ...a, status: 'connected' } : a)))
     supabase.from('connections').update({ status: 'connected' }).eq('requester_id', id).eq('target_id', userId).then()
-    pushTo(id, 'connect', (me.name || 'Someone') + ' accepted your request', 'You’re now connected — say hello on WISEcon27.')
+    pushTo(id, 'connect', (me.name || 'Someone') + ' accepted your request', 'You’re now connected — say hello on WISEcon27.', 'conversation:' + userId)
     toast('Connected')
   }
 
@@ -590,7 +592,7 @@ export function useAppState(): AppCtx {
       .single()
     if (!error && data) {
       setMessages((prev) => [...prev, mapMessage(data as MessageRow)])
-      pushTo(peerId, 'message', me.name || 'New message', text.length > 120 ? text.slice(0, 117) + '…' : text)
+      pushTo(peerId, 'message', me.name || 'New message', text.length > 120 ? text.slice(0, 117) + '…' : text, 'conversation:' + userId)
     } else if (error) {
       toast('Could not send message')
     }
@@ -621,7 +623,7 @@ export function useAppState(): AppCtx {
       return false
     }
     setMeetings((prev) => [...prev, mapMeeting(data as MeetingRow)])
-    pushTo(peerId, 'connect', (me.name || 'Someone') + ' suggested a meeting', `${start}–${end} — open WISEcon27 to respond.`)
+    pushTo(peerId, 'connect', (me.name || 'Someone') + ' suggested a meeting', `${start}–${end} — open WISEcon27 to respond.`, 'meetings')
     return true
   }
 
@@ -630,7 +632,7 @@ export function useAppState(): AppCtx {
     setMeetings((prev) => prev.map((x) => (x.id === id ? { ...x, status } : x)))
     supabase.from('meetings').update({ status }).eq('id', id).then()
     if (m && status === 'accepted') {
-      pushTo(m.requesterId, 'connect', (me.name || 'Someone') + ' accepted your meeting', `${m.start}–${m.end} — see My meetings for the spot.`)
+      pushTo(m.requesterId, 'connect', (me.name || 'Someone') + ' accepted your meeting', `${m.start}–${m.end} — see My meetings for the spot.`, 'meetings')
       toast('Meeting confirmed')
     }
   }
