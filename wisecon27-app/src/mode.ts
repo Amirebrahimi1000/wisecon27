@@ -72,7 +72,14 @@ export function initTextSize() {
    reports the true height, so we measure it and drive layout from a
    custom property instead of CSS units. */
 export function initAppHeight() {
+  const isTyping = () => {
+    const el = document.activeElement
+    return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
+  }
   const set = () => {
+    // while the keyboard is up iOS may report a shrunken window — skip those
+    // measurements so the app does not get stuck short after typing
+    if (isTyping()) return
     document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px')
     // when iOS cuts the window short (the band bug), the home indicator sits
     // OUTSIDE the window — safe-area nav padding would be dead space
@@ -80,10 +87,17 @@ export function initAppHeight() {
     document.documentElement.style.setProperty('--nav-safe', cutShort ? '0px' : 'env(safe-area-inset-bottom, 0px)')
   }
   set()
-  // iOS reports stale values on cold start — re-measure a few times
-  setTimeout(set, 100)
-  setTimeout(set, 500)
-  setTimeout(set, 1500)
+  // iOS reports stale values around launch — re-measure repeatedly early on
+  for (const ms of [100, 300, 600, 1000, 2000, 4000]) setTimeout(set, ms)
   window.addEventListener('resize', set)
   window.addEventListener('orientationchange', () => setTimeout(set, 300))
+  // recover after typing (keyboard closed) and when returning to the app
+  document.addEventListener('focusout', () => setTimeout(set, 350))
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      set()
+      setTimeout(set, 300)
+    }
+  })
 }
+
