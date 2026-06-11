@@ -8,6 +8,7 @@ import type { AppCtx } from '../appState'
 import type { Session, TrackId } from '../types'
 import { Icon } from '../components/Icon'
 import { AppHeader, ChipRow, Chip, IconBtn, Press, SessionRow } from '../components/primitives'
+import { FirstTimeHint } from '../components/Hint'
 
 type AgendaView = 'timeline' | 'linear' | 'list'
 const VIEW_KEY = 'wc27.agendaview'
@@ -173,6 +174,7 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
   return (
     <div>
       <AppHeader title="Agenda" sub={[ctx.event.dateline, ctx.event.location].filter(Boolean).join(' · ')} right={<IconBtn name="search" onClick={() => ctx.toast('Search coming soon')} />} />
+      <FirstTimeHint id="agenda" text="Bookmark sessions to build your personal plan — it shows on Home, in My schedule, and exports to your calendar." />
       {/* day selector */}
       <div style={{ display: 'flex', gap: 8, padding: '14px 16px 4px' }}>
         {ctx.days.map((d) => {

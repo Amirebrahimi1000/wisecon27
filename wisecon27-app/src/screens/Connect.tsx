@@ -5,6 +5,7 @@ import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { Attendee } from '../types'
 import { AppHeader, Avatar, Btn, Divider, Empty, Press } from '../components/primitives'
+import { FirstTimeHint } from '../components/Hint'
 import { QR } from '../components/QR'
 
 function relTime(iso: string) {
@@ -43,6 +44,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
   return (
     <div>
       <AppHeader title="Connect" sub="Meet fellow delegates" />
+      <FirstTimeHint id="connect" text="Open any delegate's profile to suggest a 1:1 meeting — pick a time slot and a meeting point, and set your own availability under My meetings." />
 
       {/* your badge card */}
       <div style={{ padding: '12px 16px 0' }}>

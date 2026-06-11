@@ -3,7 +3,7 @@
 // tour stays reachable from Profile and Event info.
 import { useState } from 'react'
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
-import type { AppCtx } from '../appState'
+import type { AppCtx, PushScreen, TabId } from '../appState'
 import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
 import { Btn, Press } from '../components/primitives'
@@ -21,6 +21,8 @@ interface Step {
   title: string
   body: string
   hint?: string
+  // "Try it now": closes the tour and lands on the real screen
+  cta?: { label: string; tab?: TabId; push?: PushScreen }
 }
 
 const STEPS: Step[] = [
@@ -35,30 +37,35 @@ const STEPS: Step[] = [
     title: 'Build your own plan',
     body: 'Browse the Agenda in timeline, detailed or list view and bookmark what you like. Your day shows up on Home, and My schedule exports straight to your calendar.',
     hint: 'Agenda tab · bookmark icon on any session',
+    cta: { label: 'Open the Agenda', tab: 'agenda' },
   },
   {
     icon: 'connect',
     title: 'Meet people, properly',
     body: 'Discover delegates with shared interests, connect and chat — or suggest a 1:1 meeting with a time and meeting point. Set your availability so requests only land when it suits you.',
     hint: 'Connect tab · My meetings on your profile',
+    cta: { label: 'Open Connect', tab: 'connect' },
   },
   {
     icon: 'sparkles',
     title: 'Suggestions made for you',
     body: 'Add a few interests to your profile and Home will recommend sessions and people that actually match them. No interests, no guessing.',
     hint: 'Profile → Edit my profile → interests',
+    cta: { label: 'Add my interests', push: 'editprofile' },
   },
   {
     icon: 'message',
     title: 'The Community wall',
     body: 'Share takeaways, questions and photos with fellow delegates. Photos stay inside the app — visible to signed-in delegates only — and any post can be removed at any time.',
     hint: 'Home → Community',
+    cta: { label: 'Open the wall', push: 'community' },
   },
   {
     icon: 'map',
     title: 'Find your way',
     body: 'The venue map shows every room and booth — tap one to see what’s happening there. Session pages and exhibitor cards link straight to it.',
     hint: 'Home → Venue map',
+    cta: { label: 'Open the map', push: 'venuemap' },
   },
   {
     icon: 'mic',
@@ -71,6 +78,7 @@ const STEPS: Step[] = [
     title: 'Your badge is your key',
     body: 'Show your QR badge at the entrance, and scan other delegates’ badges to connect instantly. You’ll find it on Home and on your profile.',
     hint: 'Home → Badge',
+    cta: { label: 'Show my badge', push: 'ticket' },
   },
 ]
 
@@ -83,6 +91,17 @@ export function Tour({ ctx }: { ctx: AppCtx }) {
   const close = () => {
     setTourSeen(dontShow)
     ctx.back()
+  }
+
+  // "Try it now" — leave the tour and land on the real screen
+  const tryIt = (cta: NonNullable<Step['cta']>) => {
+    setTourSeen(dontShow)
+    if (cta.tab) {
+      ctx.setTab(cta.tab) // clears the stack (and the tour with it)
+    } else {
+      ctx.back()
+      ctx.push(cta.push!, {})
+    }
   }
 
   return (
@@ -108,6 +127,12 @@ export function Tour({ ctx }: { ctx: AppCtx }) {
             <Icon name="info" size={14} />
             {s.hint}
           </div>
+        )}
+        {s.cta && (
+          <Press onClick={() => tryIt(s.cta!)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 18, height: 40, padding: '0 18px', borderRadius: 999, background: 'rgba(255,255,255,0.18)', boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,0.55)', color: '#fff', fontFamily: T.sig, fontWeight: 600, fontSize: 14 }}>
+            {s.cta.label}
+            <Icon name="arrowRight" size={16} stroke={2.2} />
+          </Press>
         )}
       </div>
 
