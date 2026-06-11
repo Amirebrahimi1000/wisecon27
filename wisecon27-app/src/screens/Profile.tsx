@@ -42,6 +42,7 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
     { icon: 'star', label: 'Give feedback', to: () => ctx.push('feedback', {}) },
     { icon: 'poll', label: 'Post-conference survey', detail: ctx.surveyDone ? 'Done' : '', to: () => ctx.push('survey', {}) },
     { icon: 'info', label: 'Event info & Wi-Fi', to: () => ctx.push('info', {}) },
+    { icon: 'arrowRight', label: 'Take the app tour', detail: '1 min', to: () => ctx.push('tour', {}) },
     { icon: 'settings', label: 'Settings', to: () => ctx.push('settings' as PushScreen, {}) },
     ...(ctx.isAdmin || ctx.isStaff ? [{ icon: 'qr' as IconName, label: 'Entrance scanning', detail: 'Staff', to: () => ctx.push('scanner', {}) }] : []),
     ...(ctx.isAdmin ? [{ icon: 'grid' as IconName, label: 'Admin tools', detail: 'Organiser', to: () => ctx.push('admin', {}) }] : []),

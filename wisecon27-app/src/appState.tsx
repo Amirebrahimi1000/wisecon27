@@ -17,7 +17,7 @@ export type PushScreen =
   | 'ticket' | 'feedback' | 'info' | 'settings' | 'admin'
   | 'activities' | 'survey' | 'exhibitor' | 'conversation' | 'scanner'
   | 'editprofile' | 'delegate' | 'scanconnect'
-  | 'meetings' | 'meetingrequest' | 'community' | 'venuemap' | 'availability'
+  | 'meetings' | 'meetingrequest' | 'community' | 'venuemap' | 'availability' | 'tour'
 
 export interface EventInfoItem { id: string; icon: string; label: string; detail: string }
 export interface EventMeta { dateline: string; location: string; startISO: string; endISO: string }

@@ -39,6 +39,7 @@ import { ScanConnect } from './screens/ScanConnect'
 import { Meetings } from './screens/Meetings'
 import { MeetingRequest } from './screens/MeetingRequest'
 import { Availability } from './screens/Availability'
+import { Tour, tourSeen } from './screens/Tour'
 import { Community } from './screens/Community'
 import { VenueMap } from './screens/VenueMap'
 
@@ -72,6 +73,7 @@ const PUSH_SCREENS: Record<PushScreen, (p: { ctx: AppCtx }) => JSX.Element> = {
   meetings: Meetings,
   meetingrequest: MeetingRequest,
   availability: Availability,
+  tour: Tour,
   community: Community,
   venuemap: VenueMap,
 }
@@ -154,6 +156,17 @@ function AuthedApp() {
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0
   }, [screenKey])
+
+  // first sign-in on this device → open the app tour (once; the tour's
+  // "don't show again" checkbox decides whether it returns next session)
+  const tourOpened = useRef(false)
+  const profileReady = !ctx.loading && !!ctx.me.name.trim()
+  useEffect(() => {
+    if (!profileReady || tourOpened.current || tourSeen()) return
+    tourOpened.current = true
+    ctx.push('tour', {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileReady])
 
   // map the hardware/browser Back button to popping the nav stack
   const depth = ctx.stack.length
