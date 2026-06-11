@@ -16,6 +16,23 @@ const setTourSeen = (seen: boolean) => {
   try { seen ? localStorage.setItem(SEEN_KEY, '1') : localStorage.removeItem(SEEN_KEY) } catch { /* ignore */ }
 }
 
+// Leaving the tour via "Try it now" remembers the next slide for this session,
+// so a small "Resume tour" pill can offer the rest of the walkthrough.
+const RESUME_KEY = 'wc27.tour.resume'
+export const tourResumeStep = (): number | null => {
+  try {
+    const v = sessionStorage.getItem(RESUME_KEY)
+    return v == null ? null : Math.min(Math.max(0, +v), STEPS.length - 1)
+  } catch { return null }
+}
+export const clearTourResume = () => {
+  try { sessionStorage.removeItem(RESUME_KEY) } catch { /* ignore */ }
+}
+const setTourResume = (step: number) => {
+  try { sessionStorage.setItem(RESUME_KEY, String(step)) } catch { /* ignore */ }
+}
+export const TOUR_STEPS = () => STEPS.length
+
 interface Step {
   icon: IconName
   title: string
@@ -83,19 +100,23 @@ const STEPS: Step[] = [
 ]
 
 export function Tour({ ctx }: { ctx: AppCtx }) {
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState(() => Math.min(Math.max(0, ctx.params.tourStep ?? 0), STEPS.length - 1))
   const [dontShow, setDontShow] = useState(true)
   const s = STEPS[step]
   const last = step === STEPS.length - 1
 
   const close = () => {
     setTourSeen(dontShow)
+    clearTourResume() // finishing or skipping is a deliberate end — no nagging
     ctx.back()
   }
 
-  // "Try it now" — leave the tour and land on the real screen
+  // "Try it now" — leave the tour and land on the real screen; remember where
+  // we were so the Resume pill can offer the remaining slides
   const tryIt = (cta: NonNullable<Step['cta']>) => {
     setTourSeen(dontShow)
+    if (last) clearTourResume()
+    else setTourResume(step + 1)
     if (cta.tab) {
       ctx.setTab(cta.tab) // clears the stack (and the tour with it)
     } else {

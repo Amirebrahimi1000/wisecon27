@@ -31,6 +31,7 @@ export interface NavParams {
   room?: string
   booth?: string
   meetingId?: string
+  tourStep?: number
   _fromTab?: boolean
 }
 interface StackEntry { screen: PushScreen; params: NavParams }

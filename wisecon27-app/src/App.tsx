@@ -39,7 +39,7 @@ import { ScanConnect } from './screens/ScanConnect'
 import { Meetings } from './screens/Meetings'
 import { MeetingRequest } from './screens/MeetingRequest'
 import { Availability } from './screens/Availability'
-import { Tour, tourSeen } from './screens/Tour'
+import { Tour, tourSeen, tourResumeStep, clearTourResume, TOUR_STEPS } from './screens/Tour'
 import { Community } from './screens/Community'
 import { VenueMap } from './screens/VenueMap'
 
@@ -107,6 +107,23 @@ function BottomNav({ active, onSelect, unread }: { active: TabId; onSelect: (t: 
   )
 }
 
+/** Small pill offering the rest of the tour after a "Try it now" deep link. */
+function ResumeTourPill({ step, onResume, onDismiss }: { step: number; onResume: () => void; onDismiss: () => void }) {
+  return (
+    <div style={{ position: 'absolute', bottom: TABBAR_H + 14, left: '50%', transform: 'translateX(-50%)', zIndex: 45, display: 'flex', alignItems: 'center', gap: 2, background: 'rgba(17,17,17,0.92)', borderRadius: 999, padding: '4px 6px 4px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
+      <Press onClick={onResume} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: '#fff', padding: '6px 4px 6px 0' }}>
+        <Icon name="sparkles" size={15} style={{ color: 'var(--wf-lime-9)' }} />
+        <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, whiteSpace: 'nowrap' }}>
+          Resume tour · {step + 1}/{TOUR_STEPS()}
+        </span>
+      </Press>
+      <Press onClick={onDismiss} style={{ width: 30, height: 30, borderRadius: '50%', display: 'grid', placeItems: 'center', color: 'rgba(255,255,255,0.7)' }}>
+        <Icon name="close" size={15} stroke={2.2} />
+      </Press>
+    </div>
+  )
+}
+
 function Toast({ msg }: { msg: string | null }) {
   if (!msg) return null
   return (
@@ -156,6 +173,11 @@ function AuthedApp() {
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0
   }, [screenKey])
+
+  // resume-tour pill: re-read sessionStorage whenever the app re-renders;
+  // the counter forces a refresh after an explicit dismiss
+  const [, bumpResume] = useState(0)
+  const resumeStep = tourResumeStep()
 
   // first sign-in on this device → open the app tour (once; the tour's
   // "don't show again" checkbox decides whether it returns next session)
@@ -212,6 +234,13 @@ function AuthedApp() {
         </div>
       </div>
       <Toast msg={ctx.toastMsg} />
+      {resumeStep != null && top?.screen !== 'tour' && !ctx.toastMsg && (
+        <ResumeTourPill
+          step={resumeStep}
+          onResume={() => ctx.push('tour', { tourStep: resumeStep })}
+          onDismiss={() => { clearTourResume(); bumpResume((n) => n + 1) }}
+        />
+      )}
       <BottomNav active={ctx.tab} onSelect={ctx.setTab} unread={ctx.unread} />
       <NotifyPrompt userId={ctx.userId} onToast={ctx.toast} />
     </div>
