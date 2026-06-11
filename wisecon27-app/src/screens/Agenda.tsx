@@ -1,7 +1,7 @@
 // WISEcon27 — Agenda. Day selector + track filter + three view modes:
 // Timeline (time grid, parallel sessions side by side), Linear (detailed
 // rows — the original view) and List (compact, scannable).
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { TRACKS } from '../data'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
@@ -23,12 +23,22 @@ const toMin = (t: string) => +t.slice(0, 2) * 60 + +t.slice(3, 5)
 const PX_PER_MIN = 2.6
 const GUTTER = 44
 
-/* ── Timeline: vertical time axis, overlapping sessions in columns ── */
+/* ── Timeline: vertical time axis; parallel sessions as fixed-width columns
+      that scroll horizontally (hour axis stays pinned on the left) ── */
+const COL_W = 158
+
 function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [moreRight, setMoreRight] = useState(true)
+  const checkMore = () => {
+    const el = scrollRef.current
+    if (el) setMoreRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8)
+  }
   if (list.length === 0) return null
   const minStart = Math.min(...list.map((s) => toMin(s.start)))
   const maxEnd = Math.max(...list.map((s) => toMin(s.end)))
   const top = (m: number) => (m - minStart) * PX_PER_MIN
+  const height = (maxEnd - minStart) * PX_PER_MIN + 14
 
   // cluster transitively-overlapping sessions, assign columns within a cluster
   const sorted = [...list].sort((a, b) => toMin(a.start) - toMin(b.start) || a.room.localeCompare(b.room))
@@ -57,65 +67,77 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
     c.maxEnd = Math.max(c.maxEnd, toMin(s.end))
   }
   flush()
+  const maxCols = Math.max(1, ...placed.map((p) => p.cols))
 
   const hours: number[] = []
   for (let h = Math.ceil(minStart / 60); h * 60 <= maxEnd; h++) hours.push(h)
 
   return (
-    <div style={{ position: 'relative', height: (maxEnd - minStart) * PX_PER_MIN + 14, margin: '8px 4px 0' }}>
-      {/* hour grid */}
-      {hours.map((h) => (
-        <div key={h} style={{ position: 'absolute', top: top(h * 60), left: 0, right: 0 }}>
-          <div style={{ position: 'absolute', left: GUTTER, right: 0, borderTop: '1px solid ' + T.line }} />
-          <span style={{ position: 'absolute', left: 0, top: -7, fontFamily: T.onest, fontSize: 11, color: T.subtle }}>
+    <div style={{ display: 'flex', margin: '8px 0 0', position: 'relative' }}>
+      {/* pinned hour axis */}
+      <div style={{ width: GUTTER, flexShrink: 0, position: 'relative', height }}>
+        {hours.map((h) => (
+          <span key={h} style={{ position: 'absolute', top: top(h * 60) - 7, left: 2, fontFamily: T.onest, fontSize: 11, color: T.subtle }}>
             {String(h).padStart(2, '0')}:00
           </span>
-        </div>
-      ))}
-      {/* session blocks */}
-      {placed.map(({ s, col, cols }) => {
-        const tr = TRACKS[s.track]
-        const isBreak = s.type === 'break'
-        const h = Math.max((toMin(s.end) - toMin(s.start)) * PX_PER_MIN - 3, 26)
-        const widthPct = (100 - 0) / cols
-        const tight = cols >= 3
-        return (
-          <Press
-            key={s.id}
-            onClick={() => ctx.openSession(s)}
-            style={{
-              position: 'absolute',
-              top: top(toMin(s.start)),
-              left: `calc(${GUTTER}px + (100% - ${GUTTER}px) * ${(col * widthPct) / 100} + ${col === 0 ? 0 : 2}px)`,
-              width: `calc((100% - ${GUTTER}px) * ${widthPct / 100} - ${cols > 1 ? 2 : 0}px)`,
-              height: h,
-              boxSizing: 'border-box',
-              borderRadius: 'var(--radius-3)',
-              overflow: 'hidden',
-              textAlign: 'left',
-              background: isBreak ? 'var(--wf-grey-3)' : 'var(--wf-surface)',
-              boxShadow: isBreak ? 'none' : 'var(--shadow-sm), inset 3px 0 0 ' + tr.dot,
-              padding: tight ? '4px 5px 4px 8px' : '6px 8px 6px 11px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: tight ? 10.5 : 13, lineHeight: 1.2, color: isBreak ? T.muted : T.ink, display: '-webkit-box', WebkitLineClamp: tight ? 4 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {s.title}
-                </div>
-                {!tight && (
-                  <div style={{ fontFamily: T.onest, fontSize: 10.5, color: T.muted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {s.start}–{s.end}{s.room ? ' · ' + s.room : ''}
+        ))}
+      </div>
+      {/* horizontally scrollable columns */}
+      <div ref={scrollRef} onScroll={checkMore} className="wc-noscroll" style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden' }}>
+        <div style={{ position: 'relative', height, width: maxCols * COL_W, minWidth: '100%' }}>
+          {hours.map((h) => (
+            <div key={h} style={{ position: 'absolute', top: top(h * 60), left: 0, right: 0, borderTop: '1px solid ' + T.line }} />
+          ))}
+          {placed.map(({ s, col, cols }) => {
+            const tr = TRACKS[s.track]
+            const isBreak = s.type === 'break'
+            const h = Math.max((toMin(s.end) - toMin(s.start)) * PX_PER_MIN - 3, 26)
+            const full = cols === 1
+            return (
+              <Press
+                key={s.id}
+                onClick={() => ctx.openSession(s)}
+                style={{
+                  position: 'absolute',
+                  top: top(toMin(s.start)),
+                  left: full ? 0 : col * COL_W + (col === 0 ? 0 : 3),
+                  width: full ? '100%' : COL_W - 3,
+                  height: h,
+                  boxSizing: 'border-box',
+                  borderRadius: 'var(--radius-3)',
+                  overflow: 'hidden',
+                  textAlign: 'left',
+                  background: isBreak ? 'var(--wf-grey-3)' : 'var(--wf-surface)',
+                  boxShadow: isBreak ? 'none' : 'var(--shadow-sm), inset 3px 0 0 ' + tr.dot,
+                  padding: '6px 8px 6px 11px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: full ? 13 : 12, lineHeight: 1.25, color: isBreak ? T.muted : T.ink, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {s.title}
+                    </div>
+                    <div style={{ fontFamily: T.onest, fontSize: 10.5, color: T.muted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {s.start}–{s.end}{s.room ? ' · ' + s.room : ''}
+                    </div>
                   </div>
-                )}
-              </div>
-              {ctx.isBookmarked(s.id) && (
-                <Icon name="bookmarkFill" size={tight ? 10 : 13} style={{ color: T.green9, flexShrink: 0, marginTop: 1 }} />
-              )}
-            </div>
-          </Press>
-        )
-      })}
+                  {ctx.isBookmarked(s.id) && (
+                    <Icon name="bookmarkFill" size={13} style={{ color: T.green9, flexShrink: 0, marginTop: 1 }} />
+                  )}
+                </div>
+              </Press>
+            )
+          })}
+        </div>
+      </div>
+      {/* "more columns this way" hint */}
+      {maxCols > 2 && moreRight && (
+        <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 46, pointerEvents: 'none', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', paddingTop: 80, background: 'linear-gradient(90deg, transparent, var(--wf-grey-2) 80%)' }}>
+          <span className="wc-nudge-x" style={{ display: 'inline-flex', color: T.muted, position: 'sticky', top: 200 }}>
+            <Icon name="chevronRight" size={18} stroke={2.2} />
+          </span>
+        </div>
+      )}
     </div>
   )
 }
