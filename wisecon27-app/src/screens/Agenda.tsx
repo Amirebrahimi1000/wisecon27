@@ -38,7 +38,6 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
   const minStart = Math.min(...list.map((s) => toMin(s.start)))
   const maxEnd = Math.max(...list.map((s) => toMin(s.end)))
   const top = (m: number) => (m - minStart) * PX_PER_MIN
-  const height = (maxEnd - minStart) * PX_PER_MIN + 14
 
   // cluster transitively-overlapping sessions, assign columns within a cluster
   const sorted = [...list].sort((a, b) => toMin(a.start) - toMin(b.start) || a.room.localeCompare(b.room))
@@ -67,17 +66,32 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
     c.maxEnd = Math.max(c.maxEnd, toMin(s.end))
   }
   flush()
-  const maxCols = Math.max(1, ...placed.map((p) => p.cols))
+
+  // anchor parallel sessions to consistent room columns across the whole day
+  // (Brella-style): same room = same column everywhere, with a header row
+  const roomCols = [...new Set(placed.filter((p) => p.cols > 1).map((p) => p.s.room))].sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true }),
+  )
+  for (const pl of placed) {
+    if (pl.cols > 1) {
+      const idx = roomCols.indexOf(pl.s.room)
+      if (idx !== -1) pl.col = idx
+      pl.cols = Math.max(roomCols.length, pl.cols)
+    }
+  }
+  const maxCols = Math.max(1, roomCols.length, ...placed.map((p) => p.cols))
+  const HEADER_H = roomCols.length > 1 ? 30 : 0
 
   const hours: number[] = []
   for (let h = Math.ceil(minStart / 60); h * 60 <= maxEnd; h++) hours.push(h)
+  const height = (maxEnd - minStart) * PX_PER_MIN + 14 + HEADER_H
 
   return (
     <div style={{ display: 'flex', margin: '8px 0 0', position: 'relative' }}>
       {/* pinned hour axis */}
       <div style={{ width: GUTTER, flexShrink: 0, position: 'relative', height }}>
         {hours.map((h) => (
-          <span key={h} style={{ position: 'absolute', top: top(h * 60) - 7, left: 2, fontFamily: T.onest, fontSize: 11, color: T.subtle }}>
+          <span key={h} style={{ position: 'absolute', top: top(h * 60) - 7 + HEADER_H, left: 2, fontFamily: T.onest, fontSize: 11, color: T.subtle }}>
             {String(h).padStart(2, '0')}:00
           </span>
         ))}
@@ -86,8 +100,15 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
       <div ref={scrollRef} onScroll={checkMore} className="wc-noscroll" style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden' }}>
         <div style={{ position: 'relative', height, width: maxCols * COL_W, minWidth: '100%' }}>
           {hours.map((h) => (
-            <div key={h} style={{ position: 'absolute', top: top(h * 60), left: 0, right: 0, borderTop: '1px solid ' + T.line }} />
+            <div key={h} style={{ position: 'absolute', top: top(h * 60) + HEADER_H, left: 0, right: 0, borderTop: '1px solid ' + T.line }} />
           ))}
+          {roomCols.length > 1 &&
+            roomCols.map((room, i) => (
+              <div key={room} style={{ position: 'absolute', top: 0, left: i * COL_W + (i === 0 ? 0 : 3), width: COL_W - 3, height: HEADER_H - 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'var(--wf-grey-4)', borderRadius: 999, fontFamily: T.onest, fontWeight: 600, fontSize: 10.5, color: T.body, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '0 8px' }}>
+                <Icon name="pin" size={11} style={{ flexShrink: 0, color: T.muted }} />
+                {room}
+              </div>
+            ))}
           {placed.map(({ s, col, cols }) => {
             const tr = TRACKS[s.track]
             const isBreak = s.type === 'break'
@@ -99,7 +120,7 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
                 onClick={() => ctx.openSession(s)}
                 style={{
                   position: 'absolute',
-                  top: top(toMin(s.start)),
+                  top: top(toMin(s.start)) + HEADER_H,
                   left: full ? 0 : col * COL_W + (col === 0 ? 0 : 3),
                   width: full ? '100%' : COL_W - 3,
                   height: h,
