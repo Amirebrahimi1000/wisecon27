@@ -32,6 +32,18 @@ export interface Speaker {
   bio: string
   topics: string[]
   photoUrl?: string | null
+  // linked delegate account — lets the speaker share resources on their sessions
+  profileId?: string | null
+}
+
+/** A file or link a speaker (or organiser) shares on a session. */
+export interface SessionResource {
+  id: string
+  sessionId: string
+  label: string
+  path: string | null
+  url: string | null
+  createdBy: string | null
 }
 
 export type SessionType =
@@ -63,11 +75,17 @@ export interface Session {
 
 export type ConnectStatus = 'connect' | 'pending' | 'connected'
 
-/** One day's 1:1 meeting availability; a missing day means available all day. */
-export interface DayWindow {
-  available: boolean
+/** One bookable time window within a day. */
+export interface TimeWindow {
   start: string
   end: string
+}
+
+/** One day's 1:1 meeting availability; a missing day means available all day.
+ *  Multiple windows allow e.g. "08:00–10:00 and 14:00–16:00". */
+export interface DayAvail {
+  available: boolean
+  windows: TimeWindow[]
 }
 
 export interface Attendee {
@@ -82,7 +100,7 @@ export interface Attendee {
   status: ConnectStatus
   avatarUrl?: string | null
   hidden?: boolean
-  meetingAvailability?: Record<string, DayWindow>
+  meetingAvailability?: Record<string, DayAvail>
 }
 
 export type NotificationType =

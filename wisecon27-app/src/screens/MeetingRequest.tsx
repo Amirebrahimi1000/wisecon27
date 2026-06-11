@@ -7,7 +7,7 @@
 import { useMemo, useState } from 'react'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
-import { SLOTS, slotEnd, overlaps, windowFor } from '../meetingSlots'
+import { SLOTS, slotEnd, overlaps, availFor, inAnyWindow } from '../meetingSlots'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Chip, Eyebrow, Press } from '../components/primitives'
 
@@ -24,9 +24,9 @@ export function MeetingRequest({ ctx }: { ctx: AppCtx }) {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
 
-  // the other delegate's availability window for the chosen day
-  const peerWindow = windowFor(peer?.meetingAvailability, dayId)
-  const dayOff = !peerWindow.available
+  // the other delegate's availability windows for the chosen day
+  const peerAvail = availFor(peer?.meetingAvailability, dayId)
+  const dayOff = !peerAvail.available
 
   // my commitments on the chosen day: requested/confirmed meetings block a
   // slot outright (minus the one being rescheduled); bookmarked sessions only
@@ -46,7 +46,7 @@ export function MeetingRequest({ ctx }: { ctx: AppCtx }) {
     return { busy, clash }
   }, [ctx.meetings, ctx.sessions, ctx.isBookmarked, dayId, original?.id])
 
-  const outsideWindow = (s: string) => dayOff || s < peerWindow.start || slotEnd(s) > peerWindow.end
+  const outsideWindow = (s: string) => !inAnyWindow(s, slotEnd(s), peerAvail)
 
   const send = async () => {
     if (!slot || sending) return

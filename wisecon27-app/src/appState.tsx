@@ -6,8 +6,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { useAuth } from './auth'
+import { normalizeDayAvail } from './meetingSlots'
 import type {
-  Activity, AppNotification, Attendee, ConnectStatus, Conversation, Day, DayWindow, Me, Meeting, MeetingPoint, MeetingStatus, Message, Session, Speaker, Sponsor, SurveyQuestion,
+  Activity, AppNotification, Attendee, ConnectStatus, Conversation, Day, Me, Meeting, MeetingPoint, MeetingStatus, Message, Session, SessionResource, Speaker, Sponsor, SurveyQuestion,
 } from './types'
 
 export type TabId = 'home' | 'agenda' | 'activities' | 'speakers' | 'connect' | 'profile'
@@ -52,6 +53,8 @@ export interface AppCtx {
   eventInfo: EventInfoItem[]
   event: EventMeta
   speakersOf: (s: Session) => Speaker[]
+  // resources (files/links) shared on a session by its speakers or organisers
+  resourcesOf: (sessionId: string) => SessionResource[]
   refreshContent: () => Promise<void>
   // identity
   userId: string
@@ -126,7 +129,7 @@ interface ProfileRow {
   ticket: string; badge_id: string; interests: string[]; is_admin: boolean; is_staff?: boolean; avatar_url: string | null
   delegate_type: string | null; gala: boolean | null
   hidden?: boolean | null; notif_prefs?: Record<string, boolean> | null
-  meeting_availability?: Record<string, DayWindow> | null
+  meeting_availability?: Record<string, unknown> | null
 }
 const mapProfile = (r: ProfileRow): Me => ({
   name: r.name, initials: r.initials, role: r.role, org: r.org, color: r.color,
@@ -165,6 +168,11 @@ const mapMessage = (r: MessageRow): Message => ({
 
 type ConnRow = { requester_id: string; target_id: string; status: ConnectStatus }
 
+interface ResourceRow { id: string; session_id: string; label: string; path: string | null; url: string | null; created_by: string | null }
+const mapResource = (r: ResourceRow): SessionResource => ({
+  id: r.id, sessionId: r.session_id, label: r.label, path: r.path, url: r.url, createdBy: r.created_by,
+})
+
 const initialsFrom = (name: string) =>
   name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('') || '?'
 
@@ -197,6 +205,7 @@ export function useAppState(): AppCtx {
   const [event, setEvent] = useState<EventMeta>({ dateline: '', location: '', startISO: '', endISO: '' })
   const [meetingPoints, setMeetingPoints] = useState<MeetingPoint[]>([])
   const [meetings, setMeetings] = useState<Meeting[]>([])
+  const [resources, setResources] = useState<SessionResource[]>([])
 
   // identity / user data
   const [me, setMe] = useState<Me>(EMPTY_ME)
@@ -229,7 +238,7 @@ export function useAppState(): AppCtx {
 
   /* ── load all content + user data ── */
   const loadContent = useCallback(async () => {
-    const [d, sp, se, so, ei, act, sq, st, mp] = await Promise.all([
+    const [d, sp, se, so, ei, act, sq, st, mp, sr] = await Promise.all([
       supabase.from('days').select('*').order('sort'),
       supabase.from('speakers').select('*').order('sort'),
       supabase.from('sessions').select('*, session_speakers(speaker_id, ord)'),
@@ -239,6 +248,7 @@ export function useAppState(): AppCtx {
       supabase.from('survey_questions').select('*').eq('active', true).order('sort'),
       supabase.from('settings').select('key, value'),
       supabase.from('meeting_points').select('id, label').order('sort'),
+      supabase.from('session_resources').select('*').order('created_at'),
     ])
     if (st.data) {
       const m = new Map((st.data as { key: string; value: string }[]).map((r) => [r.key, r.value]))
@@ -250,13 +260,14 @@ export function useAppState(): AppCtx {
       })
     }
     if (d.data) setDays(d.data as Day[])
-    if (sp.data) setSpeakers((sp.data as (Speaker & { photo_url: string | null })[]).map((s) => ({ ...s, photoUrl: s.photo_url })))
+    if (sp.data) setSpeakers((sp.data as (Speaker & { photo_url: string | null; profile_id?: string | null })[]).map((s) => ({ ...s, photoUrl: s.photo_url, profileId: s.profile_id ?? null })))
     if (se.data) setSessions((se.data as SessionRow[]).map(mapSession))
     if (so.data) setSponsors(so.data as Sponsor[])
     if (ei.data) setEventInfo(ei.data as EventInfoItem[])
     if (act.data) setActivitiesRaw(act.data as ActivityRow[])
     if (sq.data) setSurveyQuestions(sq.data as SurveyQuestion[])
     if (mp.data) setMeetingPoints(mp.data as MeetingPoint[])
+    if (sr.data) setResources((sr.data as ResourceRow[]).map(mapResource))
   }, [])
 
   const loadUserData = useCallback(async () => {
@@ -309,7 +320,9 @@ export function useAppState(): AppCtx {
             mutual: p.interests.filter((i) => myInterests.has(i)).length,
             status: statusFor(p.id),
             hidden: p.hidden ?? false,
-            meetingAvailability: p.meeting_availability ?? {},
+            meetingAvailability: Object.fromEntries(
+              Object.entries(p.meeting_availability ?? {}).map(([day, v]) => [day, normalizeDayAvail(v)]),
+            ),
           })),
       )
     }
@@ -349,6 +362,7 @@ export function useAppState(): AppCtx {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => loadContent())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'days' }, () => loadContent())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadContent())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_resources' }, () => loadContent())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => loadUserData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_signups' }, () => loadUserData())
       .subscribe()
@@ -693,6 +707,7 @@ export function useAppState(): AppCtx {
     eventInfo,
     event,
     speakersOf,
+    resourcesOf: (sessionId) => resources.filter((r) => r.sessionId === sessionId),
     refreshContent: loadContent,
     userId,
     me,
