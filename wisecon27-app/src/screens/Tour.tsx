@@ -141,7 +141,7 @@ export function Tour({ ctx }: { ctx: AppCtx }) {
         {step === 0 ? (
           // welcome slide leads with the host brand: the white UNIwise mark
           // (white-on-green logo variant — made for this dark green background)
-          <img src={import.meta.env.BASE_URL + 'uniwise-logo.png'} alt="UNIwise" style={{ width: 118, height: 'auto' }} />
+          <img src={import.meta.env.BASE_URL + 'logo-mark.svg'} alt="UNIwise" style={{ width: 110, height: 'auto' }} />
         ) : (
           <div style={{ width: 92, height: 92, borderRadius: '50%', background: 'rgba(255,255,255,0.16)', display: 'grid', placeItems: 'center', color: '#fff', backdropFilter: 'blur(4px)' }}>
             <Icon name={s.icon} size={44} stroke={1.6} />

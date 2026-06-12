@@ -285,7 +285,7 @@ function AuthedApp() {
 function Splash() {
   return (
     <div style={{ height: '100%', display: 'grid', placeItems: 'center', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)' }}>
-      <img src={import.meta.env.BASE_URL + 'logo-mark.svg'} alt="WISEcon27" width="72" style={{ filter: 'brightness(0) invert(1)', opacity: 0.92 }} />
+      <img src={import.meta.env.BASE_URL + 'logo-mark.svg'} alt="WISEcon27" width="72" style={{ opacity: 0.95 }} />
     </div>
   )
 }
