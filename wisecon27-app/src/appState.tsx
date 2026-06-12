@@ -46,6 +46,11 @@ export interface AppCtx {
   push: (screen: PushScreen, params?: NavParams) => void
   back: () => void
   setTab: (t: TabId) => void
+  // jump to the Agenda pre-searched on a topic (e.g. tapping a tag on a
+  // session page); Agenda consumes the pending jump on render
+  agendaJump: { query: string; day?: string } | null
+  openAgendaSearch: (query: string, day?: string) => void
+  consumeAgendaJump: () => void
   // content (live from Supabase)
   loading: boolean
   days: Day[]
@@ -195,6 +200,7 @@ export function useAppState(): AppCtx {
 
   // nav
   const [tab, setTabState] = useState<TabId>('home')
+  const [agendaJump, setAgendaJump] = useState<{ query: string; day?: string } | null>(null)
   const [stack, setStack] = useState<StackEntry[]>([])
 
   // content
@@ -708,6 +714,13 @@ export function useAppState(): AppCtx {
       setStack([])
       setTabState(t)
     },
+    agendaJump,
+    openAgendaSearch: (query, day) => {
+      setAgendaJump({ query, day })
+      setStack([])
+      setTabState('agenda')
+    },
+    consumeAgendaJump: () => setAgendaJump(null),
     loading,
     days,
     speakers,

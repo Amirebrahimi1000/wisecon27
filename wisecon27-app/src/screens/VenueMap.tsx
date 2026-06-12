@@ -6,7 +6,7 @@
 import { useMemo, useState } from 'react'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
-import { TRACKS } from '../data'
+import { trackOf } from '../data'
 import { Icon } from '../components/Icon'
 import { AppHeader, Eyebrow, Press, TrackTag } from '../components/primitives'
 
@@ -177,7 +177,7 @@ export function VenueMap({ ctx }: { ctx: AppCtx }) {
                           <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 13, color: T.ink }}>{s.start}</div>
                           <div style={{ fontFamily: T.onest, fontSize: 10.5, color: T.muted }}>{d?.dow} {d?.date}</div>
                         </div>
-                        <span style={{ width: 3, alignSelf: 'stretch', borderRadius: 3, background: TRACKS[s.track].dot }} />
+                        <span style={{ width: 3, alignSelf: 'stretch', borderRadius: 3, background: trackOf(s.track).dot }} />
                         <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.ink, lineHeight: 1.3 }}>{s.title}</span>
                         <TrackTag track={s.track} />
                       </Press>

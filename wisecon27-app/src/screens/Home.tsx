@@ -1,7 +1,7 @@
 // WISEcon27 — Home (Bold layout).
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { TRACKS } from '../data'
+import { trackOf } from '../data'
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { IconName } from '../components/Icon'
@@ -86,7 +86,7 @@ function suggestionsFor(ctx: AppCtx) {
   const eligible = (s: Session) => !ctx.isBookmarked(s.id) && s.type !== 'break' && s.type !== 'social'
   // exact matches (chip-picked interests) outrank incidental substring hits
   const score = (s: Session) => {
-    const hay = [...(s.tags ?? []), TRACKS[s.track].name, ...ctx.speakersOf(s).flatMap((p) => p.topics)].map((x) => x.toLowerCase())
+    const hay = [...(s.tags ?? []), trackOf(s.track).name, ...ctx.speakersOf(s).flatMap((p) => p.topics)].map((x) => x.toLowerCase())
     return myInts.reduce((n, i) => n + (hay.includes(i) ? 2 : hay.some((h) => h.includes(i) || i.includes(h)) ? 1 : 0), 0)
   }
   const sessions = ctx.sessions
@@ -295,7 +295,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
     return () => window.removeEventListener('resize', checkQuick)
   }, [])
   const { upNext, later, mine } = planForHome(ctx, clock)
-  const t = upNext && upNext.kind === 'session' && upNext.session ? TRACKS[upNext.session.track] : null
+  const t = upNext && upNext.kind === 'session' && upNext.session ? trackOf(upNext.session.track) : null
   const dateLine = heroDateLine(ctx, clock)
   const live = clock.phase === 'live'
   return (
@@ -431,7 +431,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
           ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {later.map((item) => {
-              const dot = item.kind === 'session' && item.session ? TRACKS[item.session.track].dot : T.green9
+              const dot = item.kind === 'session' && item.session ? trackOf(item.session.track).dot : T.green9
               return (
                 <Press key={item.id} onClick={() => (item.kind === 'session' ? ctx.openSession(item.session!) : ctx.push(item.kind === 'meeting' ? 'meetings' : 'activities', {}))} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)' }}>
                   <div style={{ textAlign: 'center', flexShrink: 0 }}>

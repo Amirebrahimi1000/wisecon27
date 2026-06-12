@@ -2,7 +2,7 @@
 // plus AppHeader/Chip (screens-core) and BottomNav/Toast (app.jsx).
 import type { CSSProperties, ReactNode } from 'react'
 import { T, STATUS_INSET } from '../theme'
-import { TRACKS } from '../data'
+import { trackOf } from '../data'
 import type { Session, Speaker, TrackId } from '../types'
 import { Icon, type IconName } from './Icon'
 
@@ -111,7 +111,7 @@ export function Avatar({
 
 /* ── track tag ── */
 export function TrackTag({ track, size = 'sm' }: { track: TrackId; size?: 'sm' | 'lg' }) {
-  const t = TRACKS[track]
+  const t = trackOf(track)
   if (!t) return null
   const pad = size === 'sm' ? '3px 9px 3px 8px' : '5px 12px 5px 10px'
   return (
@@ -287,7 +287,7 @@ export function SessionRow({
   speakers?: Speaker[]
   showBookmark?: boolean
 }) {
-  const t = TRACKS[s.track]
+  const t = trackOf(s.track)
   const isBreak = s.type === 'break' || s.type === 'social'
   const isMeeting = s.id.startsWith('mtg:') // 1:1 meeting riding along in the agenda
   const sp = speakers

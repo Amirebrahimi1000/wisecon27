@@ -2,7 +2,7 @@
 // Speakers linked to a delegate account can share slides/resources here.
 import { useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { TRACKS } from '../data'
+import { trackOf } from '../data'
 import { T, STATUS_INSET, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { Session, Speaker } from '../types'
@@ -14,7 +14,7 @@ import { shareOrCopy } from '../lib/share'
 
 export function SessionDetail({ ctx }: { ctx: AppCtx }) {
   const s = ctx.params.session!
-  const t = TRACKS[s.track]
+  const t = trackOf(s.track)
   const sp = ctx.speakersOf(s)
   const isBreak = s.type === 'break' || s.type === 'social'
   const [tab, setTab] = useState<'details' | 'qa' | 'poll'>('details')
@@ -100,8 +100,12 @@ function DetailsTab({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppCtx }) 
       <p style={{ fontFamily: T.sig, fontSize: 15.5, lineHeight: 1.55, color: T.body }}>{s.desc}</p>
       {s.tags && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {/* tappable: jump to the Agenda pre-searched on this topic */}
           {s.tags.map((tag) => (
-            <span key={tag} style={{ fontFamily: T.sig, fontSize: 12.5, fontWeight: 600, color: T.subtle, background: T.sunken, borderRadius: 999, padding: '5px 12px' }}>#{tag}</span>
+            <Press key={tag} onClick={() => ctx.openAgendaSearch(tag, s.day)} ariaLabel={'Find sessions about ' + tag} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: T.sig, fontSize: 12.5, fontWeight: 600, color: T.subtle, background: T.sunken, borderRadius: 999, padding: '5px 12px' }}>
+              #{tag}
+              <Icon name="search" size={11} stroke={2.2} />
+            </Press>
           ))}
         </div>
       )}

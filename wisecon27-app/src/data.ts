@@ -6,10 +6,13 @@
 import type { Track, TrackId } from './types'
 
 export const TRACKS: Record<TrackId, Track> = {
-  integrity: { name: 'Integrity', bg: 'var(--wf-purple-2)', fg: 'var(--wf-purple-10)', dot: 'var(--wf-purple-8)' },
-  pedagogy:  { name: 'Pedagogy',  bg: 'var(--wf-green-1)',  fg: 'var(--wf-green-11)',  dot: 'var(--wf-green-9)' },
-  platform:  { name: 'Platform',  bg: 'var(--wf-blue-1)',   fg: 'var(--wf-blue-11)',   dot: 'var(--wf-blue-9)' },
-  research:  { name: 'Research',  bg: 'var(--wf-orange-2)', fg: 'var(--wf-orange-11)', dot: 'var(--wf-orange-9)' },
-  workshop:  { name: 'Workshop',  bg: 'var(--wf-teal-3)',   fg: 'var(--wf-teal-11)',   dot: 'var(--wf-teal-9)' },
-  plenary:   { name: 'Plenary',   bg: 'var(--wf-grey-3)',   fg: 'var(--wf-grey-11)',   dot: 'var(--wf-grey-10)' },
+  explorer: { name: 'Explorer stream', bg: 'var(--wf-orange-2)', fg: 'var(--wf-orange-11)', dot: 'var(--wf-orange-9)' },
+  faculty:  { name: 'Faculty stream',  bg: 'var(--wf-green-1)',  fg: 'var(--wf-green-11)',  dot: 'var(--wf-green-9)' },
+  admin:    { name: 'Admin stream',    bg: 'var(--wf-blue-1)',   fg: 'var(--wf-blue-11)',   dot: 'var(--wf-blue-9)' },
+  plenary:  { name: 'Plenary',         bg: 'var(--wf-grey-3)',   fg: 'var(--wf-grey-11)',   dot: 'var(--wf-grey-10)' },
 }
+
+// Tolerant lookup: session rows may briefly carry track ids the bundle doesn't
+// know (deploys and data edits aren't atomic) — render those as plenary grey
+// rather than crashing.
+export const trackOf = (t: string): Track => TRACKS[t as TrackId] ?? TRACKS.plenary

@@ -673,7 +673,7 @@ function ActivityEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partia
 
 /* ════════ Sessions ════════ */
 const blankSession = (dayId: string): Partial<Session> & { id?: string } => ({
-  title: '', day: dayId, start: '09:00', end: '09:45', type: 'talk', track: 'pedagogy', room: '', desc: '', tags: [],
+  title: '', day: dayId, start: '09:00', end: '09:45', type: 'talk', track: 'faculty', room: '', desc: '', tags: [],
 })
 function Sessions({ ctx }: { ctx: AppCtx }) {
   const [editing, setEditing] = useState<(Partial<Session> & { id?: string }) | null>(null)
@@ -797,7 +797,7 @@ function SessionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
         <div style={{ flex: 1 }}><Field label="End"><Text value={s.end ?? ''} onChange={(v) => set({ end: v })} placeholder="09:45" /></Field></div>
       </div>
       <Field label="Type"><Select value={s.type ?? 'talk'} onChange={(v) => set({ type: v as SessionType })} options={(['keynote', 'talk', 'panel', 'workshop', 'break', 'social', 'plenary'] as SessionType[]).map((t) => [t, t])} /></Field>
-      <Field label="Track"><Select value={s.track ?? 'pedagogy'} onChange={(v) => set({ track: v as TrackId })} options={(Object.keys(TRACKS) as TrackId[]).map((k) => [k, TRACKS[k].name])} /></Field>
+      <Field label="Track"><Select value={s.track ?? 'faculty'} onChange={(v) => set({ track: v as TrackId })} options={(Object.keys(TRACKS) as TrackId[]).map((k) => [k, TRACKS[k].name])} /></Field>
       <Field label="Room"><Text value={s.room ?? ''} onChange={(v) => set({ room: v })} placeholder="e.g. Main Stage" /></Field>
       <Field label="Description"><Text value={s.desc ?? ''} onChange={(v) => set({ desc: v })} area /></Field>
 

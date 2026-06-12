@@ -1,8 +1,8 @@
 // WISEcon27 — Agenda. Day selector + track filter + three view modes:
 // Timeline (time grid, parallel sessions side by side), Linear (detailed
 // rows — the original view) and List (compact, scannable).
-import { useRef, useState } from 'react'
-import { TRACKS } from '../data'
+import { useEffect, useRef, useState } from 'react'
+import { TRACKS, trackOf } from '../data'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { Session, TrackId } from '../types'
@@ -92,7 +92,7 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
             </div>
           ))}
           {list.map((s) => {
-            const tr = TRACKS[s.track]
+            const tr = trackOf(s.track)
             const isBreak = s.type === 'break'
             const h = Math.max((toMin(s.end) - toMin(s.start)) * PX_PER_MIN - 3, 26)
             const col = colOf(s.room)
@@ -151,7 +151,7 @@ function CompactList({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
   return (
     <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
       {list.map((s, i) => {
-        const tr = TRACKS[s.track]
+        const tr = trackOf(s.track)
         return (
           <Press key={s.id} onClick={() => openItem(ctx, s)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '9px 12px', background: isMeetingItem(s) ? T.green1 : 'transparent', borderBottom: i === list.length - 1 ? 'none' : '1px solid ' + T.line }}>
             <span style={{ fontFamily: T.onest, fontWeight: 600, fontSize: 12, color: T.body, width: 38, flexShrink: 0 }}>{s.start}</span>
@@ -166,11 +166,14 @@ function CompactList({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
   )
 }
 
+// format filters live alongside stream filters in the same OR-set
+type FilterKey = TrackId | 'meetings' | 'breakout' | 'keynote' | 'foryou'
+
 export function Agenda({ ctx }: { ctx: AppCtx }) {
   const [day, setDay] = useState<string>(ctx.params.day || 'd1')
   // multi-select filters: empty set = everything ("All"); chips toggle on/off
-  const [filters, setFilters] = useState<Set<'meetings' | TrackId>>(new Set())
-  const toggleFilter = (k: 'meetings' | TrackId) =>
+  const [filters, setFilters] = useState<Set<FilterKey>>(new Set())
+  const toggleFilter = (k: FilterKey) =>
     setFilters((prev) => {
       const next = new Set(prev)
       if (next.has(k)) next.delete(k)
@@ -183,7 +186,7 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
     setViewState(v)
     try { localStorage.setItem(VIEW_KEY, v) } catch { /* ignore */ }
   }
-  // live search across title, room and speaker names for the selected day
+  // live search across title, topic tags, description, room and speaker names
   const [searching, setSearching] = useState(false)
   const [q, setQ] = useState('')
   const closeSearch = () => {
@@ -193,9 +196,35 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
   const matches = (s: Session) => {
     const needle = q.trim().toLowerCase()
     if (!needle) return true
-    const hay = [s.title, s.room, ...ctx.speakersOf(s).map((p) => p.name)].join(' ').toLowerCase()
+    const hay = [s.title, s.room, s.desc ?? '', ...(s.tags ?? []), ...ctx.speakersOf(s).map((p) => p.name)].join(' ').toLowerCase()
     return hay.includes(needle)
   }
+
+  // tapping a topic tag elsewhere (session page) lands here pre-searched
+  useEffect(() => {
+    if (!ctx.agendaJump) return
+    if (ctx.agendaJump.day) setDay(ctx.agendaJump.day)
+    setSearching(true)
+    setQ(ctx.agendaJump.query)
+    ctx.consumeAgendaJump()
+  }, [ctx.agendaJump]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // format chips cut across streams: breakouts are the parallel talk/panel/
+  // workshop slots, keynote matches the keynote type
+  const isBreakout = (s: Session) => s.type === 'talk' || s.type === 'panel' || s.type === 'workshop'
+  // "For you": the same interest matching as Home's suggestions, as a filter
+  const myInts = ctx.me.interests.map((i) => i.toLowerCase()).filter(Boolean)
+  const forYou = (s: Session) => {
+    if (!myInts.length) return false
+    const hay = [...(s.tags ?? []), trackOf(s.track).name, ...ctx.speakersOf(s).flatMap((p) => p.topics)].map((x) => x.toLowerCase())
+    return myInts.some((i) => hay.some((h) => h.includes(i) || i.includes(h)))
+  }
+  const passesFilters = (s: Session) =>
+    showAll ||
+    filters.has(s.track) ||
+    (filters.has('breakout') && isBreakout(s)) ||
+    (filters.has('keynote') && s.type === 'keynote') ||
+    (filters.has('foryou') && forYou(s))
 
   // my accepted 1:1 meetings join the day's programme; like tracks they have
   // their own chip, so any combination of tracks and meetings can be shown
@@ -209,7 +238,7 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
       speakers: [], desc: '', going: 0,
     }))
   const list = [
-    ...ctx.sessions.filter((s) => s.day === day && (showAll || filters.has(s.track)) && matches(s)),
+    ...ctx.sessions.filter((s) => s.day === day && passesFilters(s) && matches(s)),
     ...(showAll || filters.has('meetings') ? meetingItems.filter(matches) : []),
   ].sort((a, b) => a.start.localeCompare(b.start))
   const VIEWS: { id: AgendaView; label: string }[] = [
@@ -232,7 +261,7 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search sessions, rooms, speakers"
+              placeholder="Search sessions, topics, speakers"
               style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 0', fontFamily: T.sig, fontSize: 15, color: T.ink, background: 'transparent' }}
             />
           </div>
@@ -264,6 +293,9 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
       </div>
       <ChipRow style={{ paddingBottom: 4 }}>
         <Chip active={showAll} onClick={() => setFilters(new Set())}>All</Chip>
+        <Chip active={filters.has('foryou')} onClick={() => toggleFilter('foryou')}>
+          <Icon name="sparkles" size={13} />For you
+        </Chip>
         {(Object.entries(TRACKS) as [TrackId, (typeof TRACKS)[TrackId]][])
           .filter(([k]) => k !== 'plenary')
           .map(([k, t]) => (
@@ -271,6 +303,8 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
               {t.name}
             </Chip>
           ))}
+        <Chip active={filters.has('breakout')} onClick={() => toggleFilter('breakout')}>Breakout session</Chip>
+        <Chip active={filters.has('keynote')} onClick={() => toggleFilter('keynote')}>Keynote session</Chip>
         <Chip active={filters.has('meetings')} onClick={() => toggleFilter('meetings')} color={T.green9}>
           1:1 meetings
         </Chip>

@@ -1,11 +1,9 @@
 // WISEcon27 — domain types (schema mirrors prototype/app/data.js)
 
 export type TrackId =
-  | 'integrity'
-  | 'pedagogy'
-  | 'platform'
-  | 'research'
-  | 'workshop'
+  | 'explorer'
+  | 'faculty'
+  | 'admin'
   | 'plenary'
 
 export interface Track {
