@@ -13,17 +13,20 @@ export function Press({
   style = {},
   className = '',
   disabled = false,
+  ariaLabel,
 }: {
   children: ReactNode
   onClick?: (e: React.MouseEvent) => void
   style?: CSSProperties
   className?: string
   disabled?: boolean
+  ariaLabel?: string
 }) {
   return (
     <div
       role="button"
       tabIndex={0}
+      aria-label={ariaLabel}
       onClick={disabled ? undefined : onClick}
       className={'wc-press ' + className}
       style={{ cursor: disabled ? 'default' : 'pointer', ...style }}

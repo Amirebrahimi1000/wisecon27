@@ -32,6 +32,7 @@ export interface NavParams {
   booth?: string
   meetingId?: string
   tourStep?: number
+  focus?: 'interests' // editprofile: scroll to + focus the interest picker
   _fromTab?: boolean
 }
 interface StackEntry { screen: PushScreen; params: NavParams }

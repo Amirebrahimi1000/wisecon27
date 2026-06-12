@@ -10,6 +10,7 @@ import type { AppCtx, EventInfoItem } from '../appState'
 import type { Activity, Day, Session, Speaker, Sponsor, SponsorTier, TrackId, SessionType, NotificationType } from '../types'
 import { Icon, type IconName } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Eyebrow, Press } from '../components/primitives'
+import { TagPicker, tagSuggestions } from '../components/TagPicker'
 import { uploadSlides, uploadSpeakerPhoto } from '../lib/storage'
 import { BADGE_TYPES, asDelegateType, type DelegateType } from '../badgeTypes'
 import { Scan } from './Scan'
@@ -365,7 +366,7 @@ function CsvImport({ ctx }: { ctx: AppCtx }) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const HINT: Record<string, string> = {
-    sessions: 'Columns: title, day_id, start, end, type, track, room, desc  (id optional)',
+    sessions: 'Columns: title, day_id, start, end, type, track, room, desc, tags  (tags separated by ; — id optional)',
     speakers: 'Columns: name, role, org, bio, topics  (topics separated by ; — id optional)',
     sponsors: 'Columns: name, tier, blurb, booth, website, description  (id optional)',
   }
@@ -379,7 +380,8 @@ function CsvImport({ ctx }: { ctx: AppCtx }) {
       payload = rows.filter((r) => r.title).map((r, i) => ({
         id: r.id || 'sx-' + Date.now() + '-' + i, title: r.title, day_id: r.day_id || r.day || ctx.days[0]?.id,
         start: r.start || '09:00', end: r.end || '09:45', type: r.type || 'talk', track: r.track || 'plenary',
-        room: r.room || '', desc: r.desc || r.description || '', tags: [], going: 0,
+        room: r.room || '', desc: r.desc || r.description || '',
+        tags: (r.tags || '').split(/[;|]/).map((t) => t.trim()).filter(Boolean), going: 0,
       }))
     } else if (kind === 'speakers') {
       payload = rows.filter((r) => r.name).map((r, i) => ({
@@ -798,6 +800,19 @@ function SessionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial
       <Field label="Track"><Select value={s.track ?? 'pedagogy'} onChange={(v) => set({ track: v as TrackId })} options={(Object.keys(TRACKS) as TrackId[]).map((k) => [k, TRACKS[k].name])} /></Field>
       <Field label="Room"><Text value={s.room ?? ''} onChange={(v) => set({ room: v })} placeholder="e.g. Main Stage" /></Field>
       <Field label="Description"><Text value={s.desc ?? ''} onChange={(v) => set({ desc: v })} area /></Field>
+
+      {/* tags drive "Suggested for you" and the delegate interest picker; suggest
+          tags already on other sessions to keep one vocabulary (no AI vs A.I.) */}
+      <div style={{ marginBottom: 12 }}>
+        <Eyebrow style={{ marginBottom: 6 }}>Tags — match delegate interests</Eyebrow>
+        <TagPicker
+          value={s.tags ?? []}
+          onChange={(tags) => set({ tags })}
+          suggestions={tagSuggestions(ctx.sessions.filter((x) => x.id !== sid).map((x) => x.tags ?? []))}
+          placeholder="Add a tag (e.g. AI, rubrics)…"
+          countNoun="session"
+        />
+      </div>
 
       {/* slides upload */}
       <Eyebrow style={{ marginBottom: 8 }}>Speaker slides</Eyebrow>

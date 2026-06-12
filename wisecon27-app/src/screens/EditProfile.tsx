@@ -7,6 +7,9 @@ import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { Icon } from '../components/Icon'
 import { AppHeader, Btn, Eyebrow, Press } from '../components/primitives'
+import { TagPicker, tagSuggestions } from '../components/TagPicker'
+
+const MAX_INTERESTS = 8
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box', border: 'none', outline: 'none', background: 'var(--wf-surface)',
@@ -26,7 +29,7 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
   const [email, setEmail] = useState('')
   const [bio, setBio] = useState('')
   const [linkedin, setLinkedin] = useState('')
-  const [interests, setInterests] = useState('')
+  const [interests, setInterests] = useState<string[]>([])
   const [share, setShare] = useState<Record<string, boolean>>({})
   const [loaded, setLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -43,7 +46,7 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
         setEmail(d.email)
         setBio(d.bio ?? '')
         setLinkedin(d.linkedin ?? '')
-        setInterests((d.interests ?? []).join(', '))
+        setInterests(d.interests ?? [])
         setShare(d.share_prefs ?? {})
         setLoaded(true)
       })
@@ -55,7 +58,7 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
   const save = async () => {
     if (saving) return
     setSaving(true)
-    const ints = interests.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 8)
+    const ints = interests.map((s) => s.trim()).filter(Boolean).slice(0, MAX_INTERESTS)
     const { error } = await supabase
       .from('profiles')
       .update({ bio: bio.trim(), linkedin: linkedin.trim(), interests: ints, share_prefs: share })
@@ -114,13 +117,21 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
           style={{ ...inputStyle, marginBottom: 12 }}
           disabled={!loaded}
         />
-        <input
+        {/* interests — pick from the programme's tags or type your own */}
+        <Eyebrow style={{ margin: '20px 0 8px', paddingLeft: 2 }}>My interests</Eyebrow>
+        <TagPicker
           value={interests}
-          onChange={(e) => setInterests(e.target.value)}
-          placeholder="Interests, comma-separated (e.g. AI, rubrics, integrity)"
-          style={{ ...inputStyle, marginBottom: 22 }}
+          onChange={setInterests}
+          suggestions={tagSuggestions(ctx.sessions.map((s) => s.tags ?? []))}
+          max={MAX_INTERESTS}
+          placeholder="Type an interest (e.g. AI, rubrics)…"
+          countNoun="session"
           disabled={!loaded}
+          autoFocus={ctx.params.focus === 'interests' && loaded}
         />
+        <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, margin: '8px 0 22px', paddingLeft: 2, lineHeight: 1.5 }}>
+          Tap a topic from the programme or add your own — we use these to suggest sessions and people for you. Up to {MAX_INTERESTS}.
+        </div>
 
         {/* sharing */}
         <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>What other delegates can see</Eyebrow>

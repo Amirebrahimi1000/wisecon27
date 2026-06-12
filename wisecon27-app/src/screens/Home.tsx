@@ -84,9 +84,10 @@ const runQuick = (ctx: AppCtx, q: QuickAction) => (q.tab ? ctx.setTab(q.tab) : c
 function suggestionsFor(ctx: AppCtx) {
   const myInts = ctx.me.interests.map((i) => i.toLowerCase()).filter(Boolean)
   const eligible = (s: Session) => !ctx.isBookmarked(s.id) && s.type !== 'break' && s.type !== 'social'
+  // exact matches (chip-picked interests) outrank incidental substring hits
   const score = (s: Session) => {
     const hay = [...(s.tags ?? []), TRACKS[s.track].name, ...ctx.speakersOf(s).flatMap((p) => p.topics)].map((x) => x.toLowerCase())
-    return myInts.filter((i) => hay.some((h) => h.includes(i) || i.includes(h))).length
+    return myInts.reduce((n, i) => n + (hay.includes(i) ? 2 : hay.some((h) => h.includes(i) || i.includes(h)) ? 1 : 0), 0)
   }
   const sessions = ctx.sessions
     .filter(eligible)
@@ -108,7 +109,7 @@ function SuggestedSection({ ctx }: { ctx: AppCtx }) {
   if (!hasInterests) {
     return (
       <div style={{ padding: '24px 16px 0' }}>
-        <Press onClick={() => ctx.push('editprofile', {})} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 16, boxShadow: 'var(--shadow-sm)' }}>
+        <Press onClick={() => ctx.push('editprofile', { focus: 'interests' })} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 16, boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ width: 38, height: 38, borderRadius: '50%', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name="sparkles" size={19} /></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>Get personal suggestions</div>
