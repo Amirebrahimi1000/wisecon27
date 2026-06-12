@@ -138,9 +138,15 @@ export function Tour({ ctx }: { ctx: AppCtx }) {
 
       {/* slide */}
       <div key={step} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 32px' }}>
-        <div style={{ width: 92, height: 92, borderRadius: '50%', background: 'rgba(255,255,255,0.16)', display: 'grid', placeItems: 'center', color: '#fff', backdropFilter: 'blur(4px)' }}>
-          <Icon name={s.icon} size={44} stroke={1.6} />
-        </div>
+        {step === 0 ? (
+          // welcome slide leads with the host brand: the white UNIwise mark
+          // (white-on-green logo variant — made for this dark green background)
+          <img src={import.meta.env.BASE_URL + 'uniwise-logo.png'} alt="UNIwise" style={{ width: 118, height: 'auto' }} />
+        ) : (
+          <div style={{ width: 92, height: 92, borderRadius: '50%', background: 'rgba(255,255,255,0.16)', display: 'grid', placeItems: 'center', color: '#fff', backdropFilter: 'blur(4px)' }}>
+            <Icon name={s.icon} size={44} stroke={1.6} />
+          </div>
+        )}
         <h2 style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 27, color: '#fff', lineHeight: 1.15, letterSpacing: '-0.01em', marginTop: 26 }}>{s.title}</h2>
         <p style={{ fontFamily: T.sig, fontSize: 15.5, color: 'rgba(255,255,255,0.92)', lineHeight: 1.55, marginTop: 14, maxWidth: 320 }}>{s.body}</p>
         {s.hint && (

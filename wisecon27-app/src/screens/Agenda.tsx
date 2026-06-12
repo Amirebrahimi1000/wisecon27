@@ -54,9 +54,14 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
   const maxEnd = Math.max(...list.map((s) => toMin(s.end)))
   const top = (m: number) => (m - minStart) * PX_PER_MIN
 
-  // one column per distinct room; roomless sessions (and 1:1 meetings, whose
-  // "room" is a meeting point) become full-width bands
-  const rooms = [...new Set(list.filter((s) => !isMeetingItem(s)).map((s) => s.room).filter(Boolean))].sort(byRoom)
+  // one column per distinct room; 1:1 meetings sit under their agreed meeting
+  // point (own columns, after the programme rooms). Only roomless sessions
+  // (e.g. lunch) become full-width bands.
+  const sessionRooms = [...new Set(list.filter((s) => !isMeetingItem(s)).map((s) => s.room).filter(Boolean))].sort(byRoom)
+  const meetingRooms = [...new Set(list.filter(isMeetingItem).map((s) => s.room))]
+    .filter((r) => !sessionRooms.includes(r))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+  const rooms = [...sessionRooms, ...meetingRooms]
   const colOf = (room: string) => rooms.indexOf(room)
   const cols = Math.max(1, rooms.length)
 
@@ -163,7 +168,7 @@ function CompactList({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
 
 export function Agenda({ ctx }: { ctx: AppCtx }) {
   const [day, setDay] = useState<string>(ctx.params.day || 'd1')
-  const [track, setTrack] = useState<'all' | TrackId>('all')
+  const [track, setTrack] = useState<'all' | 'meetings' | TrackId>('all')
   const [view, setViewState] = useState<AgendaView>(() => getView())
   const setView = (v: AgendaView) => {
     setViewState(v)
@@ -183,8 +188,9 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
     return hay.includes(needle)
   }
 
-  // my accepted 1:1 meetings join the day's programme (track filter doesn't
-  // hide them — they're personal commitments, not programme content)
+  // my accepted 1:1 meetings join the day's programme (track filters don't
+  // hide them — they're personal commitments, not programme content — and the
+  // "1:1 meetings" chip shows only them)
   const meetingItems: Session[] = ctx.meetings
     .filter((m) => m.status === 'accepted' && m.day === day)
     .map((m) => ({
@@ -195,7 +201,9 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
       speakers: [], desc: '', going: 0,
     }))
   const list = [
-    ...ctx.sessions.filter((s) => s.day === day && (track === 'all' || s.track === track) && matches(s)),
+    ...(track === 'meetings'
+      ? []
+      : ctx.sessions.filter((s) => s.day === day && (track === 'all' || s.track === track) && matches(s))),
     ...meetingItems.filter(matches),
   ].sort((a, b) => a.start.localeCompare(b.start))
   const VIEWS: { id: AgendaView; label: string }[] = [
@@ -257,6 +265,9 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
               {t.name}
             </Chip>
           ))}
+        <Chip active={track === 'meetings'} onClick={() => setTrack('meetings')} color={T.green9}>
+          1:1 meetings
+        </Chip>
       </ChipRow>
       <div style={{ padding: '4px 12px ' + (TABBAR_H + 16) + 'px' }}>
         {view === 'timeline' && <Timeline list={list} ctx={ctx} />}
@@ -282,7 +293,11 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
           ))}
         {list.length === 0 && (
           <div style={{ textAlign: 'center', color: T.muted, padding: 40, fontFamily: T.sig }}>
-            {q.trim() ? `Nothing matches “${q.trim()}” on this day.` : 'No sessions in this track today.'}
+            {q.trim()
+              ? `Nothing matches “${q.trim()}” on this day.`
+              : track === 'meetings'
+                ? 'No 1:1 meetings on this day yet — arrange one from a delegate’s profile in Connect.'
+                : 'No sessions in this track today.'}
           </div>
         )}
       </div>

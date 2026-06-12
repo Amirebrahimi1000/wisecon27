@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { Attendee } from '../types'
+import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Divider, Empty, Press } from '../components/primitives'
 import { FirstTimeHint } from '../components/Hint'
 import { QR } from '../components/QR'
@@ -35,6 +36,10 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
   // who chose to hide from the list — unless we already have a relationship
   const discover = people.filter((p) => !incomingIds.has(p.id) && (!p.hidden || p.status !== 'connect'))
 
+  // 1:1 meetings are arranged from delegate profiles, so they surface here too
+  const pendingMeetings = ctx.meetings.filter((m) => m.status === 'pending' && m.inviteeId === ctx.userId).length
+  const confirmedMeetings = ctx.meetings.filter((m) => m.status === 'accepted').length
+
   const tabs = [
     ['discover', 'Discover'],
     ['requests', `Requests${ctx.incomingRequests.length ? ' · ' + ctx.incomingRequests.length : ''}`],
@@ -63,6 +68,26 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
       {/* one labelled scanning action — the badge card above opens your own badge */}
       <div style={{ padding: '10px 16px 0' }}>
         <Btn kind="primary" full icon="qr" onClick={() => ctx.push('scanconnect', {})}>Scan a badge to connect</Btn>
+      </div>
+
+      {/* my 1:1 meetings — pending replies first, else confirmed count */}
+      <div style={{ padding: '10px 16px 0' }}>
+        <Press onClick={() => ctx.push('meetings', {})} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '12px 14px', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+            <Icon name="clock" size={18} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>My meetings</div>
+            <div style={{ fontFamily: T.sig, fontSize: 12.5, color: pendingMeetings > 0 ? T.green10 : T.muted, marginTop: 1, fontWeight: pendingMeetings > 0 ? 600 : 400 }}>
+              {pendingMeetings > 0
+                ? pendingMeetings + ' request' + (pendingMeetings === 1 ? '' : 's') + ' to answer'
+                : confirmedMeetings > 0
+                  ? confirmedMeetings + ' confirmed'
+                  : 'Suggest a 1:1 from any delegate’s profile'}
+            </div>
+          </div>
+          <Icon name="chevronRight" size={18} stroke={2} style={{ color: T.muted }} />
+        </Press>
       </div>
 
       {/* tabs */}
