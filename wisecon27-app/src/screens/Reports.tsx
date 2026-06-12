@@ -177,6 +177,50 @@ function SurveyResults({ ctx }: { ctx: AppCtx }) {
   )
 }
 
+/* ════════ general event feedback (the "Give feedback" screen) ════════ */
+interface FeedbackRow { stars: number; tags: string[]; comment: string; created_at: string }
+
+function EventFeedback() {
+  const [rows, setRows] = useState<FeedbackRow[] | null>(null)
+  useEffect(() => {
+    supabase
+      .from('event_feedback')
+      .select('stars, tags, comment, created_at')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setRows((data ?? []) as FeedbackRow[]))
+  }, [])
+
+  if (!rows) return <div style={card}><Eyebrow>Loading feedback…</Eyebrow></div>
+  const avg = rows.length ? rows.reduce((a, r) => a + r.stars, 0) / rows.length : 0
+
+  const exportCsv = () =>
+    downloadCsv('wisecon27-feedback.csv', [
+      ['Submitted', 'Stars', 'Tags', 'Comment'],
+      ...rows.map((r) => [r.created_at, r.stars, (r.tags ?? []).join('; '), r.comment]),
+    ])
+
+  return (
+    <div style={card}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <div style={h2}>Event feedback</div>
+        <Btn kind="outline" size="sm" icon="download" onClick={exportCsv} disabled={rows.length === 0}>CSV</Btn>
+      </div>
+      <div style={{ fontFamily: T.onest, fontSize: 12, color: T.muted, marginBottom: 14 }}>
+        {rows.length} response{rows.length === 1 ? '' : 's'}{rows.length > 0 ? ` · ${avg.toFixed(1)} ★ average` : ''}
+      </div>
+      {rows.length === 0 && <Eyebrow>No feedback yet.</Eyebrow>}
+      {[5, 4, 3, 2, 1].map((s) => rows.length > 0 && (
+        <Bar key={s} label={s + ' ★'} n={rows.filter((r) => r.stars === s).length} max={rows.length} />
+      ))}
+      {rows.filter((r) => r.comment).slice(0, 8).map((r, i) => (
+        <div key={i} style={{ fontFamily: T.sig, fontSize: 13.5, color: T.body, background: 'var(--wf-grey-3)', borderRadius: 'var(--radius-3)', padding: '8px 11px', lineHeight: 1.45, marginTop: 8 }}>
+          “{r.comment}” <span style={{ fontFamily: T.onest, fontSize: 11, color: T.muted }}>· {r.stars} ★</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /* ════════ poll results ════════ */
 interface PollRow { id: string; session_id: string | null; question: string }
 interface ResultRow { poll_id: string; option_id: string; label: string; sort: number; votes: number }
@@ -246,6 +290,7 @@ export function Reports({ ctx }: { ctx: AppCtx }) {
     <div>
       <Attendance />
       <SurveyResults ctx={ctx} />
+      <EventFeedback />
       <PollResults ctx={ctx} />
     </div>
   )

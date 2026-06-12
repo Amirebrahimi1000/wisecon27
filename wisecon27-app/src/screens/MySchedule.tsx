@@ -62,7 +62,7 @@ export function MySchedule({ ctx }: { ctx: AppCtx }) {
                 {items.map((it, i) => (
                   <div key={it.kind === 'session' ? it.s.id : it.kind === 'activity' ? it.a.id : it.m.id} style={{ borderBottom: i === items.length - 1 ? 'none' : '1px solid ' + T.line }}>
                     {it.kind === 'session' ? (
-                      <SessionRow s={it.s} bookmarked onToggle={() => ctx.toggleBookmark(it.s.id)} onOpen={ctx.openSession} />
+                      <SessionRow s={it.s} bookmarked onToggle={() => ctx.toggleBookmark(it.s.id)} onOpen={ctx.openSession} speakers={ctx.speakersOf(it.s)} />
                     ) : it.kind === 'activity' ? (
                       <Press onClick={() => ctx.push('activities', {})} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', width: '100%', textAlign: 'left' }}>
                         <div style={{ width: 44, flexShrink: 0, textAlign: 'center' }}>

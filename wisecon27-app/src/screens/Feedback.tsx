@@ -1,5 +1,7 @@
 // WISEcon27 — Feedback (pushed): star rating, chips, textarea, success state.
+// Responses are stored in event_feedback (organisers read them under Reports).
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { Icon } from '../components/Icon'
@@ -13,7 +15,20 @@ export function Feedback({ ctx }: { ctx: AppCtx }) {
   const [tags, setTags] = useState<string[]>([])
   const [text, setText] = useState('')
   const [done, setDone] = useState(false)
+  const [saving, setSaving] = useState(false)
   const toggle = (c: string) => setTags(tags.includes(c) ? tags.filter((x) => x !== c) : [...tags, c])
+
+  const submit = async () => {
+    if (saving) return
+    setSaving(true)
+    const { error } = await supabase
+      .from('event_feedback')
+      .insert({ user_id: ctx.userId, stars, tags, comment: text.trim() })
+    setSaving(false)
+    if (error) return ctx.toast(error.message)
+    setDone(true)
+    ctx.toast('Feedback submitted')
+  }
 
   if (done) {
     return (
@@ -58,8 +73,8 @@ export function Feedback({ ctx }: { ctx: AppCtx }) {
           rows={4}
           style={{ width: '100%', boxSizing: 'border-box', resize: 'none', border: '1px solid var(--wf-grey-6)', borderRadius: 'var(--radius-4)', padding: 13, fontFamily: T.sig, fontSize: 15, color: T.ink, outline: 'none', lineHeight: 1.5 }}
         />
-        <Btn kind="primary" full size="lg" onClick={() => { setDone(true); ctx.toast('Feedback submitted') }} disabled={stars === 0} style={{ marginTop: 18 }}>
-          Submit feedback
+        <Btn kind="primary" full size="lg" onClick={submit} disabled={stars === 0 || saving} style={{ marginTop: 18 }}>
+          {saving ? 'Submitting…' : 'Submit feedback'}
         </Btn>
       </div>
     </div>

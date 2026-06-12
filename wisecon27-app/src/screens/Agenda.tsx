@@ -169,6 +169,20 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
     setViewState(v)
     try { localStorage.setItem(VIEW_KEY, v) } catch { /* ignore */ }
   }
+  // live search across title, room and speaker names for the selected day
+  const [searching, setSearching] = useState(false)
+  const [q, setQ] = useState('')
+  const closeSearch = () => {
+    setSearching(false)
+    setQ('')
+  }
+  const matches = (s: Session) => {
+    const needle = q.trim().toLowerCase()
+    if (!needle) return true
+    const hay = [s.title, s.room, ...ctx.speakersOf(s).map((p) => p.name)].join(' ').toLowerCase()
+    return hay.includes(needle)
+  }
+
   // my accepted 1:1 meetings join the day's programme (track filter doesn't
   // hide them — they're personal commitments, not programme content)
   const meetingItems: Session[] = ctx.meetings
@@ -181,8 +195,8 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
       speakers: [], desc: '', going: 0,
     }))
   const list = [
-    ...ctx.sessions.filter((s) => s.day === day && (track === 'all' || s.track === track)),
-    ...meetingItems,
+    ...ctx.sessions.filter((s) => s.day === day && (track === 'all' || s.track === track) && matches(s)),
+    ...meetingItems.filter(matches),
   ].sort((a, b) => a.start.localeCompare(b.start))
   const VIEWS: { id: AgendaView; label: string }[] = [
     { id: 'timeline', label: 'Timeline' },
@@ -191,7 +205,25 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
   ]
   return (
     <div>
-      <AppHeader title="Agenda" sub={[ctx.event.dateline, ctx.event.location].filter(Boolean).join(' · ')} right={<IconBtn name="search" onClick={() => ctx.toast('Search coming soon')} />} />
+      <AppHeader
+        title="Agenda"
+        sub={[ctx.event.dateline, ctx.event.location].filter(Boolean).join(' · ')}
+        right={<IconBtn name={searching ? 'close' : 'search'} onClick={() => (searching ? closeSearch() : setSearching(true))} />}
+      />
+      {searching && (
+        <div style={{ padding: '10px 16px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '0 12px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}>
+            <Icon name="search" size={18} style={{ color: T.muted }} />
+            <input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search sessions, rooms, speakers"
+              style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 0', fontFamily: T.sig, fontSize: 15, color: T.ink, background: 'transparent' }}
+            />
+          </div>
+        </div>
+      )}
       <FirstTimeHint id="agenda" text="Bookmark sessions to build your personal plan — it shows on Home, in My schedule, and exports to your calendar." />
       {/* day selector */}
       <div style={{ display: 'flex', gap: 8, padding: '14px 16px 4px' }}>
@@ -245,11 +277,13 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
                 borderBottom: i === list.length - 1 ? 'none' : '1px solid ' + T.line,
               }}
             >
-              <SessionRow s={s} bookmarked={ctx.isBookmarked(s.id)} onToggle={() => ctx.toggleBookmark(s.id)} onOpen={(x) => openItem(ctx, x)} />
+              <SessionRow s={s} bookmarked={ctx.isBookmarked(s.id)} onToggle={() => ctx.toggleBookmark(s.id)} onOpen={(x) => openItem(ctx, x)} speakers={ctx.speakersOf(s)} />
             </div>
           ))}
         {list.length === 0 && (
-          <div style={{ textAlign: 'center', color: T.muted, padding: 40, fontFamily: T.sig }}>No sessions in this track today.</div>
+          <div style={{ textAlign: 'center', color: T.muted, padding: 40, fontFamily: T.sig }}>
+            {q.trim() ? `Nothing matches “${q.trim()}” on this day.` : 'No sessions in this track today.'}
+          </div>
         )}
       </div>
     </div>

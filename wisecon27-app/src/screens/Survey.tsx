@@ -17,8 +17,12 @@ export function Survey({ ctx }: { ctx: AppCtx }) {
   const complete = required.every((q) => answers[q.id] !== undefined && answers[q.id] !== '')
 
   const submit = async () => {
-    await ctx.submitSurvey(answers)
-    setDone(true)
+    try {
+      await ctx.submitSurvey(answers)
+      setDone(true)
+    } catch {
+      /* submit failed — the toast is already shown, keep the form so nothing is lost */
+    }
   }
 
   if (done) {

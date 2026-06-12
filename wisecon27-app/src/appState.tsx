@@ -683,12 +683,17 @@ export function useAppState(): AppCtx {
 
   const submitSessionFeedback = async (sessionId: string, stars: number, tags: string[], comment: string) => {
     setMyFeedback((prev) => ({ ...prev, [sessionId]: { stars, tags, comment } }))
-    await supabase.from('session_feedback').upsert({ session_id: sessionId, user_id: userId, stars, tags, comment })
+    const { error } = await supabase.from('session_feedback').upsert({ session_id: sessionId, user_id: userId, stars, tags, comment })
+    if (error) toast('Could not save your rating — try again')
   }
 
   const submitSurvey = async (answers: Record<string, unknown>) => {
+    const { error } = await supabase.from('survey_responses').upsert({ user_id: userId, answers })
+    if (error) {
+      toast('Could not submit the survey — try again')
+      throw new Error(error.message)
+    }
     setSurveyDone(true)
-    await supabase.from('survey_responses').upsert({ user_id: userId, answers })
   }
 
   return {

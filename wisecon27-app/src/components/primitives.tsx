@@ -2,7 +2,7 @@
 // plus AppHeader/Chip (screens-core) and BottomNav/Toast (app.jsx).
 import type { CSSProperties, ReactNode } from 'react'
 import { T, STATUS_INSET } from '../theme'
-import { TRACKS, speakersOf } from '../data'
+import { TRACKS } from '../data'
 import type { Session, Speaker, TrackId } from '../types'
 import { Icon, type IconName } from './Icon'
 
@@ -273,18 +273,21 @@ export function SessionRow({
   bookmarked,
   onToggle,
   onOpen,
+  speakers = [],
   showBookmark = true,
 }: {
   s: Session
   bookmarked: boolean
   onToggle: () => void
   onOpen: (s: Session) => void
+  /** resolved speaker objects for this session (e.g. ctx.speakersOf(s)) */
+  speakers?: Speaker[]
   showBookmark?: boolean
 }) {
   const t = TRACKS[s.track]
   const isBreak = s.type === 'break' || s.type === 'social'
   const isMeeting = s.id.startsWith('mtg:') // 1:1 meeting riding along in the agenda
-  const sp = speakersOf(s)
+  const sp = speakers
   return (
     <Press onClick={() => onOpen(s)} style={{ display: 'flex', gap: 12, padding: '14px 16px', alignItems: 'stretch', background: 'var(--wf-surface)' }}>
       <div style={{ width: 52, flexShrink: 0, textAlign: 'right', paddingTop: 1 }}>
@@ -329,28 +332,6 @@ export function SessionRow({
         </div>
       )}
     </Press>
-  )
-}
-
-/* ── card wrapper ── */
-export function Card({
-  children,
-  style = {},
-  onClick,
-  pad = 16,
-}: {
-  children: ReactNode
-  style?: CSSProperties
-  onClick?: () => void
-  pad?: number
-}) {
-  const inner: CSSProperties = { background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', padding: pad, boxShadow: 'var(--shadow-card)', ...style }
-  return onClick ? (
-    <Press onClick={onClick} style={inner}>
-      {children}
-    </Press>
-  ) : (
-    <div style={inner}>{children}</div>
   )
 }
 
@@ -427,5 +408,4 @@ export function Empty({ icon, text }: { icon: IconName; text: string }) {
   )
 }
 
-export { speakersOf }
 export type { Speaker }
