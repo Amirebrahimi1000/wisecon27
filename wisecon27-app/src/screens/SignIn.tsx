@@ -51,24 +51,35 @@ export function SignIn() {
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--wf-grey-2)' }}>
-      {/* brand hero */}
-      <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)', padding: STATUS_INSET + 'px 26px 58px' }}>
-        <div style={{ position: 'relative', paddingTop: 40 }}>
-          <img
-            src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'}
-            alt="WISEcon27 — Connect. Create. Transform Assessment."
-            style={{ width: 280, maxWidth: '84%', display: 'block', filter: 'brightness(0) invert(1)' }}
-          />
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 26, fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: 'rgba(255,255,255,0.95)', background: 'rgba(255,255,255,0.14)', borderRadius: 999, padding: '7px 16px', backdropFilter: 'blur(4px)' }}>
+    // full-bleed brand gradient (same family as the Home hero and the tour);
+    // the form floats in a white card instead of hugging the green band
+    <div className="wc-noscroll" style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', position: 'relative', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)' }}>
+      {/* faint rotated watermark (UNIwise bubble), echoing the Home hero */}
+      <img src={import.meta.env.BASE_URL + 'logo-mark.svg'} alt="" style={{ position: 'absolute', right: -54, top: -18, width: 240, opacity: 0.1, filter: 'brightness(0) invert(1)', transform: 'rotate(-10deg)', pointerEvents: 'none' }} />
+
+      {/* brand block */}
+      <div style={{ position: 'relative', padding: (STATUS_INSET + 34) + 'px 26px 0' }}>
+        <div style={{ fontFamily: T.onest, fontWeight: 600, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.8)' }}>
+          UNIwise presents
+        </div>
+        <img
+          src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'}
+          alt="WISEcon27 — Connect. Create. Transform Assessment."
+          style={{ width: 290, maxWidth: '88%', display: 'block', marginTop: 14, filter: 'brightness(0) invert(1)' }}
+        />
+        {(dateline || location) && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 22, fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: 'rgba(255,255,255,0.95)', background: 'rgba(255,255,255,0.14)', borderRadius: 999, padding: '7px 16px', backdropFilter: 'blur(4px)' }}>
             <Icon name="calendar" size={15} />
             {[dateline, location].filter(Boolean).join(' · ')}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* sheet */}
-      <div style={{ flex: 1, marginTop: -28, background: 'var(--wf-grey-2)', borderRadius: '24px 24px 0 0', padding: '28px 22px' }}>
+      <div style={{ flex: 1, minHeight: 26 }} />
+
+      {/* floating form card */}
+      <div style={{ position: 'relative', padding: '0 16px calc(20px + env(safe-area-inset-bottom, 0px))' }}>
+        <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: '24px 22px' }}>
         {status === 'sent' ? (
           <div>
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: T.green1, color: T.green9, display: 'grid', placeItems: 'center', margin: '0 auto 18px' }}>
@@ -108,9 +119,9 @@ export function SignIn() {
           </div>
         ) : (
           <>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink }}>Sign in</div>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 22, color: T.ink }}>Welcome, delegate</div>
             <p style={{ fontFamily: T.sig, fontSize: 14.5, color: T.muted, marginTop: 6, lineHeight: 1.5 }}>
-              Enter your email and we'll send a sign-in code — no password needed.
+              Sign in with your email and we'll send you a code — no password needed.
             </p>
             <div style={{ marginTop: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '0 14px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}>
@@ -136,19 +147,20 @@ export function SignIn() {
             <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 18, lineHeight: 1.5, textAlign: 'center' }}>
               By continuing you agree to the event terms. Your badge is created automatically on first sign-in.
             </div>
+          </>
+        )}
+        </div>
 
-            {!isStandalone() && (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0 16px' }}>
-                  <div style={{ flex: 1, height: 1, background: 'var(--wf-grey-6)' }} />
-                  <div style={{ fontFamily: T.onest, fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.muted }}>
-                    For the best experience
-                  </div>
-                  <div style={{ flex: 1, height: 1, background: 'var(--wf-grey-6)' }} />
-                </div>
-                <InstallCard />
-              </>
-            )}
+        {status !== 'sent' && !isStandalone() && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 6px 12px' }}>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.28)' }} />
+              <div style={{ fontFamily: T.onest, fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)' }}>
+                For the best experience
+              </div>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.28)' }} />
+            </div>
+            <InstallCard />
           </>
         )}
       </div>

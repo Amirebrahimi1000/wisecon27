@@ -168,7 +168,16 @@ function CompactList({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
 
 export function Agenda({ ctx }: { ctx: AppCtx }) {
   const [day, setDay] = useState<string>(ctx.params.day || 'd1')
-  const [track, setTrack] = useState<'all' | 'meetings' | TrackId>('all')
+  // multi-select filters: empty set = everything ("All"); chips toggle on/off
+  const [filters, setFilters] = useState<Set<'meetings' | TrackId>>(new Set())
+  const toggleFilter = (k: 'meetings' | TrackId) =>
+    setFilters((prev) => {
+      const next = new Set(prev)
+      if (next.has(k)) next.delete(k)
+      else next.add(k)
+      return next
+    })
+  const showAll = filters.size === 0
   const [view, setViewState] = useState<AgendaView>(() => getView())
   const setView = (v: AgendaView) => {
     setViewState(v)
@@ -188,9 +197,8 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
     return hay.includes(needle)
   }
 
-  // my accepted 1:1 meetings join the day's programme (track filters don't
-  // hide them — they're personal commitments, not programme content — and the
-  // "1:1 meetings" chip shows only them)
+  // my accepted 1:1 meetings join the day's programme; like tracks they have
+  // their own chip, so any combination of tracks and meetings can be shown
   const meetingItems: Session[] = ctx.meetings
     .filter((m) => m.status === 'accepted' && m.day === day)
     .map((m) => ({
@@ -201,10 +209,8 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
       speakers: [], desc: '', going: 0,
     }))
   const list = [
-    ...(track === 'meetings'
-      ? []
-      : ctx.sessions.filter((s) => s.day === day && (track === 'all' || s.track === track) && matches(s))),
-    ...meetingItems.filter(matches),
+    ...ctx.sessions.filter((s) => s.day === day && (showAll || filters.has(s.track)) && matches(s)),
+    ...(showAll || filters.has('meetings') ? meetingItems.filter(matches) : []),
   ].sort((a, b) => a.start.localeCompare(b.start))
   const VIEWS: { id: AgendaView; label: string }[] = [
     { id: 'timeline', label: 'Timeline' },
@@ -257,15 +263,15 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
         })}
       </div>
       <ChipRow style={{ paddingBottom: 4 }}>
-        <Chip active={track === 'all'} onClick={() => setTrack('all')}>All tracks</Chip>
+        <Chip active={showAll} onClick={() => setFilters(new Set())}>All</Chip>
         {(Object.entries(TRACKS) as [TrackId, (typeof TRACKS)[TrackId]][])
           .filter(([k]) => k !== 'plenary')
           .map(([k, t]) => (
-            <Chip key={k} active={track === k} onClick={() => setTrack(k)} color={t.dot}>
+            <Chip key={k} active={filters.has(k)} onClick={() => toggleFilter(k)} color={t.dot}>
               {t.name}
             </Chip>
           ))}
-        <Chip active={track === 'meetings'} onClick={() => setTrack('meetings')} color={T.green9}>
+        <Chip active={filters.has('meetings')} onClick={() => toggleFilter('meetings')} color={T.green9}>
           1:1 meetings
         </Chip>
       </ChipRow>
@@ -295,9 +301,9 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
           <div style={{ textAlign: 'center', color: T.muted, padding: 40, fontFamily: T.sig }}>
             {q.trim()
               ? `Nothing matches “${q.trim()}” on this day.`
-              : track === 'meetings'
+              : filters.size === 1 && filters.has('meetings')
                 ? 'No 1:1 meetings on this day yet — arrange one from a delegate’s profile in Connect.'
-                : 'No sessions in this track today.'}
+                : 'Nothing matches your filters on this day.'}
           </div>
         )}
       </div>
