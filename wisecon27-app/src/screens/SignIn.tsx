@@ -58,8 +58,9 @@ export function SignIn() {
       <img src={import.meta.env.BASE_URL + 'logo-mark.svg'} alt="" style={{ position: 'absolute', right: -54, top: -18, width: 240, opacity: 0.1, filter: 'brightness(0) invert(1)', transform: 'rotate(-10deg)', pointerEvents: 'none' }} />
 
       {/* brand block — stacked tight like the Home hero so the form card and
-          install steps fit on one screen */}
-      <div style={{ position: 'relative', padding: (STATUS_INSET + 10) + 'px 26px 0' }}>
+          install steps fit on one screen. The status-bar inset only applies in
+          the installed app (browsers draw their own bar above the page). */}
+      <div style={{ position: 'relative', padding: (isStandalone() ? STATUS_INSET + 10 : 22) + 'px 26px 0' }}>
         <div style={{ fontFamily: T.onest, fontWeight: 600, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.8)' }}>
           UNIwise presents
         </div>
