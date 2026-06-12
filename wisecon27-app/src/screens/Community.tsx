@@ -10,7 +10,6 @@ import { useFeed } from '../feed'
 import { uploadWallPhoto, removeWallPhoto } from '../lib/storage'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Empty, IconBtn, Press } from '../components/primitives'
-import { FirstTimeHint } from '../components/Hint'
 
 function relTime(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
@@ -73,7 +72,6 @@ export function Community({ ctx }: { ctx: AppCtx }) {
   return (
     <div>
       <AppHeader title="Community" sub="The delegate wall" onBack={ctx.back} />
-      <FirstTimeHint id="community" text="Share takeaways, questions and photos with fellow delegates. Everything stays inside the app, and you can remove your posts at any time." />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {/* composer */}
         <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 16 }}>

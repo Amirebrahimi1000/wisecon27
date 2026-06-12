@@ -13,21 +13,9 @@ import { slidesPublicUrl } from '../lib/storage'
 import { downloadCsv } from '../lib/csv'
 import type { Session } from '../types'
 
-// Real-time header bits derived from the event clock + live day list.
-function eventHeader(ctx: AppCtx, clock: EventClock) {
-  const todayLong = ctx.days[clock.dayIndex - 1]?.long ?? ''
-  // primary date line shown on every variant
-  const dateLine = clock.phase === 'live' ? todayLong || ctx.event.dateline : ctx.event.dateline
-  // short status used in the live/Day pill
-  const status =
-    clock.phase === 'live' ? `Day ${clock.dayIndex} of ${clock.total}`
-    : clock.phase === 'before' ? (clock.countdown ? `Starts in ${clock.countdown}` : 'Starting soon')
-    : clock.phase === 'ended' ? 'Event ended'
-    : ''
-  // single combined line for the simpler variants
-  const line = [dateLine, status].filter(Boolean).join(' · ')
-  return { todayLong, dateLine, status, line }
-}
+// The hero's date line: today's long name while live, the dateline otherwise.
+const heroDateLine = (ctx: AppCtx, clock: EventClock) =>
+  clock.phase === 'live' ? ctx.days[clock.dayIndex - 1]?.long || ctx.event.dateline : ctx.event.dateline
 
 interface PlanItem {
   id: string
@@ -79,13 +67,11 @@ interface QuickAction {
   tab?: 'agenda' | 'speakers' | 'connect' | 'activities'
   push?: 'ticket' | 'info' | 'activities' | 'community' | 'venuemap'
 }
+// only destinations the tab bar does NOT already offer — no duplicates
 const QUICK: QuickAction[] = [
-  { icon: 'calendar', label: 'Agenda', tab: 'agenda' },
-  { icon: 'sparkles', label: 'Activities', tab: 'activities' },
   { icon: 'message', label: 'Community', push: 'community' },
   { icon: 'map', label: 'Venue map', push: 'venuemap' },
   { icon: 'speakers', label: 'Speakers', tab: 'speakers' },
-  { icon: 'connect', label: 'Connect', tab: 'connect' },
   { icon: 'qr', label: 'My badge', push: 'ticket' },
   { icon: 'info', label: 'Info', push: 'info' },
 ]
@@ -256,6 +242,33 @@ function PostEventSection({ ctx }: { ctx: AppCtx }) {
   )
 }
 
+/* ════════ pending meeting requests — only shown when action is needed ════════ */
+function MeetingRequestsCard({ ctx }: { ctx: AppCtx }) {
+  const pending = ctx.meetings.filter((m) => m.status === 'pending' && m.inviteeId === ctx.userId)
+  if (pending.length === 0) return null
+  const first = pending[0]
+  const d = ctx.days.find((x) => x.id === first.day)
+  const detail = `${ctx.nameFor(first.requesterId)} suggested ${d ? d.dow + ' ' : ''}${first.start}–${first.end}` +
+    (pending.length > 1 ? ` · +${pending.length - 1} more` : '')
+  return (
+    <div style={{ padding: '0 16px 18px' }}>
+      <Press onClick={() => ctx.push('meetings', {})} style={{ display: 'flex', alignItems: 'center', gap: 12, background: T.green9, borderRadius: 'var(--radius-5)', padding: 16, color: '#fff', boxShadow: 'var(--shadow-card)' }}>
+        <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+          <Icon name="clock" size={19} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5 }}>
+            {pending.length} meeting request{pending.length === 1 ? '' : 's'} waiting
+          </div>
+          <div style={{ fontFamily: T.sig, fontSize: 12.5, opacity: 0.88, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail}</div>
+        </div>
+        <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13, flexShrink: 0 }}>Respond</span>
+        <Icon name="chevronRight" size={17} stroke={2} />
+      </Press>
+    </div>
+  )
+}
+
 function HeroStat({ n, label }: { n: number; label: string }) {
   return (
     <div style={{ flex: 1, background: 'rgba(255,255,255,0.14)', borderRadius: 'var(--radius-4)', padding: '12px 12px', backdropFilter: 'blur(4px)' }}>
@@ -282,7 +295,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
   }, [])
   const { upNext, later, mine } = planForHome(ctx, clock)
   const t = upNext && upNext.kind === 'session' && upNext.session ? TRACKS[upNext.session.track] : null
-  const h = eventHeader(ctx, clock)
+  const dateLine = heroDateLine(ctx, clock)
   const live = clock.phase === 'live'
   return (
     <div style={{ background: 'var(--wf-grey-2)', minHeight: '100%', paddingBottom: TABBAR_H + 16 }}>
@@ -317,10 +330,10 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
                 <>Assessment,<br />reimagined.</>
               )}
             </h1>
-            {h.dateLine && (
+            {dateLine && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 12, fontFamily: T.sig, fontSize: 14, color: 'rgba(255,255,255,0.92)' }}>
                 <Icon name="calendar" size={15} style={{ opacity: 0.9 }} />
-                {h.dateLine}
+                {dateLine}
               </div>
             )}
           </div>
@@ -347,6 +360,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
         <div style={{ padding: '0 16px' }}>
           <InstallBanner />
         </div>
+        <MeetingRequestsCard ctx={ctx} />
         {clock.phase === 'ended' && <PostEventSection ctx={ctx} />}
         {upNext && clock.phase !== 'ended' && (
           <div style={{ padding: '0 16px' }}>
