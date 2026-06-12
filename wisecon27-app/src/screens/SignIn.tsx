@@ -57,25 +57,26 @@ export function SignIn() {
       {/* faint rotated watermark (UNIwise bubble), echoing the Home hero */}
       <img src={import.meta.env.BASE_URL + 'logo-mark.svg'} alt="" style={{ position: 'absolute', right: -54, top: -18, width: 240, opacity: 0.1, filter: 'brightness(0) invert(1)', transform: 'rotate(-10deg)', pointerEvents: 'none' }} />
 
-      {/* brand block */}
-      <div style={{ position: 'relative', padding: (STATUS_INSET + 34) + 'px 26px 0' }}>
+      {/* brand block — stacked tight like the Home hero so the form card and
+          install steps fit on one screen */}
+      <div style={{ position: 'relative', padding: (STATUS_INSET + 10) + 'px 26px 0' }}>
         <div style={{ fontFamily: T.onest, fontWeight: 600, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.8)' }}>
           UNIwise presents
         </div>
         <img
           src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'}
           alt="WISEcon27 — Connect. Create. Transform Assessment."
-          style={{ width: 290, maxWidth: '88%', display: 'block', marginTop: 14, filter: 'brightness(0) invert(1)' }}
+          style={{ width: 290, maxWidth: '88%', display: 'block', marginTop: 12, filter: 'brightness(0) invert(1)' }}
         />
         {(dateline || location) && (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 22, fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: 'rgba(255,255,255,0.95)', background: 'rgba(255,255,255,0.14)', borderRadius: 999, padding: '7px 16px', backdropFilter: 'blur(4px)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 16, fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: 'rgba(255,255,255,0.95)', background: 'rgba(255,255,255,0.14)', borderRadius: 999, padding: '7px 16px', backdropFilter: 'blur(4px)' }}>
             <Icon name="calendar" size={15} />
             {[dateline, location].filter(Boolean).join(' · ')}
           </div>
         )}
       </div>
 
-      <div style={{ flex: 1, minHeight: 26 }} />
+      <div style={{ height: 22, flexShrink: 0 }} />
 
       {/* floating form card */}
       <div style={{ position: 'relative', padding: '0 16px calc(20px + env(safe-area-inset-bottom, 0px))' }}>
