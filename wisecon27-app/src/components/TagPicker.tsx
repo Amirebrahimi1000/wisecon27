@@ -102,9 +102,9 @@ export function TagPicker({
         }}
       >
         {value.map((v) => (
-          <span key={v} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 30, padding: '0 6px 0 11px', borderRadius: 999, background: 'var(--wf-grey-12)', color: 'var(--wf-grey-1)', fontFamily: T.sig, fontWeight: 600, fontSize: 13 }}>
+          <span key={v} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 30, padding: '0 6px 0 11px', borderRadius: 999, background: T.green9, color: '#fff', fontFamily: T.sig, fontWeight: 600, fontSize: 13 }}>
             {v}
-            <Press onClick={() => remove(v)} style={{ display: 'grid', placeItems: 'center', width: 20, height: 20, borderRadius: '50%', color: 'var(--wf-grey-5)' }} ariaLabel={'Remove ' + v}>
+            <Press onClick={() => remove(v)} style={{ display: 'grid', placeItems: 'center', width: 20, height: 20, borderRadius: '50%', color: 'rgba(255,255,255,0.75)' }} ariaLabel={'Remove ' + v}>
               <Icon name="close" size={13} stroke={2.4} />
             </Press>
           </span>
