@@ -7,6 +7,7 @@ import { Icon } from '../components/Icon'
 import { AppHeader, Btn, Eyebrow, Press } from '../components/primitives'
 import { enablePush, isPushEnabled, pushSupported } from '../push'
 import { getMode, setMode, getTextSize, setTextSize, type AppMode, type TextSize } from '../mode'
+import { useT, LANGS, type Lang } from '../i18n'
 
 const MODES: { id: AppMode; name: string; desc: string }[] = [
   { id: 'light', name: 'Light', desc: 'Always light (default)' },
@@ -57,6 +58,7 @@ function PickList<Id extends string>({ options, value, onPick }: { options: { id
 }
 
 export function Settings({ ctx }: { ctx: AppCtx }) {
+  const { t, lang, setLang } = useT()
   const [pushOn, setPushOn] = useState(false)
   const [busy, setBusy] = useState(false)
   const [mode, setModeState] = useState<AppMode>(() => getMode())
@@ -103,8 +105,16 @@ export function Settings({ ctx }: { ctx: AppCtx }) {
 
   return (
     <div>
-      <AppHeader title="Settings" onBack={ctx.back} />
+      <AppHeader title={t('settings.title')} onBack={ctx.back} />
       <div style={{ padding: '16px 16px ' + (TABBAR_H + 16) + 'px' }}>
+        {/* language */}
+        <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }}>{t('settings.language')}</Eyebrow>
+        <PickList
+          options={LANGS.map((l) => ({ id: l.id, name: l.name, desc: l.english }))}
+          value={lang}
+          onPick={(l: Lang) => setLang(l)}
+        />
+
         {/* push notifications */}
         <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }}>Notifications</Eyebrow>
         <div style={{ ...cardStyle, padding: 16 }}>

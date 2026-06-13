@@ -8,9 +8,11 @@ import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Eyebrow, Press } from '../components/primitives'
 import { QR } from '../components/QR'
 import { useAuth } from '../auth'
+import { useT } from '../i18n'
 
 export function Profile({ ctx }: { ctx: AppCtx }) {
   const { signOut } = useAuth()
+  const { t } = useT()
   const me = ctx.me
   const count = ctx.sessions.filter((s) => ctx.isBookmarked(s.id)).length
   const connectedCount = ctx.attendees.filter((a) => a.status === 'connected').length
@@ -20,48 +22,51 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
   interface Row { icon: IconName; label: string; detail?: string; to: () => void }
   interface Section { title: string; rows: Row[] }
   const sections: Section[] = [
-    { title: 'My event', rows: [
-      { icon: 'calendar', label: 'My schedule', detail: count + ' saved', to: () => ctx.push('myschedule', {}) },
-      { icon: 'connect', label: 'My connections', detail: String(connectedCount), to: () => ctx.setTab('connect' as TabId) },
-      { icon: 'clock', label: 'My meetings', detail: pendingMeetings > 0 ? pendingMeetings + ' to answer' : String(confirmedMeetings), to: () => ctx.push('meetings', {}) },
-      { icon: 'bell', label: 'Notifications', detail: ctx.unread > 0 ? ctx.unread + ' new' : '', to: () => ctx.push('notifications', {}) },
+    { title: t('more.sec.myEvent'), rows: [
+      { icon: 'calendar', label: t('more.mySchedule'), detail: count + ' ' + t('more.saved'), to: () => ctx.push('myschedule', {}) },
+      { icon: 'connect', label: t('more.myConnections'), detail: String(connectedCount), to: () => ctx.setTab('connect' as TabId) },
+      { icon: 'clock', label: t('more.myMeetings'), detail: pendingMeetings > 0 ? pendingMeetings + ' ' + t('more.toAnswer') : String(confirmedMeetings), to: () => ctx.push('meetings', {}) },
+      { icon: 'list', label: t('more.notes'), to: () => ctx.push('notes', {}) },
+      { icon: 'bell', label: t('more.notifications'), detail: ctx.unread > 0 ? ctx.unread + ' ' + t('more.new') : '', to: () => ctx.push('notifications', {}) },
     ] },
-    { title: 'Explore', rows: [
-      { icon: 'grid', label: 'Sponsors & exhibitors', to: () => ctx.push('sponsors', {}) },
-      { icon: 'message', label: 'Community feed', to: () => ctx.push('community', {}) },
-      { icon: 'map', label: 'Venue map', to: () => ctx.push('venuemap', {}) },
-      { icon: 'sparkles', label: 'Interactive activities', to: () => ctx.push('activities', {}) },
-      { icon: 'info', label: 'Event info & Wi-Fi', to: () => ctx.push('info', {}) },
+    { title: t('more.sec.explore'), rows: [
+      { icon: 'grid', label: t('more.sponsors'), to: () => ctx.push('sponsors', {}) },
+      { icon: 'message', label: t('more.community'), to: () => ctx.push('community', {}) },
+      { icon: 'map', label: t('more.venueMap'), to: () => ctx.push('venuemap', {}) },
+      { icon: 'download', label: t('more.resources'), to: () => ctx.push('resources', {}) },
+      { icon: 'sparkles', label: t('more.activities'), to: () => ctx.push('activities', {}) },
+      { icon: 'info', label: t('more.info'), to: () => ctx.push('info', {}) },
     ] },
-    { title: 'Support & settings', rows: [
-      { icon: 'star', label: 'Give feedback', to: () => ctx.push('feedback', {}) },
-      { icon: 'poll', label: 'Post-conference survey', detail: ctx.surveyDone ? 'Done' : '', to: () => ctx.push('survey', {}) },
-      { icon: 'arrowRight', label: 'Take the app tour', detail: '1 min', to: () => ctx.push('tour', {}) },
-      { icon: 'settings', label: 'Settings', to: () => ctx.push('settings' as PushScreen, {}) },
+    { title: t('more.sec.support'), rows: [
+      { icon: 'shield', label: t('more.certificate'), to: () => ctx.push('certificate', {}) },
+      { icon: 'star', label: t('more.feedback'), to: () => ctx.push('feedback', {}) },
+      { icon: 'poll', label: t('more.survey'), detail: ctx.surveyDone ? t('more.done') : '', to: () => ctx.push('survey', {}) },
+      { icon: 'arrowRight', label: t('more.tour'), detail: t('more.min1'), to: () => ctx.push('tour', {}) },
+      { icon: 'settings', label: t('more.settings'), to: () => ctx.push('settings' as PushScreen, {}) },
     ] },
-    ...(ctx.isAdmin || ctx.isStaff ? [{ title: 'Organiser', rows: [
-      { icon: 'qr' as IconName, label: 'Entrance scanning', detail: 'Staff', to: () => ctx.push('scanner', {}) },
-      ...(ctx.isAdmin ? [{ icon: 'grid' as IconName, label: 'Admin tools', detail: 'Organiser', to: () => ctx.push('admin', {}) }] : []),
+    ...(ctx.isAdmin || ctx.isStaff ? [{ title: t('more.sec.organiser'), rows: [
+      { icon: 'qr' as IconName, label: t('more.scanning'), detail: t('more.staff'), to: () => ctx.push('scanner', {}) },
+      ...(ctx.isAdmin ? [{ icon: 'grid' as IconName, label: t('more.admin'), detail: t('more.sec.organiser'), to: () => ctx.push('admin', {}) }] : []),
     ] }] : []),
   ]
 
   return (
     <div>
-      <AppHeader title="More" />
+      <AppHeader title={t('more.title')} />
       <div style={{ padding: '8px 16px', paddingBottom: 'calc(' + (TABBAR_H + 24) + 'px + env(safe-area-inset-bottom, 0px))' }}>
         {/* my profile — tap through to edit; nudges a first-time fill-out */}
         <Press onClick={() => ctx.push('editprofile', {})} style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 14 }}>
           <Avatar initials={me.initials} color={me.color} size={48} src={me.avatarUrl} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Eyebrow color={T.subtle}>My profile</Eyebrow>
+            <Eyebrow color={T.subtle}>{t('more.myProfile')}</Eyebrow>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16.5, color: T.ink, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{me.name}</div>
             {me.avatarUrl ? (
               <div style={{ fontFamily: T.onest, fontSize: 12.5, color: T.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {[me.role, me.org].filter(Boolean).join(' · ') || 'View and edit your profile'}
+                {[me.role, me.org].filter(Boolean).join(' · ') || t('more.viewEdit')}
               </div>
             ) : (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 3, fontFamily: T.sig, fontWeight: 600, fontSize: 12.5, color: T.green10 }}>
-                <Icon name="sparkles" size={13} /> Add a photo & interests
+                <Icon name="sparkles" size={13} /> {t('more.completeHint')}
               </div>
             )}
           </div>
@@ -73,7 +78,7 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
             <QR value={me.badgeId} size={56} />
           </div>
           <div style={{ flex: 1 }}>
-            <Eyebrow color="rgba(255,255,255,0.6)">My badge</Eyebrow>
+            <Eyebrow color="rgba(255,255,255,0.6)">{t('more.myBadge')}</Eyebrow>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16, marginTop: 3 }}>{me.ticket}</div>
             <div style={{ fontFamily: T.onest, fontSize: 12.5, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{me.badgeId}</div>
           </div>
@@ -98,7 +103,7 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
           </div>
         ))}
         <div style={{ textAlign: 'center', marginTop: 6 }}>
-          <Btn kind="danger" icon="logout" onClick={() => signOut()}>Sign out</Btn>
+          <Btn kind="danger" icon="logout" onClick={() => signOut()}>{t('more.signOut')}</Btn>
         </div>
         <div style={{ textAlign: 'center', fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 18 }}>WISEcon27 · {__APP_VERSION__} · Powered by UNIwise</div>
       </div>

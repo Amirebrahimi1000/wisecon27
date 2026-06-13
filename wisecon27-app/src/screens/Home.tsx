@@ -10,6 +10,7 @@ import { Avatar, BookmarkBtn, Btn, Eyebrow, IconBtn, Press, TrackTag } from '../
 import { InstallBanner } from '../install'
 import { useHasUnreadPosts } from '../feed'
 import { useEventClock, type EventClock } from '../eventClock'
+import { useT } from '../i18n'
 import { slidesPublicUrl } from '../lib/storage'
 import { downloadCsv } from '../lib/csv'
 import type { Session } from '../types'
@@ -270,6 +271,36 @@ function HeroStat({ n, label }: { n: number; label: string }) {
   )
 }
 
+/* ── first-time nudge: complete your profile (dismissible, ties to Suggested) ── */
+function ProfileNudge({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
+  const key = 'wc27.nudge.profile.' + ctx.userId
+  const incomplete = !ctx.me.avatarUrl || ctx.me.interests.length === 0
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(key) === '1' } catch { return false }
+  })
+  if (!incomplete || dismissed) return null
+  const dismiss = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try { localStorage.setItem(key, '1') } catch { /* ignore */ }
+    setDismissed(true)
+  }
+  return (
+    <div style={{ padding: '0 16px', marginBottom: 4 }}>
+      <Press onClick={() => ctx.push('editprofile', { focus: 'interests' })} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', padding: 16, boxShadow: 'var(--shadow-card)' }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name="sparkles" size={20} /></div>
+        <div style={{ flex: 1, paddingRight: 16 }}>
+          <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{t('profileNudge.title')}</div>
+          <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginTop: 1, lineHeight: 1.4 }}>{t('profileNudge.body')}</div>
+        </div>
+        <Press onClick={dismiss} ariaLabel="Dismiss" style={{ position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%', display: 'grid', placeItems: 'center', color: T.muted }}>
+          <Icon name="close" size={15} stroke={2.2} />
+        </Press>
+      </Press>
+    </div>
+  )
+}
+
 /* ════════ Home (Bold) ════════ */
 function HomeBold({ ctx }: { ctx: AppCtx }) {
   const clock = useEventClock(ctx.event.startISO, ctx.event.endISO, ctx.days.length)
@@ -291,6 +322,12 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
   const t = upNext && upNext.kind === 'session' && upNext.session ? trackOf(upNext.session.track) : null
   const dateLine = heroDateLine(ctx, clock)
   const live = clock.phase === 'live'
+  // "Up next" becomes "Happening now" when the next item is currently running —
+  // this folds a live-status cue into the existing card instead of adding a
+  // separate banner that would compete with Suggested for you below.
+  const pad2 = (n: number) => String(n).padStart(2, '0')
+  const nowHHMM = live ? `${pad2(new Date().getHours())}:${pad2(new Date().getMinutes())}` : ''
+  const happeningNow = !!(live && upNext && upNext.start <= nowHHMM && upNext.end > nowHHMM)
   return (
     <div style={{ background: 'var(--wf-grey-2)', minHeight: '100%', paddingBottom: TABBAR_H + 16 }}>
       {/* hero */}
@@ -379,10 +416,20 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
           <InstallBanner />
         </div>
         <MeetingRequestsCard ctx={ctx} />
+        {clock.phase !== 'ended' && <ProfileNudge ctx={ctx} />}
         {clock.phase === 'ended' && <PostEventSection ctx={ctx} />}
         {upNext && clock.phase !== 'ended' && (
           <div style={{ padding: '0 16px' }}>
-            <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }} color={T.subtle}>Up next at {upNext.start}</Eyebrow>
+            <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }} color={happeningNow ? T.green10 : T.subtle}>
+              {happeningNow ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <span className="wc-pulse" style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--wf-lime-9)' }} />
+                  Happening now
+                </span>
+              ) : (
+                <>Up next at {upNext.start}</>
+              )}
+            </Eyebrow>
             <Press onClick={() => (upNext.kind === 'session' ? ctx.openSession(upNext.session!) : ctx.push(upNext.kind === 'meeting' ? 'meetings' : 'activities', {}))} style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', overflow: 'hidden', boxShadow: 'var(--shadow-card)', display: 'flex' }}>
               <div style={{ width: 6, background: t ? t.dot : T.green9, flexShrink: 0 }} />
               <div style={{ flex: 1, padding: 18 }}>

@@ -11,16 +11,29 @@ import { Avatar, Btn, Eyebrow, IconBtn, Press, TYPE_META } from '../components/p
 import { useQA, usePoll, type QAItem } from '../sessionLive'
 import { slidesPublicUrl, uploadResource } from '../lib/storage'
 import { shareOrCopy } from '../lib/share'
+import { conflictsFor } from '../sessionTime'
+import { hasReminder, toggleReminder, REMINDER_LEAD_MIN } from '../reminders'
+import { getNote, setNote } from '../notes'
+import { useT } from '../i18n'
 
 export function SessionDetail({ ctx }: { ctx: AppCtx }) {
   const s = ctx.params.session!
+  const { t: tr } = useT()
   const t = trackOf(s.track)
   const sp = ctx.speakersOf(s)
   const isBreak = s.type === 'break' || s.type === 'social'
   const [tab, setTab] = useState<'details' | 'qa' | 'poll'>('details')
   const bm = ctx.isBookmarked(s.id)
+  const [reminded, setReminded] = useState(() => hasReminder(ctx.userId, s.id))
   const day = ctx.days.find((d) => d.id === s.day)!
   const qa = useQA(s.id, ctx.userId)
+  const clashes = conflictsFor(ctx, s)
+
+  const toggleRemind = () => {
+    const on = toggleReminder(ctx.userId, s.id)
+    setReminded(on)
+    ctx.toast(on ? tr('session.reminderSet') + `${REMINDER_LEAD_MIN} min before` : tr('session.reminderOff'))
+  }
 
   const share = async () => {
     const r = await shareOrCopy('WISEcon27', `${s.title} — ${day.dow} ${day.date}, ${s.start}–${s.end} in ${s.room} · WISEcon27`)
@@ -63,13 +76,23 @@ export function SessionDetail({ ctx }: { ctx: AppCtx }) {
 
       {/* action bar */}
       {!isBreak && (
-        <div style={{ display: 'flex', gap: 10, padding: '14px 16px', background: 'var(--wf-surface)', borderBottom: '1px solid ' + T.line }}>
-          <Btn kind={bm ? 'default' : 'primary'} full icon={bm ? 'check' : 'plus'} onClick={() => ctx.toggleBookmark(s.id)}>
-            {bm ? 'In my schedule' : 'Add to schedule'}
-          </Btn>
-          <Btn kind="outline" icon="bell" onClick={() => ctx.toast('Reminder set for ' + s.start)} style={{ flexShrink: 0 }}>
-            Remind
-          </Btn>
+        <div style={{ background: 'var(--wf-surface)', borderBottom: '1px solid ' + T.line }}>
+          <div style={{ display: 'flex', gap: 10, padding: '14px 16px' }}>
+            <Btn kind={bm ? 'default' : 'primary'} full icon={bm ? 'check' : 'plus'} onClick={() => ctx.toggleBookmark(s.id)}>
+              {bm ? tr('session.inSchedule') : tr('session.addSchedule')}
+            </Btn>
+            <Btn kind={reminded ? 'default' : 'outline'} icon={reminded ? 'checkCircle' : 'bell'} onClick={toggleRemind} style={{ flexShrink: 0 }}>
+              {reminded ? tr('session.reminding') : tr('session.remind')}
+            </Btn>
+          </div>
+          {clashes.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, margin: '0 16px 14px', padding: '10px 12px', background: 'var(--wf-amber-2, #fff7e6)', border: '1px solid var(--wf-amber-6, #f0d089)', borderRadius: 'var(--radius-4)' }}>
+              <Icon name="clock" size={16} stroke={2} style={{ color: 'var(--wf-amber-10, #8a6516)', flexShrink: 0, marginTop: 1 }} />
+              <div style={{ fontFamily: T.sig, fontSize: 12.5, color: 'var(--wf-amber-11, #6b4e10)', lineHeight: 1.4 }}>
+                {tr('session.clash')}: {clashes.map((c) => c.title).join(', ')}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -132,7 +155,33 @@ function DetailsTab({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppCtx }) 
         </div>
       )}
       <SessionResources s={s} sp={sp} ctx={ctx} />
+      <NotesSection s={s} ctx={ctx} />
       <SessionFeedback s={s} ctx={ctx} />
+    </div>
+  )
+}
+
+/* ── private per-session notes (device-local) ── */
+function NotesSection({ s, ctx }: { s: Session; ctx: AppCtx }) {
+  const { t: tr } = useT()
+  const [text, setText] = useState(() => getNote(ctx.userId, s.id))
+  const onChange = (v: string) => {
+    setText(v)
+    setNote(ctx.userId, s.id, v)
+  }
+  return (
+    <div>
+      <Eyebrow style={{ marginBottom: 10 }}>{tr('session.notes')}</Eyebrow>
+      <textarea
+        value={text}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={tr('notes.placeholder')}
+        rows={4}
+        style={{ width: '100%', boxSizing: 'border-box', border: 'none', outline: 'none', resize: 'vertical', background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '12px 13px', fontFamily: T.sig, fontSize: 15, color: T.ink, lineHeight: 1.5, boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}
+      />
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 7, fontFamily: T.sig, fontSize: 12, color: T.muted }}>
+        <Icon name="shield" size={13} /> {tr('notes.private')}
+      </div>
     </div>
   )
 }

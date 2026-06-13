@@ -42,13 +42,18 @@ import { Availability } from './screens/Availability'
 import { Tour, tourSeen, tourResumeStep, clearTourResume, TOUR_STEPS } from './screens/Tour'
 import { Community } from './screens/Community'
 import { VenueMap } from './screens/VenueMap'
+import { Certificate } from './screens/Certificate'
+import { Notes } from './screens/Notes'
+import { Resources } from './screens/Resources'
+import { I18nProvider, useT } from './i18n'
+import { useReminderScheduler } from './reminders'
 
-const TABS: { id: TabId; icon: IconName; label: string }[] = [
-  { id: 'home', icon: 'home', label: 'Home' },
-  { id: 'agenda', icon: 'calendar', label: 'Agenda' },
-  { id: 'activities', icon: 'sparkles', label: 'Activities' },
-  { id: 'connect', icon: 'connect', label: 'Connect' },
-  { id: 'profile', icon: 'grid', label: 'More' },
+const TABS: { id: TabId; icon: IconName; labelKey: string }[] = [
+  { id: 'home', icon: 'home', labelKey: 'nav.home' },
+  { id: 'agenda', icon: 'calendar', labelKey: 'nav.agenda' },
+  { id: 'activities', icon: 'sparkles', labelKey: 'nav.activities' },
+  { id: 'connect', icon: 'connect', labelKey: 'nav.connect' },
+  { id: 'profile', icon: 'grid', labelKey: 'nav.more' },
 ]
 
 const PUSH_SCREENS: Record<PushScreen, (p: { ctx: AppCtx }) => JSX.Element> = {
@@ -76,6 +81,9 @@ const PUSH_SCREENS: Record<PushScreen, (p: { ctx: AppCtx }) => JSX.Element> = {
   tour: Tour,
   community: Community,
   venuemap: VenueMap,
+  certificate: Certificate,
+  notes: Notes,
+  resources: Resources,
 }
 
 const TAB_SCREENS: Record<Exclude<TabId, 'home'>, (p: { ctx: AppCtx }) => JSX.Element> = {
@@ -87,6 +95,7 @@ const TAB_SCREENS: Record<Exclude<TabId, 'home'>, (p: { ctx: AppCtx }) => JSX.El
 }
 
 function BottomNav({ active, onSelect, unread }: { active: TabId; onSelect: (t: TabId) => void; unread: number }) {
+  const { t: tr } = useT()
   return (
     <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 40, paddingBottom: 'calc(22px + var(--nav-safe, env(safe-area-inset-bottom, 0px)))', background: 'var(--wf-glass)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', borderTop: '1px solid ' + T.line, display: 'flex' }}>
       {TABS.map((t) => {
@@ -99,7 +108,7 @@ function BottomNav({ active, onSelect, unread }: { active: TabId; onSelect: (t: 
                 <span style={{ position: 'absolute', top: -1, right: -3, width: 8, height: 8, borderRadius: 999, background: 'var(--wf-tomato-9)', boxShadow: '0 0 0 2px #fff' }} />
               )}
             </div>
-            <span style={{ fontFamily: T.sig, fontWeight: on ? 700 : 500, fontSize: 10.5, color: on ? T.green10 : T.muted, letterSpacing: '0.01em' }}>{t.label}</span>
+            <span style={{ fontFamily: T.sig, fontWeight: on ? 700 : 500, fontSize: 10.5, color: on ? T.green10 : T.muted, letterSpacing: '0.01em' }}>{tr(t.labelKey)}</span>
           </Press>
         )
       })}
@@ -140,6 +149,7 @@ const PULL_TRIGGER = 64 // px (after resistance) to trigger a refresh
 
 function AuthedApp() {
   const ctx = useAppState()
+  useReminderScheduler(ctx)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // pull-to-refresh: drag down at the top of any screen to reload the app
@@ -313,11 +323,13 @@ export default function App() {
   else if (!session) content = <SignIn />
   else content = <AuthedApp />
   return (
-    <div className="wc-stage">
-      <div className="wc-device">
-        {content}
-        <InstallSheet />
+    <I18nProvider>
+      <div className="wc-stage">
+        <div className="wc-device">
+          {content}
+          <InstallSheet />
+        </div>
       </div>
-    </div>
+    </I18nProvider>
   )
 }
