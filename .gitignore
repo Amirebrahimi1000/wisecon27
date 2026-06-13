@@ -21,3 +21,6 @@ npm-debug.log*
 
 # vite / pwa
 wisecon27-app/dev-dist/
+
+# supabase CLI local link state (per-machine; run `supabase link` to recreate)
+wisecon27-app/supabase/.temp/
