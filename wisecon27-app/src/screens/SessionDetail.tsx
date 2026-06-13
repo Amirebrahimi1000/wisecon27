@@ -377,8 +377,8 @@ function PollTab({ sessionId, ctx }: { sessionId: string; ctx: AppCtx }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <span style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--wf-tomato-9)' }} className="wc-pulse" />
-        <Eyebrow color="var(--wf-tomato-11)">Live now</Eyebrow>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--wf-green-9)' }} className="wc-pulse" />
+        <Eyebrow color="var(--wf-green-11)">Live now</Eyebrow>
       </div>
       <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 18, color: T.ink, lineHeight: 1.3, marginBottom: 16 }}>{poll.question}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
