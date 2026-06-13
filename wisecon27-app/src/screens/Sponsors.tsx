@@ -3,13 +3,15 @@ import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { SponsorTier } from '../types'
 import { AppHeader, Eyebrow, Press } from '../components/primitives'
+import { useT } from '../i18n'
 
 const TIERS: SponsorTier[] = ['Host', 'Platinum', 'Gold', 'Silver']
 
 export function Sponsors({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   return (
     <div>
-      <AppHeader title="Sponsors" sub="With thanks to our partners" onBack={ctx.back} />
+      <AppHeader title={t('sponsors.title')} sub={t('sponsors.sub')} onBack={ctx.back} />
       <div style={{ padding: '12px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {TIERS.map((tier) => {
           const list = ctx.sponsors.filter((s) => s.tier === tier)

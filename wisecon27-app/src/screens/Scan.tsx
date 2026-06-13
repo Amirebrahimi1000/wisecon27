@@ -13,6 +13,7 @@ import { BADGE_TYPES, asDelegateType } from '../badgeTypes'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Eyebrow } from '../components/primitives'
 import { QrCamera } from '../components/QrCamera'
+import { useT } from '../i18n'
 
 interface ScannedProfile {
   id: string
@@ -37,6 +38,7 @@ const fmtTime = (iso: string) => {
 }
 
 export function Scan({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const [state, setState] = useState<ScanState>({ kind: 'scanning' })
   const [saving, setSaving] = useState(false)
 
@@ -68,7 +70,7 @@ export function Scan({ ctx }: { ctx: AppCtx }) {
 
   return (
     <div>
-      <QrCamera onCode={onCode} paused={state.kind !== 'scanning'} hint="Point at a delegate's badge QR" />
+      <QrCamera onCode={onCode} paused={state.kind !== 'scanning'} hint={t('scan.cameraHint')} />
 
       {/* result */}
       {state.kind === 'notfound' && (
@@ -76,9 +78,9 @@ export function Scan({ ctx }: { ctx: AppCtx }) {
           <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'var(--wf-tomato-2)', color: 'var(--wf-tomato-9)', display: 'grid', placeItems: 'center', margin: '0 auto 10px' }}>
             <Icon name="close" size={24} />
           </div>
-          <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16.5, color: T.ink }}>No delegate found</div>
-          <div style={{ fontFamily: T.onest, fontSize: 13, color: T.muted, marginTop: 4 }}>Code: {state.code}</div>
-          <Btn kind="primary" full size="lg" onClick={scanNext} style={{ marginTop: 14 }}>Scan next</Btn>
+          <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16.5, color: T.ink }}>{t('scan.notFound')}</div>
+          <div style={{ fontFamily: T.onest, fontSize: 13, color: T.muted, marginTop: 4 }}>{t('scan.code')}: {state.code}</div>
+          <Btn kind="primary" full size="lg" onClick={scanNext} style={{ marginTop: 14 }}>{t('scan.scanNext')}</Btn>
         </div>
       )}
 
@@ -93,32 +95,32 @@ export function Scan({ ctx }: { ctx: AppCtx }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
                 <Avatar initials={(p.name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')} color={bt.chipText} size={52} src={p.avatar_url} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 18, color: T.ink }}>{p.name || 'Unnamed delegate'}</div>
+                  <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 18, color: T.ink }}>{p.name || t('scan.unnamed')}</div>
                   <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{[p.role, p.org].filter(Boolean).join(' · ')}</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 <span style={{ display: 'inline-flex', background: bt.chipBg, color: bt.chipText, fontFamily: T.sig, fontWeight: 600, fontSize: 13, borderRadius: 999, padding: '5px 13px' }}>{bt.label}</span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: p.gala ? '#1c1c1e' : 'var(--wf-grey-4)', color: p.gala ? '#f5d77b' : T.muted, fontFamily: T.sig, fontWeight: 600, fontSize: 13, borderRadius: 999, padding: '5px 13px' }}>
-                  <Icon name="star" size={13} /> {p.gala ? 'Gala Dinner' : 'No gala'}
+                  <Icon name="star" size={13} /> {p.gala ? t('scan.galaDinner') : t('scan.noGala')}
                 </span>
               </div>
 
               {state.justCheckedIn ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 16, background: T.green1, color: T.green11, borderRadius: 'var(--radius-4)', padding: '12px 14px', fontFamily: T.sig, fontWeight: 700, fontSize: 15 }}>
-                  <Icon name="checkCircle" size={20} /> Checked in
+                  <Icon name="checkCircle" size={20} /> {t('scan.checkedIn')}
                 </div>
               ) : already ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 16, background: 'var(--wf-orange-2)', color: 'var(--wf-orange-11, #8a5a00)', borderRadius: 'var(--radius-4)', padding: '12px 14px', fontFamily: T.sig, fontWeight: 600, fontSize: 14, lineHeight: 1.35 }}>
-                  <Icon name="info" size={20} style={{ flexShrink: 0 }} /> Already checked in · {fmtTime(p.checked_in_at!)}
+                  <Icon name="info" size={20} style={{ flexShrink: 0 }} /> {t('scan.alreadyCheckedIn')} · {fmtTime(p.checked_in_at!)}
                 </div>
               ) : (
                 <Btn kind="primary" full size="lg" icon="check" onClick={() => checkIn(p)} disabled={saving} style={{ marginTop: 16 }}>
-                  {saving ? 'Checking in…' : 'Check in'}
+                  {saving ? t('scan.checkingIn') : t('scan.checkIn')}
                 </Btn>
               )}
               <Btn kind={state.justCheckedIn || already ? 'primary' : 'outline'} full size="lg" onClick={scanNext} style={{ marginTop: 10 }}>
-                Scan next
+                {t('scan.scanNext')}
               </Btn>
             </div>
           </div>
@@ -126,7 +128,7 @@ export function Scan({ ctx }: { ctx: AppCtx }) {
       })()}
 
       {state.kind === 'scanning' && (
-        <Eyebrow style={{ textAlign: 'center', display: 'block' }}>Entrance check-in · duplicate scans are flagged</Eyebrow>
+        <Eyebrow style={{ textAlign: 'center', display: 'block' }}>{t('scan.entranceHint')}</Eyebrow>
       )}
     </div>
   )
@@ -135,9 +137,10 @@ export function Scan({ ctx }: { ctx: AppCtx }) {
 /** Standalone scanner for the Staff role (pushed from Profile) — same scanner,
  *  no other admin tools around it. */
 export function ScannerScreen({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   return (
     <div>
-      <AppHeader title="Entrance scanning" sub="Scan a delegate's badge QR" onBack={ctx.back} />
+      <AppHeader title={t('scan.screenTitle')} sub={t('scan.screenSub')} onBack={ctx.back} />
       <div style={{ padding: '14px 16px 24px' }}>
         <Scan ctx={ctx} />
       </div>

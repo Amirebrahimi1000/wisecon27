@@ -9,6 +9,7 @@ import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Eyebrow, Press } from '../components/primitives'
 import { TagPicker, tagSuggestions } from '../components/TagPicker'
 import { uploadAvatar } from '../lib/storage'
+import { useT } from '../i18n'
 
 const MAX_INTERESTS = 8
 
@@ -27,6 +28,7 @@ function Toggle({ on, onTap }: { on: boolean; onTap: () => void }) {
 }
 
 export function EditProfile({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const [email, setEmail] = useState('')
   const [bio, setBio] = useState('')
   const [linkedin, setLinkedin] = useState('')
@@ -43,7 +45,7 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
     const { url, error } = await uploadAvatar(ctx.userId, file)
     setUploading(false)
     if (error) ctx.toast(error)
-    else if (url) { ctx.setAvatar(url); ctx.toast('Profile photo updated') }
+    else if (url) { ctx.setAvatar(url); ctx.toast(t('editprofile.toastPhotoUpdated')) }
   }
 
   useEffect(() => {
@@ -78,20 +80,20 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
     setSaving(false)
     if (error) return ctx.toast(error.message)
     ctx.setMyInterests(ints) // recommendations + shared-interest counts update immediately
-    ctx.toast('Profile updated')
+    ctx.toast(t('editprofile.toastProfileUpdated'))
     ctx.back()
   }
 
   const locked = [
-    ['Name', ctx.me.name],
-    ['Email', email],
-    ['Role', ctx.me.role],
-    ['Organisation', ctx.me.org],
+    [t('editprofile.fieldName'), ctx.me.name],
+    [t('editprofile.fieldEmail'), email],
+    [t('editprofile.fieldRole'), ctx.me.role],
+    [t('editprofile.fieldOrg'), ctx.me.org],
   ] as const
 
   return (
     <div style={{ minHeight: '100%', background: 'var(--wf-grey-2)' }}>
-      <AppHeader title="Edit profile" onBack={ctx.back} />
+      <AppHeader title={t('editprofile.title')} onBack={ctx.back} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {/* profile photo */}
         <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto} style={{ display: 'none' }} />
@@ -103,12 +105,12 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
             </div>
           </Press>
           <Press onClick={() => fileRef.current?.click()} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.green10 }}>
-            {uploading ? 'Uploading…' : 'Change photo'}
+            {uploading ? t('editprofile.uploading') : t('editprofile.changePhoto')}
           </Press>
         </div>
 
         {/* registration data — locked */}
-        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>From your registration</Eyebrow>
+        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>{t('editprofile.secRegistration')}</Eyebrow>
         <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden', marginBottom: 8 }}>
           {locked.map(([label, value], i) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: i === locked.length - 1 ? 'none' : '1px solid ' + T.line }}>
@@ -119,16 +121,16 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
           ))}
         </div>
         <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginBottom: 22, paddingLeft: 2, lineHeight: 1.5 }}>
-          These come from your registration and are always visible to other delegates. Contact the organisers to change them.
+          {t('editprofile.registrationNote')}
         </div>
 
         {/* optional extras */}
-        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>About you — optional</Eyebrow>
+        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>{t('editprofile.secAbout')}</Eyebrow>
         <div style={{ marginBottom: 14 }}>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value.slice(0, 280))}
-            placeholder="A few lines about yourself, what you work on, or what you'd like to talk about at WISEcon…"
+            placeholder={t('editprofile.bioPlaceholder')}
             rows={4}
             maxLength={280}
             style={{ ...inputStyle, resize: 'none', lineHeight: 1.5 }}
@@ -139,30 +141,30 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
         <input
           value={linkedin}
           onChange={(e) => setLinkedin(e.target.value)}
-          placeholder="LinkedIn URL (e.g. linkedin.com/in/you)"
+          placeholder={t('editprofile.linkedinPlaceholder')}
           style={{ ...inputStyle, marginBottom: 12 }}
           disabled={!loaded}
         />
         {/* interests — pick from the programme's tags or type your own */}
-        <Eyebrow style={{ margin: '20px 0 8px', paddingLeft: 2 }}>My interests</Eyebrow>
+        <Eyebrow style={{ margin: '20px 0 8px', paddingLeft: 2 }}>{t('editprofile.secInterests')}</Eyebrow>
         <TagPicker
           value={interests}
           onChange={setInterests}
           suggestions={tagSuggestions(ctx.sessions.map((s) => s.tags ?? []))}
           max={MAX_INTERESTS}
-          placeholder="Type an interest (e.g. AI, rubrics)…"
+          placeholder={t('editprofile.interestPlaceholder')}
           countNoun="session"
           disabled={!loaded}
           autoFocus={ctx.params.focus === 'interests' && loaded}
         />
         <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, margin: '8px 0 22px', paddingLeft: 2, lineHeight: 1.5 }}>
-          Tap a topic from the programme or add your own — we use these to suggest sessions and people for you. Up to {MAX_INTERESTS}.
+          {t('editprofile.interestHint').replace('{max}', String(MAX_INTERESTS))}
         </div>
 
         {/* sharing */}
-        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>What other delegates can see</Eyebrow>
+        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>{t('editprofile.secSharing')}</Eyebrow>
         <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden', marginBottom: 8 }}>
-          {([['bio', 'About text'], ['linkedin', 'LinkedIn'], ['interests', 'Interests']] as const).map(([k, label], i) => (
+          {([['bio', t('editprofile.shareAbout')], ['linkedin', t('editprofile.shareLinkedIn')], ['interests', t('editprofile.shareInterests')]] as const).map(([k, label], i) => (
             <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', borderBottom: i === 2 ? 'none' : '1px solid ' + T.line }}>
               <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{label}</span>
               <Toggle on={sharedOn(k)} onTap={() => flip(k)} />
@@ -170,11 +172,11 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
           ))}
         </div>
         <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginBottom: 20, paddingLeft: 2, lineHeight: 1.5 }}>
-          Name, email, role and organisation are always shown.
+          {t('editprofile.sharingNote')}
         </div>
 
         <Btn kind="primary" full size="lg" onClick={save} disabled={!loaded || saving}>
-          {saving ? 'Saving…' : 'Save profile'}
+          {saving ? t('editprofile.saving') : t('editprofile.save')}
         </Btn>
       </div>
     </div>

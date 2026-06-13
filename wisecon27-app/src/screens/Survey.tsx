@@ -6,8 +6,10 @@ import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { Icon } from '../components/Icon'
 import { AppHeader, Btn, Eyebrow, Press } from '../components/primitives'
+import { useT } from '../i18n'
 
 export function Survey({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const [answers, setAnswers] = useState<Record<string, unknown>>({})
   const [done, setDone] = useState(ctx.surveyDone)
   const set = (id: string, v: unknown) => setAnswers((a) => ({ ...a, [id]: v }))
@@ -28,16 +30,16 @@ export function Survey({ ctx }: { ctx: AppCtx }) {
   if (done) {
     return (
       <div>
-        <AppHeader title="Survey" onBack={ctx.back} />
+        <AppHeader title={t('survey.title')} onBack={ctx.back} />
         <div style={{ padding: '60px 30px', textAlign: 'center' }}>
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: T.green1, color: T.green9, display: 'grid', placeItems: 'center', margin: '0 auto 18px' }}>
             <Icon name="checkCircle" size={40} />
           </div>
-          <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 22, color: T.ink }}>Thank you</div>
+          <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 22, color: T.ink }}>{t('survey.thankYou')}</div>
           <p style={{ fontFamily: T.sig, fontSize: 15, color: T.body, marginTop: 8, lineHeight: 1.5 }}>
-            Your responses help us make WISEcon28 even better.
+            {t('survey.thankYouBody')}
           </p>
-          <Btn kind="primary" onClick={ctx.back} style={{ marginTop: 22 }}>Done</Btn>
+          <Btn kind="primary" onClick={ctx.back} style={{ marginTop: 22 }}>{t('survey.done')}</Btn>
         </div>
       </div>
     )
@@ -45,10 +47,10 @@ export function Survey({ ctx }: { ctx: AppCtx }) {
 
   return (
     <div>
-      <AppHeader title="Post-conference survey" onBack={ctx.back} />
+      <AppHeader title={t('survey.titleFull')} onBack={ctx.back} />
       <div style={{ padding: '18px 18px ' + (TABBAR_H + 16) + 'px', display: 'flex', flexDirection: 'column', gap: 26 }}>
         <p style={{ fontFamily: T.sig, fontSize: 15, color: T.body, lineHeight: 1.5 }}>
-          A few quick questions about your WISEcon27 experience — thank you for taking part.
+          {t('survey.intro')}
         </p>
         {ctx.surveyQuestions.map((q) => (
           <div key={q.id}>
@@ -84,16 +86,16 @@ export function Survey({ ctx }: { ctx: AppCtx }) {
               <textarea
                 value={(answers[q.id] as string) ?? ''}
                 onChange={(e) => set(q.id, e.target.value)}
-                placeholder="Your answer (optional)"
+                placeholder={t('survey.textPlaceholder')}
                 rows={3}
                 style={{ width: '100%', boxSizing: 'border-box', resize: 'none', border: '1px solid var(--wf-grey-6)', borderRadius: 'var(--radius-4)', padding: 13, fontFamily: T.sig, fontSize: 15, color: T.ink, outline: 'none', lineHeight: 1.5 }}
               />
             )}
           </div>
         ))}
-        {ctx.surveyQuestions.length === 0 && <Eyebrow>No survey is open right now.</Eyebrow>}
+        {ctx.surveyQuestions.length === 0 && <Eyebrow>{t('survey.noSurvey')}</Eyebrow>}
         {ctx.surveyQuestions.length > 0 && (
-          <Btn kind="primary" full size="lg" onClick={submit} disabled={!complete}>Submit survey</Btn>
+          <Btn kind="primary" full size="lg" onClick={submit} disabled={!complete}>{t('survey.submit')}</Btn>
         )}
       </div>
     </div>

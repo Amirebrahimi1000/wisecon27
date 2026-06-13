@@ -6,8 +6,10 @@ import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { AppHeader, Eyebrow } from '../components/primitives'
 import { QrCamera } from '../components/QrCamera'
+import { useT } from '../i18n'
 
 export function ScanConnect({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const [busy, setBusy] = useState(false)
   const lastMiss = useRef('')
 
@@ -18,13 +20,13 @@ export function ScanConnect({ ctx }: { ctx: AppCtx }) {
     if (!data) {
       if (lastMiss.current !== code) {
         lastMiss.current = code
-        ctx.toast('No delegate found for that code')
+        ctx.toast(t('scanconnect.notFound'))
       }
       setBusy(false)
       return
     }
     if ((data as { id: string }).id === ctx.userId) {
-      ctx.toast('That’s your own badge 🙂')
+      ctx.toast(t('scanconnect.ownBadge'))
       setBusy(false)
       return
     }
@@ -34,12 +36,12 @@ export function ScanConnect({ ctx }: { ctx: AppCtx }) {
 
   return (
     <div style={{ minHeight: '100%', background: 'var(--wf-grey-2)' }}>
-      <AppHeader title="Scan to connect" sub="Point at a fellow delegate's badge" onBack={ctx.back} />
+      <AppHeader title={t('scanconnect.title')} sub={t('scanconnect.sub')} onBack={ctx.back} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
-        <QrCamera onCode={onCode} paused={busy} hint="Point at a delegate's badge QR" />
-        <Eyebrow style={{ display: 'block', textAlign: 'center' }}>Their profile opens — connect from there</Eyebrow>
+        <QrCamera onCode={onCode} paused={busy} hint={t('scanconnect.cameraHint')} />
+        <Eyebrow style={{ display: 'block', textAlign: 'center' }}>{t('scanconnect.profileOpens')}</Eyebrow>
         <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
-          Your own badge is under Connect → the green card, or Profile → My badge.
+          {t('scanconnect.ownBadgeHint')}
         </div>
       </div>
     </div>

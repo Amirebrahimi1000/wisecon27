@@ -10,13 +10,15 @@ import type { AppCtx } from '../appState'
 import { SLOTS, slotEnd, overlaps, availFor, inAnyWindow } from '../meetingSlots'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Chip, Eyebrow, Press } from '../components/primitives'
+import { useT } from '../i18n'
 
 export function MeetingRequest({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   // rescheduling? the original request we're countering
   const original = ctx.params.meetingId ? ctx.meetings.find((m) => m.id === ctx.params.meetingId) : undefined
   const peerId = ctx.params.peerId || ''
   const peer = ctx.attendees.find((a) => a.id === peerId)
-  const first = peer?.name.split(' ')[0] ?? 'them'
+  const first = peer?.name.split(' ')[0] ?? t('meetingreq.them')
 
   const [dayId, setDayId] = useState(original?.day ?? ctx.days[0]?.id ?? '')
   const [slot, setSlot] = useState<string | null>(null)
@@ -58,22 +60,22 @@ export function MeetingRequest({ ctx }: { ctx: AppCtx }) {
       // counter-proposal replaces the original request
       if (original.inviteeId === ctx.userId) ctx.respondMeeting(original.id, 'declined')
       else ctx.cancelMeeting(original.id)
-      ctx.toast('New time suggested — the original request was declined')
+      ctx.toast(t('meetingreq.toastNewTime'))
     } else {
-      ctx.toast('Meeting request sent to ' + first)
+      ctx.toast(t('meetingreq.toastSent').replace('{first}', first))
     }
     ctx.back()
   }
 
   return (
     <div>
-      <AppHeader title="Suggest a meeting" sub={original ? 'Counter-propose a time that suits you' : '30 minutes, face to face'} onBack={ctx.back} />
+      <AppHeader title={t('meetingreq.title')} sub={original ? t('meetingreq.subCounter') : t('meetingreq.subNew')} onBack={ctx.back} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {/* who */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: original ? 10 : 18 }}>
           <Avatar initials={peer?.initials ?? '?'} color={peer?.color ?? 'var(--wf-blue-9)'} size={44} src={peer?.avatarUrl} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{peer?.name ?? 'A delegate'}</div>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{peer?.name ?? t('meetingreq.aDelegate')}</div>
             <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {[peer?.role, peer?.org].filter(Boolean).join(' · ')}
             </div>
@@ -84,13 +86,13 @@ export function MeetingRequest({ ctx }: { ctx: AppCtx }) {
           <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start', background: 'var(--wf-blue-1)', borderRadius: 'var(--radius-4)', padding: '11px 13px', marginBottom: 18 }}>
             <Icon name="info" size={16} style={{ color: 'var(--wf-blue-9)', flexShrink: 0, marginTop: 1 }} />
             <span style={{ fontFamily: T.sig, fontSize: 13, color: 'var(--wf-blue-11)', lineHeight: 1.45 }}>
-              {first} suggested {original.start}–{original.end}. Sending a new time declines that request.
+              {t('meetingreq.counterInfo').replace('{first}', first).replace('{start}', original.start).replace('{end}', original.end)}
             </span>
           </div>
         )}
 
         {/* day */}
-        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>Day</Eyebrow>
+        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>{t('meetingreq.labelDay')}</Eyebrow>
         <div className="wc-noscroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 18 }}>
           {ctx.days.map((d) => (
             <Chip key={d.id} active={dayId === d.id} onClick={() => { setDayId(d.id); setSlot(null) }}>{d.dow} {d.date}</Chip>
@@ -98,10 +100,10 @@ export function MeetingRequest({ ctx }: { ctx: AppCtx }) {
         </div>
 
         {/* time slot */}
-        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>Time</Eyebrow>
+        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>{t('meetingreq.labelTime')}</Eyebrow>
         {dayOff ? (
           <div style={{ fontFamily: T.sig, fontSize: 14, color: T.muted, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)', marginBottom: 18, lineHeight: 1.5 }}>
-            {first} isn't taking 1:1 meetings on this day — try another day.
+            {t('meetingreq.dayOff').replace('{first}', first)}
           </div>
         ) : (
           <>
@@ -135,15 +137,15 @@ export function MeetingRequest({ ctx }: { ctx: AppCtx }) {
               })}
             </div>
             <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginBottom: 18, lineHeight: 1.5 }}>
-              Struck-through slots collide with a meeting you already have; faded slots are outside {first}'s availability. An orange dot means it overlaps a session in your plan.
+              {t('meetingreq.slotLegend').replace('{first}', first)}
             </div>
           </>
         )}
 
         {/* meeting point */}
-        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>Meeting point</Eyebrow>
+        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>{t('meetingreq.labelPoint')}</Eyebrow>
         {ctx.meetingPoints.length === 0 ? (
-          <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, marginBottom: 18 }}>The organisers haven't set up meeting points yet — you can still agree a spot in the message.</div>
+          <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, marginBottom: 18 }}>{t('meetingreq.noPoints')}</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
             {ctx.meetingPoints.map((p) => {
@@ -160,17 +162,17 @@ export function MeetingRequest({ ctx }: { ctx: AppCtx }) {
         )}
 
         {/* message */}
-        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>Message (optional)</Eyebrow>
+        <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>{t('meetingreq.labelMessage')}</Eyebrow>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value.slice(0, 200))}
-          placeholder="What would you like to talk about?"
+          placeholder={t('meetingreq.messagePlaceholder')}
           rows={3}
           style={{ width: '100%', boxSizing: 'border-box', resize: 'none', border: 'none', outline: 'none', background: 'var(--wf-surface)', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', borderRadius: 'var(--radius-4)', padding: 12, fontFamily: T.sig, fontSize: 14.5, color: T.ink, lineHeight: 1.5, marginBottom: 16 }}
         />
 
         <Btn kind="primary" full size="lg" icon="send" onClick={send} disabled={!slot || sending}>
-          {sending ? 'Sending…' : slot ? `Suggest ${slot}–${slotEnd(slot)}` : 'Pick a time slot'}
+          {sending ? t('meetingreq.sending') : slot ? `${t('meetingreq.suggest')} ${slot}–${slotEnd(slot)}` : t('meetingreq.pickSlot')}
         </Btn>
       </div>
     </div>

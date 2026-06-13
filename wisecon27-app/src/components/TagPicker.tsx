@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { T } from '../theme'
 import { Icon } from './Icon'
 import { Press } from './primitives'
+import { useT } from '../i18n'
 
 export interface TagSuggestion {
   label: string
@@ -46,6 +47,7 @@ export function TagPicker({
   disabled?: boolean
   autoFocus?: boolean
 }) {
+  const { t } = useT()
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -115,7 +117,7 @@ export function TagPicker({
           onChange={(e) => onInput(e.target.value)}
           onKeyDown={onKey}
           onBlur={() => add(query)}
-          placeholder={full ? (max + ' of ' + max + ' added') : value.length ? 'Add another…' : placeholder}
+          placeholder={full ? t('common.maxAdded').replace(/\{max\}/g, String(max)) : value.length ? t('common.addAnother') : placeholder}
           disabled={disabled || full}
           enterKeyHint="done"
           style={{ flex: 1, minWidth: 90, border: 'none', outline: 'none', background: 'transparent', padding: '6px 3px', fontFamily: T.sig, fontSize: 15, color: T.ink }}

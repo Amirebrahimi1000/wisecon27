@@ -5,15 +5,17 @@ import { BADGE_TYPES, asDelegateType } from '../badgeTypes'
 import { Icon } from '../components/Icon'
 import { Eyebrow, IconBtn } from '../components/primitives'
 import { QR } from '../components/QR'
+import { useT } from '../i18n'
 
 export function Ticket({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const ME = ctx.me
   const bt = BADGE_TYPES[asDelegateType(ME.delegateType)]
   return (
     <div style={{ minHeight: '100%', background: bt.bg, paddingBottom: TABBAR_H + 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: STATUS_INSET + 6 + 'px 14px 6px' }}>
         <IconBtn name="chevronLeft" onClick={ctx.back} stroke={2.2} color="#fff" bg="rgba(255,255,255,0.16)" />
-        <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 17, color: '#fff' }}>My badge</div>
+        <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 17, color: '#fff' }}>{t('ticket.title')}</div>
         <div style={{ width: 38 }} />
       </div>
       <div style={{ padding: '20px 22px' }}>
@@ -26,7 +28,7 @@ export function Ticket({ ctx }: { ctx: AppCtx }) {
               <span style={{ display: 'inline-flex', background: bt.chipBg, color: bt.chipText, fontFamily: T.sig, fontWeight: 600, fontSize: 13, borderRadius: 999, padding: '5px 14px' }}>{bt.label}</span>
               {ME.gala && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#1c1c1e', color: '#f5d77b', fontFamily: T.sig, fontWeight: 600, fontSize: 13, borderRadius: 999, padding: '5px 14px' }}>
-                  <Icon name="star" size={13} /> Gala Dinner
+                  <Icon name="star" size={13} /> {t('ticket.galaDinner')}
                 </span>
               )}
             </div>
@@ -34,7 +36,7 @@ export function Ticket({ ctx }: { ctx: AppCtx }) {
           <div style={{ padding: 24, display: 'grid', placeItems: 'center' }}>
             <QR value={ME.badgeId} size={200} />
             <div style={{ fontFamily: T.onest, fontSize: 13, letterSpacing: '0.18em', color: '#474748', marginTop: 16 }}>{ME.badgeId}</div>
-            <div style={{ fontFamily: T.sig, fontSize: 12.5, color: '#8c8c8c', marginTop: 4 }}>Scan at registration & session doors</div>
+            <div style={{ fontFamily: T.sig, fontSize: 12.5, color: '#8c8c8c', marginTop: 4 }}>{t('ticket.scanHint')}</div>
           </div>
         </div>
       </div>

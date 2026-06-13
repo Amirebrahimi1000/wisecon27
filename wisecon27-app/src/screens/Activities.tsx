@@ -3,12 +3,14 @@ import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { Icon } from '../components/Icon'
 import { AppHeader, Btn, Empty, Eyebrow } from '../components/primitives'
+import { useT } from '../i18n'
 
 export function Activities({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const dayLong = (id: string | null) => (id ? ctx.days.find((d) => d.id === id)?.long ?? '' : '')
   return (
     <div>
-      <AppHeader title="Activities" sub="Hands-on & social — sign up to join" onBack={ctx.stack.length ? ctx.back : null} />
+      <AppHeader title={t('activities.title')} sub={t('activities.sub')} onBack={ctx.stack.length ? ctx.back : null} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {ctx.activities.map((a) => {
           const spotsLeft = a.capacity != null ? Math.max(0, a.capacity - a.going) : null
@@ -28,12 +30,12 @@ export function Activities({ ctx }: { ctx: AppCtx }) {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 14 }}>
                 <span style={{ fontFamily: T.onest, fontSize: 12, color: spotsLeft === 0 ? 'var(--wf-negative-9)' : T.muted }}>
                   {a.capacity == null
-                    ? `${a.going} going`
+                    ? `${a.going} ${t('activities.going')}`
                     : a.signedUp
-                      ? `You're in · ${a.going}/${a.capacity}`
+                      ? `${t('activities.youreIn')} · ${a.going}/${a.capacity}`
                       : spotsLeft === 0
-                        ? 'Full'
-                        : `${spotsLeft} of ${a.capacity} spots left`}
+                        ? t('activities.full')
+                        : `${spotsLeft} ${t('activities.of')} ${a.capacity} ${t('activities.spotsLeft')}`}
                 </span>
                 <Btn
                   kind={a.signedUp ? 'default' : a.full ? 'outline' : 'primary'}
@@ -42,14 +44,14 @@ export function Activities({ ctx }: { ctx: AppCtx }) {
                   onClick={() => ctx.toggleActivitySignup(a.id)}
                   disabled={a.full && !a.signedUp}
                 >
-                  {a.signedUp ? 'Signed up' : a.full ? 'Full' : 'Sign up'}
+                  {a.signedUp ? t('activities.signedUp') : a.full ? t('activities.full') : t('activities.signUp')}
                 </Btn>
               </div>
             </div>
           )
         })}
-        {ctx.activities.length === 0 && <Empty icon="sparkles" text="No activities yet — check back soon." />}
-        <Eyebrow style={{ textAlign: 'center', marginTop: 4, color: T.muted }}>More activities added throughout the event</Eyebrow>
+        {ctx.activities.length === 0 && <Empty icon="sparkles" text={t('activities.empty')} />}
+        <Eyebrow style={{ textAlign: 'center', marginTop: 4, color: T.muted }}>{t('activities.moreComingSoon')}</Eyebrow>
       </div>
     </div>
   )

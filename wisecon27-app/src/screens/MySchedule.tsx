@@ -1,5 +1,6 @@
 // WISEcon27 — My Schedule (pushed): bookmarked sessions + activity sign-ups,
 // grouped by day and exportable to the calendar.
+import { useT } from '../i18n'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { Session } from '../types'
@@ -8,13 +9,14 @@ import { AppHeader, Btn, Empty, Eyebrow, Press, SessionRow } from '../components
 import { buildScheduleIcs, downloadIcs } from '../lib/ics'
 
 export function MySchedule({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const mine = ctx.sessions.filter((s) => ctx.isBookmarked(s.id))
   const myActs = ctx.activities.filter((a) => a.signedUp)
   const myMeetings = ctx.meetings.filter((m) => m.status === 'accepted')
   const meetingTitle = (m: (typeof myMeetings)[number]) =>
     'Meeting with ' + ctx.nameFor(m.requesterId === ctx.userId ? m.inviteeId : m.requesterId)
   const meetingPlace = (m: (typeof myMeetings)[number]) =>
-    ctx.meetingPoints.find((p) => p.id === m.pointId)?.label ?? 'Meeting point TBC'
+    ctx.meetingPoints.find((p) => p.id === m.pointId)?.label ?? t('mysched.meetingPointTbc')
   const total = mine.length + myActs.length + myMeetings.length
   const exportIcs = () => {
     // activities and meetings map onto the same shape the ICS builder needs
@@ -27,17 +29,17 @@ export function MySchedule({ ctx }: { ctx: AppCtx }) {
       title: meetingTitle(m), room: meetingPlace(m), desc: m.message,
     })) as unknown as Session[]
     const ics = buildScheduleIcs([...mine, ...actEvents, ...mtgEvents], ctx.days, ctx.event.startISO, ctx.event.location)
-    if (!ics) return ctx.toast('Event dates are not configured yet')
+    if (!ics) return ctx.toast(t('mysched.toastNoDates'))
     downloadIcs(ics)
-    ctx.toast('Calendar file downloaded')
+    ctx.toast(t('mysched.toastDownloaded'))
   }
   return (
     <div>
-      <AppHeader title="My schedule" sub={`${total} saved`} onBack={ctx.params._fromTab ? null : ctx.back} />
+      <AppHeader title={t('mysched.title')} sub={`${total} ${t('mysched.saved')}`} onBack={ctx.params._fromTab ? null : ctx.back} />
       <div style={{ padding: '8px 12px ' + (TABBAR_H + 16) + 'px' }}>
         {total > 0 && (
           <Btn kind="outline" full icon="calendar" onClick={exportIcs} style={{ marginBottom: 14 }}>
-            Add to my calendar (.ics)
+            {t('mysched.addCalendar')}
           </Btn>
         )}
         {ctx.days.map((d) => {
@@ -70,7 +72,7 @@ export function MySchedule({ ctx }: { ctx: AppCtx }) {
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink, lineHeight: 1.3 }}>{it.a.title}</div>
-                          <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 2 }}>{['Activity', it.a.location].filter(Boolean).join(' · ')}</div>
+                          <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 2 }}>{[t('mysched.activity'), it.a.location].filter(Boolean).join(' · ')}</div>
                         </div>
                         <Icon name="sparkles" size={17} style={{ color: T.green10, flexShrink: 0 }} />
                       </Press>
@@ -81,7 +83,7 @@ export function MySchedule({ ctx }: { ctx: AppCtx }) {
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink, lineHeight: 1.3 }}>{meetingTitle(it.m)}</div>
-                          <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 2 }}>{['1:1 meeting', meetingPlace(it.m)].join(' · ')}</div>
+                          <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 2 }}>{[t('mysched.oneOnOne'), meetingPlace(it.m)].join(' · ')}</div>
                         </div>
                         <Icon name="connect" size={17} style={{ color: T.green10, flexShrink: 0 }} />
                       </Press>
@@ -92,7 +94,7 @@ export function MySchedule({ ctx }: { ctx: AppCtx }) {
             </div>
           )
         })}
-        {total === 0 && <Empty icon="bookmark" text="Bookmark sessions to build your schedule." />}
+        {total === 0 && <Empty icon="bookmark" text={t('mysched.empty')} />}
       </div>
     </div>
   )

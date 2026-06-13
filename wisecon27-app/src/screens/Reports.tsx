@@ -165,7 +165,7 @@ function SurveyResults({ ctx }: { ctx: AppCtx }) {
                 {vals.length === 0 && <span style={{ fontFamily: T.sig, fontSize: 13, color: T.muted }}>No written answers.</span>}
                 {(vals as string[]).map((v, i) => (
                   <div key={i} style={{ fontFamily: T.sig, fontSize: 13.5, color: T.body, background: 'var(--wf-grey-3)', borderRadius: 'var(--radius-2)', padding: '8px 11px', lineHeight: 1.45 }}>
-                    “{v}”
+                    "{v}"
                   </div>
                 ))}
               </div>
@@ -214,7 +214,7 @@ function EventFeedback() {
       ))}
       {rows.filter((r) => r.comment).slice(0, 8).map((r, i) => (
         <div key={i} style={{ fontFamily: T.sig, fontSize: 13.5, color: T.body, background: 'var(--wf-grey-3)', borderRadius: 'var(--radius-2)', padding: '8px 11px', lineHeight: 1.45, marginTop: 8 }}>
-          “{r.comment}” <span style={{ fontFamily: T.onest, fontSize: 11, color: T.muted }}>· {r.stars} of 5</span>
+          "{r.comment}" <span style={{ fontFamily: T.onest, fontSize: 11, color: T.muted }}>· {r.stars} of 5</span>
         </div>
       ))}
     </div>

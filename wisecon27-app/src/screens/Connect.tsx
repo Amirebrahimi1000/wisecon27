@@ -8,6 +8,7 @@ import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Divider, Empty, Press } from '../components/primitives'
 import { FirstTimeHint } from '../components/Hint'
 import { QR } from '../components/QR'
+import { useT } from '../i18n'
 
 function relTime(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
@@ -20,6 +21,7 @@ function relTime(iso: string) {
 }
 
 export function Connect({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const [tab, setTab] = useState<'discover' | 'requests' | 'messages'>('discover')
   const people = ctx.attendees
   const incomingIds = new Set(ctx.incomingRequests.map((a) => a.id))
@@ -29,7 +31,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
 
   const request = (p: Attendee) => {
     ctx.setConnection(p.id, 'pending')
-    ctx.toast('Request sent to ' + p.name.split(' ')[0])
+    ctx.toast(t('connect.requestSent').replace('{name}', p.name.split(' ')[0]))
   }
 
   // Discover excludes incoming requesters (they live in Requests) and delegates
@@ -41,15 +43,15 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
   const confirmedMeetings = ctx.meetings.filter((m) => m.status === 'accepted').length
 
   const tabs = [
-    ['discover', 'Discover'],
-    ['requests', `Requests${ctx.incomingRequests.length ? ' · ' + ctx.incomingRequests.length : ''}`],
-    ['messages', `Messages${totalUnread ? ' · ' + totalUnread : ''}`],
+    ['discover', t('connect.tabDiscover')],
+    ['requests', `${t('connect.tabRequests')}${ctx.incomingRequests.length ? ' · ' + ctx.incomingRequests.length : ''}`],
+    ['messages', `${t('connect.tabMessages')}${totalUnread ? ' · ' + totalUnread : ''}`],
   ] as const
 
   return (
     <div>
-      <AppHeader title="Connect" sub="Meet fellow delegates" />
-      <FirstTimeHint id="connect" text="Open any delegate's profile to suggest a 1:1 meeting — pick a time slot and a meeting point, and set your own availability under My meetings." />
+      <AppHeader title={t('connect.title')} sub={t('connect.sub')} />
+      <FirstTimeHint id="connect" text={t('connect.hint')} />
 
       {/* your badge card */}
       <div style={{ padding: '12px 16px 0' }}>
@@ -57,7 +59,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
           <Avatar initials={ctx.me.initials} color="rgba(255,255,255,0.2)" size={48} src={ctx.me.avatarUrl} style={{ boxShadow: '0 0 0 2px rgba(255,255,255,0.4)' }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16 }}>{ctx.me.name}</div>
-            <div style={{ fontFamily: T.onest, fontSize: 12.5, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>Tap to share your badge</div>
+            <div style={{ fontFamily: T.onest, fontSize: 12.5, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>{t('connect.tapShareBadge')}</div>
           </div>
           <div style={{ background: '#fff', borderRadius: 'var(--radius-2)', padding: 5 }}>
             <QR value={ctx.me.badgeId} size={44} />
@@ -67,7 +69,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
 
       {/* one labelled scanning action — the badge card above opens your own badge */}
       <div style={{ padding: '10px 16px 0' }}>
-        <Btn kind="primary" full icon="qr" onClick={() => ctx.push('scanconnect', {})}>Scan a badge to connect</Btn>
+        <Btn kind="primary" full icon="qr" onClick={() => ctx.push('scanconnect', {})}>{t('connect.scanBtn')}</Btn>
       </div>
 
       {/* my 1:1 meetings — pending replies first, else confirmed count */}
@@ -77,13 +79,13 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
             <Icon name="clock" size={18} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>My meetings</div>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>{t('connect.myMeetings')}</div>
             <div style={{ fontFamily: T.sig, fontSize: 12.5, color: pendingMeetings > 0 ? T.green10 : T.muted, marginTop: 1, fontWeight: pendingMeetings > 0 ? 600 : 400 }}>
               {pendingMeetings > 0
-                ? pendingMeetings + ' request' + (pendingMeetings === 1 ? '' : 's') + ' to answer'
+                ? t(pendingMeetings === 1 ? 'connect.meetingRequestOne' : 'connect.meetingRequestMany').replace('{n}', String(pendingMeetings))
                 : confirmedMeetings > 0
-                  ? confirmedMeetings + ' confirmed'
-                  : 'Suggest a 1:1 from any delegate’s profile'}
+                  ? t('connect.meetingConfirmed').replace('{n}', String(confirmedMeetings))
+                  : t('connect.meetingSuggest')}
             </div>
           </div>
           <Icon name="chevronRight" size={18} stroke={2} style={{ color: T.muted }} />
@@ -102,7 +104,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
         {/* ── MESSAGES ── */}
         {tab === 'messages' ? (
           ctx.conversations.length === 0 ? (
-            <Empty icon="message" text="No messages yet. Connect with a delegate, then start a conversation." />
+            <Empty icon="message" text={t('connect.emptyMessages')} />
           ) : (
             ctx.conversations.map((c) => (
               <Press key={c.peerId} onClick={() => openConversation(c.peerId)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 6px', borderBottom: '1px solid ' + T.line }}>
@@ -114,7 +116,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 2 }}>
                     <span style={{ fontFamily: T.sig, fontSize: 13.5, color: c.unread ? T.ink : T.muted, fontWeight: c.unread ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {c.fromMe ? 'You: ' : ''}{c.lastBody}
+                      {c.fromMe ? t('connect.you') + ': ' : ''}{c.lastBody}
                     </span>
                     {c.unread > 0 && (
                       <span style={{ flexShrink: 0, minWidth: 18, height: 18, borderRadius: 999, background: T.green9, color: '#fff', fontFamily: T.onest, fontWeight: 700, fontSize: 11, display: 'grid', placeItems: 'center', padding: '0 5px' }}>{c.unread}</span>
@@ -126,7 +128,7 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
           )
         ) : /* ── REQUESTS ── */ tab === 'requests' ? (
           ctx.incomingRequests.length === 0 ? (
-            <Empty icon="connect" text="No pending requests." />
+            <Empty icon="connect" text={t('connect.emptyRequests')} />
           ) : (
             ctx.incomingRequests.map((p) => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 6px', borderBottom: '1px solid ' + T.line }}>
@@ -136,14 +138,14 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
                   <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.role}{p.org ? ' · ' + p.org : ''}</div>
                 </Press>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <Btn kind="default" size="sm" onClick={() => ctx.declineConnection(p.id)}>Ignore</Btn>
-                  <Btn kind="primary" size="sm" onClick={() => ctx.acceptConnection(p.id)}>Accept</Btn>
+                  <Btn kind="default" size="sm" onClick={() => ctx.declineConnection(p.id)}>{t('connect.ignore')}</Btn>
+                  <Btn kind="primary" size="sm" onClick={() => ctx.acceptConnection(p.id)}>{t('connect.accept')}</Btn>
                 </div>
               </div>
             ))
           )
         ) : /* ── DISCOVER ── */ discover.length === 0 ? (
-          <Empty icon="connect" text="No other delegates yet — check back soon." />
+          <Empty icon="connect" text={t('connect.emptyDiscover')} />
         ) : (
           discover.map((p) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 6px', borderBottom: '1px solid ' + T.line }}>
@@ -153,16 +155,16 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
                 <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.role}{p.org ? ' · ' + p.org : ''}</div>
                 {p.mutual > 0 && (
                   <div style={{ marginTop: 5 }}>
-                    <span style={{ fontFamily: T.onest, fontSize: 11, color: T.green10, background: T.green1, borderRadius: 999, padding: '2px 8px' }}>{p.mutual} shared interests</span>
+                    <span style={{ fontFamily: T.onest, fontSize: 11, color: T.green10, background: T.green1, borderRadius: 999, padding: '2px 8px' }}>{t('connect.sharedInterests').replace('{n}', String(p.mutual))}</span>
                   </div>
                 )}
               </Press>
               {p.status === 'connected' ? (
-                <Btn kind="outline" size="sm" icon="message" onClick={() => openConversation(p.id)}>Message</Btn>
+                <Btn kind="outline" size="sm" icon="message" onClick={() => openConversation(p.id)}>{t('connect.message')}</Btn>
               ) : p.status === 'pending' ? (
-                <Btn kind="default" size="sm" onClick={() => ctx.setConnection(p.id, 'connect')}>Requested</Btn>
+                <Btn kind="default" size="sm" onClick={() => ctx.setConnection(p.id, 'connect')}>{t('connect.requested')}</Btn>
               ) : (
-                <Btn kind="primary" size="sm" onClick={() => request(p)}>Connect</Btn>
+                <Btn kind="primary" size="sm" onClick={() => request(p)}>{t('connect.connect')}</Btn>
               )}
             </div>
           ))

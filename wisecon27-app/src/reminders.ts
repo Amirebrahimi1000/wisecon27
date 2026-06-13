@@ -1,11 +1,15 @@
-// WISEcon27 — per-session reminders. The opt-in set lives on the device; a
-// lightweight scheduler (running while the app is open) fires a notification a
-// few minutes before each chosen session and records that it fired so it never
-// repeats. Guaranteed delivery while the app is fully closed needs the server
-// cron path (send-push) — this covers the common "app on my phone" case.
+// WISEcon27 — per-session reminders.
+// Two delivery paths, kept in sync from one opt-in:
+//  • Server (closed-app): each opt-in is mirrored to the session_reminders
+//    table; the send-reminders cron pushes it even when the app is shut.
+//  • Local (foreground fallback): a scheduler running while the app is open
+//    fires a notification for delegates who haven't enabled push, so they
+//    still get reminded. It stands down when push is on to avoid duplicates.
 import { useEffect } from 'react'
 import type { AppCtx } from './appState'
 import { sessionStartMs } from './sessionTime'
+import { supabase } from './lib/supabase'
+import { isPushEnabled } from './push'
 
 export const REMINDER_LEAD_MIN = 10
 
@@ -41,6 +45,21 @@ export function toggleReminder(userId: string, sessionId: string): boolean {
   return !on
 }
 
+/** Mirror the opt-in to the server so it can deliver when the app is closed.
+ *  Fire-and-forget: local delivery still works if this write fails. */
+export function syncReminderToServer(userId: string, sessionId: string, on: boolean, remindAtMs: number) {
+  if (!userId) return
+  if (on) {
+    if (Number.isNaN(remindAtMs)) return
+    supabase
+      .from('session_reminders')
+      .upsert({ user_id: userId, session_id: sessionId, remind_at: new Date(remindAtMs).toISOString(), sent_at: null })
+      .then()
+  } else {
+    supabase.from('session_reminders').delete().eq('user_id', userId).eq('session_id', sessionId).then()
+  }
+}
+
 async function notify(title: string, body: string, tag: string) {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return false
   try {
@@ -66,6 +85,9 @@ export function useReminderScheduler(ctx: AppCtx) {
       if (!alive) return
       const want = read(setKey(userId))
       if (!want.length) return
+      // push on → the server cron delivers (foreground and closed); don't also
+      // fire locally or the delegate gets the reminder twice.
+      if (await isPushEnabled()) return
       const fired = new Set(read(firedKey(userId)))
       const now = Date.now()
       const lead = REMINDER_LEAD_MIN * 60000

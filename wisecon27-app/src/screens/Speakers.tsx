@@ -4,20 +4,22 @@ import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Press } from '../components/primitives'
+import { useT } from '../i18n'
 
 export function Speakers({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const [q, setQ] = useState('')
   const list = ctx.speakers.filter((s) => (s.name + s.org + s.role).toLowerCase().includes(q.toLowerCase()))
   return (
     <div>
-      <AppHeader title="Speakers" sub={`${ctx.speakers.length} speakers`} />
+      <AppHeader title={t('speakers.title')} sub={t('speakers.sub').replace('{n}', String(ctx.speakers.length))} />
       <div style={{ padding: '12px 16px 4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '0 12px', boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)' }}>
           <Icon name="search" size={18} style={{ color: T.muted }} />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search speakers"
+            placeholder={t('speakers.searchPlaceholder')}
             style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 0', fontFamily: T.sig, fontSize: 15, color: T.ink, background: 'transparent' }}
           />
         </div>
@@ -35,7 +37,7 @@ export function Speakers({ ctx }: { ctx: AppCtx }) {
           </Press>
         ))}
         {list.length === 0 && (
-          <div style={{ textAlign: 'center', color: T.muted, padding: 40, fontFamily: T.sig }}>No speakers match “{q}”.</div>
+          <div style={{ textAlign: 'center', color: T.muted, padding: 40, fontFamily: T.sig }}>{t('speakers.noMatch').replace('{q}', q)}</div>
         )}
       </div>
     </div>

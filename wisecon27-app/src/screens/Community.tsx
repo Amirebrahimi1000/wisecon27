@@ -10,6 +10,7 @@ import { useFeed } from '../feed'
 import { uploadWallPhoto, removeWallPhoto } from '../lib/storage'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Empty, IconBtn, Press } from '../components/primitives'
+import { useT } from '../i18n'
 
 function relTime(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
@@ -22,6 +23,7 @@ function relTime(iso: string) {
 }
 
 export function Community({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const feed = useFeed(ctx.userId)
   // "new posts" tracking: remember the newest post the delegate has already
   // seen (per-user, client-side) so we can flag what's new, mark a "last read"
@@ -89,10 +91,10 @@ export function Community({ ctx }: { ctx: AppCtx }) {
     if (!sc || sc === document.body) return
     const scroller = sc
     let armed = false
-    const t = setTimeout(() => { armed = true }, 600)
+    const timer = setTimeout(() => { armed = true }, 600)
     const onScroll = () => { if (armed && scroller.scrollTop <= 4) catchUp() }
     scroller.addEventListener('scroll', onScroll, { passive: true })
-    return () => { clearTimeout(t); scroller.removeEventListener('scroll', onScroll) }
+    return () => { clearTimeout(timer); scroller.removeEventListener('scroll', onScroll) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -115,7 +117,7 @@ export function Community({ ctx }: { ctx: AppCtx }) {
     setAttaching(true)
     const r = await uploadWallPhoto(ctx.userId, file)
     setAttaching(false)
-    if (r.error || !r.path) return ctx.toast(r.error ?? 'Upload failed')
+    if (r.error || !r.path) return ctx.toast(r.error ?? t('community.uploadFailed'))
     if (photo) removeWallPhoto(photo.path) // replacing a previous attachment
     setPhoto({ path: r.path, preview: URL.createObjectURL(file) })
   }
@@ -133,21 +135,21 @@ export function Community({ ctx }: { ctx: AppCtx }) {
     if (ok) {
       setText('')
       setPhoto(null)
-      ctx.toast('Posted to the community feed')
+      ctx.toast(t('community.toastPosted'))
     } else {
-      ctx.toast('Could not post — try again')
+      ctx.toast(t('community.toastFailed'))
     }
   }
 
   const authorOf = (p: FeedPost) => {
-    if (p.userId === ctx.userId) return { name: 'You', initials: ctx.me.initials, color: ctx.me.color, avatarUrl: ctx.me.avatarUrl, sub: [ctx.me.role, ctx.me.org].filter(Boolean).join(' · ') }
+    if (p.userId === ctx.userId) return { name: t('community.you'), initials: ctx.me.initials, color: ctx.me.color, avatarUrl: ctx.me.avatarUrl, sub: [ctx.me.role, ctx.me.org].filter(Boolean).join(' · ') }
     const a = ctx.attendees.find((x) => x.id === p.userId)
-    return { name: a?.name ?? 'A delegate', initials: a?.initials ?? '?', color: a?.color ?? 'var(--wf-blue-9)', avatarUrl: a?.avatarUrl, sub: [a?.role, a?.org].filter(Boolean).join(' · ') }
+    return { name: a?.name ?? t('community.aDelegate'), initials: a?.initials ?? '?', color: a?.color ?? 'var(--wf-blue-9)', avatarUrl: a?.avatarUrl, sub: [a?.role, a?.org].filter(Boolean).join(' · ') }
   }
 
   return (
     <div>
-      <AppHeader title="Community" sub="The delegate wall" onBack={ctx.back} />
+      <AppHeader title={t('community.title')} sub={t('community.sub')} onBack={ctx.back} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
         <div ref={topRef} />
         {/* composer */}
@@ -157,7 +159,7 @@ export function Community({ ctx }: { ctx: AppCtx }) {
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, 400))}
-              placeholder="Share a takeaway, a question, or a photo-worthy moment…"
+              placeholder={t('community.placeholder')}
               rows={2}
               style={{ flex: 1, resize: 'none', border: 'none', outline: 'none', background: 'transparent', fontFamily: T.sig, fontSize: 14.5, color: T.ink, lineHeight: 1.5, paddingTop: 8 }}
             />
@@ -174,12 +176,12 @@ export function Community({ ctx }: { ctx: AppCtx }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto} style={{ display: 'none' }} />
               <IconBtn name="camera" size={34} color={attaching ? T.muted : T.green10} bg={T.sunken} onClick={() => !attaching && fileRef.current?.click()} />
-              <span style={{ fontFamily: T.onest, fontSize: 11, color: T.muted }}>{attaching ? 'Preparing photo…' : `${text.length}/400`}</span>
+              <span style={{ fontFamily: T.onest, fontSize: 11, color: T.muted }}>{attaching ? t('community.preparingPhoto') : `${text.length}/400`}</span>
             </div>
-            <Btn kind="primary" size="sm" icon="send" onClick={post} disabled={(!text.trim() && !photo) || posting || attaching}>{posting ? 'Posting…' : 'Post'}</Btn>
+            <Btn kind="primary" size="sm" icon="send" onClick={post} disabled={(!text.trim() && !photo) || posting || attaching}>{posting ? t('community.posting') : t('community.post')}</Btn>
           </div>
           <div style={{ fontFamily: T.onest, fontSize: 10.5, color: T.muted, marginTop: 8, lineHeight: 1.45 }}>
-            Photos are visible to signed-in delegates only. Be mindful of who's in frame — you or the organisers can remove a post at any time.
+            {t('community.photoDisclaimer')}
           </div>
         </div>
 
@@ -188,14 +190,14 @@ export function Community({ ctx }: { ctx: AppCtx }) {
           <div style={{ position: 'sticky', top: STATUS_INSET + 64, zIndex: 25, display: 'flex', justifyContent: 'center', marginBottom: 12, pointerEvents: 'none' }}>
             <Press onClick={jumpToNewest} style={{ pointerEvents: 'auto', display: 'inline-flex', alignItems: 'center', gap: 7, background: T.green9, color: '#fff', padding: '9px 16px', borderRadius: 999, boxShadow: 'var(--shadow-card)', fontFamily: T.sig, fontWeight: 600, fontSize: 13.5 }}>
               <Icon name="arrowUp" size={15} stroke={2.4} />
-              {pillCount} new post{pillCount === 1 ? '' : 's'}
+              {pillCount === 1 ? t('community.newPost1') : t('community.newPostN').replace('{n}', String(pillCount))}
             </Press>
           </div>
         )}
 
         {/* posts */}
         {!feed.loading && feed.posts.length === 0 && (
-          <Empty icon="message" text="Nothing here yet — be the first to post." />
+          <Empty icon="message" text={t('community.empty')} />
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {feed.posts.map((p, i) => {
@@ -207,7 +209,7 @@ export function Community({ ctx }: { ctx: AppCtx }) {
                 {i === firstReadIdx && firstReadIdx > 0 && (
                   <div ref={dividerRef} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 2px' }}>
                     <div style={{ flex: 1, height: 1, background: T.line2 }} />
-                    <span style={{ fontFamily: T.onest, fontWeight: 600, fontSize: 11, color: T.muted, whiteSpace: 'nowrap' }}>Last read · caught up below</span>
+                    <span style={{ fontFamily: T.onest, fontWeight: 600, fontSize: 11, color: T.muted, whiteSpace: 'nowrap' }}>{t('community.lastRead')}</span>
                     <div style={{ flex: 1, height: 1, background: T.line2 }} />
                   </div>
                 )}
@@ -222,10 +224,10 @@ export function Community({ ctx }: { ctx: AppCtx }) {
                         {[a.sub, relTime(p.createdAt)].filter(Boolean).join(' · ')}
                       </div>
                     </div>
-                    {unread && <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 10.5, color: T.green10, background: T.green1, borderRadius: 999, padding: '3px 9px', flexShrink: 0 }}>New</span>}
+                    {unread && <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 10.5, color: T.green10, background: T.green1, borderRadius: 999, padding: '3px 9px', flexShrink: 0 }}>{t('community.new')}</span>}
                     {canRemove && (
                       <Press onClick={() => (confirmId === p.id ? (setConfirmId(null), feed.remove(p)) : setConfirmId(p.id))} style={{ color: confirmId === p.id ? 'var(--wf-negative-9)' : T.line2, padding: 4, fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>
-                        {confirmId === p.id ? 'Remove?' : <Icon name="close" size={16} />}
+                        {confirmId === p.id ? t('community.removeConfirm') : <Icon name="close" size={16} />}
                       </Press>
                     )}
                   </div>
@@ -236,7 +238,7 @@ export function Community({ ctx }: { ctx: AppCtx }) {
                   <Press onClick={() => feed.toggleLike(p)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '5px 11px', borderRadius: 999, background: p.liked ? 'var(--wf-tomato-2)' : T.sunken, color: p.liked ? 'var(--wf-tomato-9)' : T.muted }}>
                     <Icon name="heart" size={15} stroke={2} />
                     <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 12.5 }}>{p.likes || ''}</span>
-                    <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>{p.liked ? 'Liked' : 'Like'}</span>
+                    <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>{p.liked ? t('community.liked') : t('community.like')}</span>
                   </Press>
                 </div>
               </Fragment>

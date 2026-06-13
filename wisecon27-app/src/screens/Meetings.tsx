@@ -6,8 +6,9 @@ import type { Meeting } from '../types'
 import { Icon } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Empty, Eyebrow, Press } from '../components/primitives'
 import { FirstTimeHint } from '../components/Hint'
+import { useT } from '../i18n'
 
-function MeetingCard({ ctx, m }: { ctx: AppCtx; m: Meeting }) {
+function MeetingCard({ ctx, m, t }: { ctx: AppCtx; m: Meeting; t: (k: string) => string }) {
   const incoming = m.inviteeId === ctx.userId
   const peerId = incoming ? m.requesterId : m.inviteeId
   const peer = ctx.attendees.find((a) => a.id === peerId)
@@ -18,7 +19,7 @@ function MeetingCard({ ctx, m }: { ctx: AppCtx; m: Meeting }) {
       <Press onClick={() => ctx.push('delegate', { peerId })} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Avatar initials={peer?.initials ?? '?'} color={peer?.color ?? 'var(--wf-blue-9)'} size={44} src={peer?.avatarUrl} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{peer?.name ?? 'A delegate'}</div>
+          <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{peer?.name ?? t('meetings.aDelegate')}</div>
           <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {[peer?.role, peer?.org].filter(Boolean).join(' · ')}
           </div>
@@ -32,39 +33,40 @@ function MeetingCard({ ctx, m }: { ctx: AppCtx; m: Meeting }) {
       </div>
       {m.message && (
         <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, marginTop: 9, lineHeight: 1.45, fontStyle: 'italic' }}>
-          “{m.message}”
+          "{m.message}"
         </div>
       )}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12, flexWrap: 'wrap' }}>
         {m.status === 'pending' && incoming ? (
           <>
-            <Btn kind="default" size="sm" onClick={() => ctx.respondMeeting(m.id, 'declined')}>Decline</Btn>
-            <Btn kind="outline" size="sm" icon="clock" onClick={() => ctx.push('meetingrequest', { peerId, meetingId: m.id })}>New time</Btn>
-            <Btn kind="primary" size="sm" icon="check" onClick={() => ctx.respondMeeting(m.id, 'accepted')}>Accept</Btn>
+            <Btn kind="default" size="sm" onClick={() => ctx.respondMeeting(m.id, 'declined')}>{t('meetings.decline')}</Btn>
+            <Btn kind="outline" size="sm" icon="clock" onClick={() => ctx.push('meetingrequest', { peerId, meetingId: m.id })}>{t('meetings.newTime')}</Btn>
+            <Btn kind="primary" size="sm" icon="check" onClick={() => ctx.respondMeeting(m.id, 'accepted')}>{t('meetings.accept')}</Btn>
           </>
         ) : m.status === 'pending' ? (
-          <Btn kind="default" size="sm" onClick={() => { ctx.cancelMeeting(m.id); ctx.toast('Meeting request cancelled') }}>Cancel request</Btn>
+          <Btn kind="default" size="sm" onClick={() => { ctx.cancelMeeting(m.id); ctx.toast(t('meetings.toastCancelReq')) }}>{t('meetings.cancelRequest')}</Btn>
         ) : (
-          <Btn kind="default" size="sm" onClick={() => { ctx.cancelMeeting(m.id); ctx.toast('Meeting cancelled') }}>Cancel meeting</Btn>
+          <Btn kind="default" size="sm" onClick={() => { ctx.cancelMeeting(m.id); ctx.toast(t('meetings.toastCancelMtg')) }}>{t('meetings.cancelMeeting')}</Btn>
         )}
       </div>
     </div>
   )
 }
 
-function Section({ ctx, label, items }: { ctx: AppCtx; label: string; items: Meeting[] }) {
+function Section({ ctx, label, items, t }: { ctx: AppCtx; label: string; items: Meeting[]; t: (k: string) => string }) {
   if (!items.length) return null
   return (
     <div style={{ marginBottom: 20 }}>
       <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }}>{label}</Eyebrow>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {items.map((m) => <MeetingCard key={m.id} ctx={ctx} m={m} />)}
+        {items.map((m) => <MeetingCard key={m.id} ctx={ctx} m={m} t={t} />)}
       </div>
     </div>
   )
 }
 
 export function Meetings({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const byTime = (a: Meeting, b: Meeting) => (a.day + a.start).localeCompare(b.day + b.start)
   const incoming = ctx.meetings.filter((m) => m.status === 'pending' && m.inviteeId === ctx.userId).sort(byTime)
   const outgoing = ctx.meetings.filter((m) => m.status === 'pending' && m.requesterId === ctx.userId).sort(byTime)
@@ -72,8 +74,8 @@ export function Meetings({ ctx }: { ctx: AppCtx }) {
   const total = incoming.length + outgoing.length + confirmed.length
   return (
     <div>
-      <AppHeader title="My meetings" sub="1:1 networking" onBack={ctx.back} />
-      <FirstTimeHint id="meetings" text="Confirmed meetings appear in your agenda, on Home and in your calendar export — and if a suggested time doesn't fit, reply with a new one." />
+      <AppHeader title={t('meetings.title')} sub={t('meetings.sub')} onBack={ctx.back} />
+      <FirstTimeHint id="meetings" text={t('meetings.hint')} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {/* when can people book me? */}
         <Press onClick={() => ctx.push('availability', {})} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 18 }}>
@@ -81,21 +83,21 @@ export function Meetings({ ctx }: { ctx: AppCtx }) {
             <Icon name="clock" size={19} />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>My availability</div>
-            <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 1 }}>Choose when delegates can book you.</div>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>{t('meetings.myAvailability')}</div>
+            <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 1 }}>{t('meetings.availDesc')}</div>
           </div>
           <Icon name="chevronRight" size={18} stroke={2} style={{ color: T.line2 }} />
         </Press>
         {total === 0 ? (
           <>
-            <Empty icon="connect" text="No meetings yet. Open a delegate's profile and suggest a time — we'll reserve a meeting spot for you." />
-            <Btn kind="primary" full icon="connect" onClick={() => ctx.setTab('connect')}>Find delegates to meet</Btn>
+            <Empty icon="connect" text={t('meetings.empty')} />
+            <Btn kind="primary" full icon="connect" onClick={() => ctx.setTab('connect')}>{t('meetings.findDelegates')}</Btn>
           </>
         ) : (
           <>
-            <Section ctx={ctx} label="Needs your reply" items={incoming} />
-            <Section ctx={ctx} label="Awaiting their reply" items={outgoing} />
-            <Section ctx={ctx} label="Confirmed" items={confirmed} />
+            <Section ctx={ctx} label={t('meetings.needsReply')} items={incoming} t={t} />
+            <Section ctx={ctx} label={t('meetings.awaitingReply')} items={outgoing} t={t} />
+            <Section ctx={ctx} label={t('meetings.confirmed')} items={confirmed} t={t} />
           </>
         )}
       </div>

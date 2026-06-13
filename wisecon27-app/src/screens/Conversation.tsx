@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { AppHeader, Avatar, Empty, IconBtn } from '../components/primitives'
+import { useT } from '../i18n'
 
 function dayLabel(iso: string) {
   const d = new Date(iso)
@@ -14,6 +15,7 @@ function timeLabel(iso: string) {
 }
 
 export function Conversation({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const peerId = ctx.params.peerId || ''
   const peer = ctx.attendees.find((a) => a.id === peerId)
   const msgs = ctx.messagesWith(peerId)
@@ -32,10 +34,10 @@ export function Conversation({ ctx }: { ctx: AppCtx }) {
   }, [msgs.length])
 
   const send = () => {
-    const t = text.trim()
-    if (!t) return
+    const trimmed = text.trim()
+    if (!trimmed) return
     setText('')
-    ctx.sendMessage(peerId, t)
+    ctx.sendMessage(peerId, trimmed)
   }
 
   return (
@@ -49,7 +51,7 @@ export function Conversation({ ctx }: { ctx: AppCtx }) {
 
       <div style={{ padding: '14px 14px 0', display: 'flex', flexDirection: 'column', gap: 8, minHeight: 'calc(100dvh - 320px)' }}>
         {msgs.length === 0 ? (
-          <Empty icon="message" text={`Say hello to ${(peer?.name || 'your connection').split(' ')[0]} 👋`} />
+          <Empty icon="message" text={t('convo.sayHello').replace('{name}', (peer?.name || t('convo.yourConnection')).split(' ')[0])} />
         ) : (
           msgs.map((m, i) => {
             const mine = m.senderId === ctx.userId
@@ -101,7 +103,7 @@ export function Conversation({ ctx }: { ctx: AppCtx }) {
                 send()
               }
             }}
-            placeholder="Message…"
+            placeholder={t('convo.placeholder')}
             rows={1}
             style={{ flex: 1, border: 'none', outline: 'none', resize: 'none', background: 'transparent', fontFamily: T.sig, fontSize: 15, color: T.ink, padding: '8px 0', maxHeight: 120, lineHeight: 1.4 }}
           />

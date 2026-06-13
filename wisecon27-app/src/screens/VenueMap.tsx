@@ -9,6 +9,7 @@ import type { AppCtx } from '../appState'
 import { trackOf } from '../data'
 import { Icon } from '../components/Icon'
 import { AppHeader, Eyebrow, Press, TrackTag } from '../components/primitives'
+import { useT } from '../i18n'
 
 interface Area {
   id: string
@@ -53,6 +54,7 @@ function buildAreas(rooms: string[]): { areas: Area[]; height: number } {
 }
 
 export function VenueMap({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const booth = ctx.params.booth
 
   const { areas, height } = useMemo(() => {
@@ -87,11 +89,11 @@ export function VenueMap({ ctx }: { ctx: AppCtx }) {
 
   return (
     <div>
-      <AppHeader title="Venue map" sub={ctx.event.location || 'Find your way'} onBack={ctx.back} />
+      <AppHeader title={t('venue.title')} sub={ctx.event.location || t('venue.sub')} onBack={ctx.back} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {ctx.params.room && !areaFor(ctx.params.room) && (
           <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, marginBottom: 10 }}>
-            “{ctx.params.room}” isn't on the floor plan — ask at the registration desk in the Foyer.
+            {t('venue.notOnPlan').replace('{room}', ctx.params.room as string)}
           </div>
         )}
 
@@ -128,12 +130,12 @@ export function VenueMap({ ctx }: { ctx: AppCtx }) {
               )
             })}
             <text x={W / 2} y={height - 8} textAnchor="middle" style={{ fontFamily: T.onest, fontSize: 10, fill: 'var(--wf-grey-9)' }}>
-              ▲ Main entrance
+              {'▲'} {t('venue.mainEntrance')}
             </text>
           </svg>
         </div>
         <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, margin: '8px 2px 16px', lineHeight: 1.5 }}>
-          Tap a room to see what's happening there.
+          {t('venue.tapHint')}
         </div>
 
         {/* selected location detail */}
@@ -150,7 +152,7 @@ export function VenueMap({ ctx }: { ctx: AppCtx }) {
             {/* exhibitor booths in the Expo Hall */}
             {selected.id === 'expo hall' && exhibitors.length > 0 && (
               <div style={{ marginTop: 12 }}>
-                <Eyebrow style={{ marginBottom: 8 }}>Booths</Eyebrow>
+                <Eyebrow style={{ marginBottom: 8 }}>{t('venue.booths')}</Eyebrow>
                 {exhibitors.map((sp) => {
                   const here = booth && norm(sp.booth ?? '') === norm(booth)
                   return (
@@ -167,7 +169,7 @@ export function VenueMap({ ctx }: { ctx: AppCtx }) {
             {/* programme in this room */}
             {inRoom.length > 0 && (
               <div style={{ marginTop: 12 }}>
-                <Eyebrow style={{ marginBottom: 8 }}>In this room</Eyebrow>
+                <Eyebrow style={{ marginBottom: 8 }}>{t('venue.inThisRoom')}</Eyebrow>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {inRoom.map((s) => {
                     const d = ctx.days.find((x) => x.id === s.day)
@@ -187,7 +189,7 @@ export function VenueMap({ ctx }: { ctx: AppCtx }) {
               </div>
             )}
             {selected.id !== 'expo hall' && inRoom.length === 0 && (
-              <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, marginTop: 10 }}>No programmed sessions in this space.</div>
+              <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, marginTop: 10 }}>{t('venue.noSessions')}</div>
             )}
           </div>
         )}

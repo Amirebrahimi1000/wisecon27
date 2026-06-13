@@ -8,6 +8,7 @@ import type { NotificationType } from '../types'
 import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
 import { AppHeader, Press } from '../components/primitives'
+import { useT } from '../i18n'
 
 const META: Record<NotificationType, { icon: IconName; color: string; bg: string }> = {
   reminder: { icon: 'clock', color: 'var(--wf-green-9)', bg: 'var(--wf-green-1)' },
@@ -24,6 +25,7 @@ const CLAMP_LINES = 4
 const isLong = (body: string) => body.length > 170 || body.includes('\n')
 
 export function Notifications({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const toggle = (id: string) =>
     setExpanded((prev) => {
@@ -35,10 +37,10 @@ export function Notifications({ ctx }: { ctx: AppCtx }) {
   return (
     <div>
       <AppHeader
-        title="Notifications"
+        title={t('notif.title')}
         onBack={ctx.params._fromTab ? null : ctx.back}
         right={
-          <Press onClick={() => { ctx.markAllRead(); ctx.toast('All marked read') }} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.green10, padding: '0 6px' }}>Mark read</Press>
+          <Press onClick={() => { ctx.markAllRead(); ctx.toast(t('notif.allMarkedRead')) }} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.green10, padding: '0 6px' }}>{t('notif.markRead')}</Press>
         }
       />
       <div style={{ padding: '8px 12px ' + (TABBAR_H + 16) + 'px' }}>
@@ -78,7 +80,7 @@ export function Notifications({ ctx }: { ctx: AppCtx }) {
                 </div>
                 {long && (
                   <div style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5, color: T.green10, marginTop: 5 }}>
-                    {open ? 'Show less' : 'Read more'}
+                    {open ? t('notif.showLess') : t('notif.readMore')}
                   </div>
                 )}
               </div>

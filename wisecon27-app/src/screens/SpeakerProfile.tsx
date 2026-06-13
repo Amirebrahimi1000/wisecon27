@@ -5,10 +5,12 @@ import { T, STATUS_INSET, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { Avatar, Btn, Eyebrow, IconBtn, SessionRow } from '../components/primitives'
 import { shareOrCopy } from '../lib/share'
+import { useT } from '../i18n'
 
 const norm = (n: string) => n.toLowerCase().replace(/^(dr|prof)\.?\s+/i, '').trim()
 
 export function SpeakerProfile({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const p = ctx.params.speaker!
   const sessions = ctx.sessions.filter((s) => (s.speakers || []).includes(p.id))
   const delegate = ctx.attendees.find((a) => norm(a.name) === norm(p.name))
@@ -16,21 +18,21 @@ export function SpeakerProfile({ ctx }: { ctx: AppCtx }) {
 
   const share = async () => {
     const r = await shareOrCopy('WISEcon27', `${p.name} — ${[p.role, p.org].filter(Boolean).join(', ')} · speaking at WISEcon27`)
-    if (r === 'copied') ctx.toast('Speaker details copied')
-    else if (r === 'failed') ctx.toast('Sharing isn’t available on this device')
+    if (r === 'copied') ctx.toast(t('speaker.detailsCopied'))
+    else if (r === 'failed') ctx.toast(t('speaker.sharingUnavailable'))
   }
 
   const connect = () => {
-    if (!delegate) return ctx.toast(first + ' isn’t on the delegate list — catch them after their session')
-    if (delegate.status === 'connected') return ctx.toast('You’re already connected with ' + first)
-    if (delegate.status === 'pending') return ctx.toast('Request already sent')
+    if (!delegate) return ctx.toast(t('speaker.notOnList').replace('{first}', first))
+    if (delegate.status === 'connected') return ctx.toast(t('speaker.alreadyConnected').replace('{first}', first))
+    if (delegate.status === 'pending') return ctx.toast(t('speaker.requestSentAlready'))
     ctx.setConnection(delegate.id, 'pending')
-    ctx.toast('Request sent to ' + first)
+    ctx.toast(t('speaker.requestSent').replace('{first}', first))
   }
 
   const message = () => {
-    if (!delegate) return ctx.toast(first + ' isn’t on the delegate list — catch them after their session')
-    if (delegate.status !== 'connected') return ctx.toast('Connect with ' + first + ' first to send a message')
+    if (!delegate) return ctx.toast(t('speaker.notOnList').replace('{first}', first))
+    if (delegate.status !== 'connected') return ctx.toast(t('speaker.connectFirst').replace('{first}', first))
     ctx.push('conversation', { peerId: delegate.id })
   }
   return (
@@ -58,29 +60,29 @@ export function SpeakerProfile({ ctx }: { ctx: AppCtx }) {
       </div>
       <div style={{ padding: '16px 16px 0', display: 'flex', gap: 10 }}>
         {delegate?.status === 'connected' ? (
-          <Btn kind="primary" full icon="message" onClick={message}>Message</Btn>
+          <Btn kind="primary" full icon="message" onClick={message}>{t('speaker.message')}</Btn>
         ) : (
           <>
             <Btn kind={delegate?.status === 'pending' ? 'default' : 'primary'} full icon={delegate?.status === 'pending' ? 'check' : 'connect'} onClick={connect}>
-              {delegate?.status === 'pending' ? 'Requested' : 'Connect'}
+              {delegate?.status === 'pending' ? t('speaker.requested') : t('speaker.connect')}
             </Btn>
-            <Btn kind="outline" icon="message" onClick={message} style={{ flexShrink: 0 }}>Message</Btn>
+            <Btn kind="outline" icon="message" onClick={message} style={{ flexShrink: 0 }}>{t('speaker.message')}</Btn>
           </>
         )}
       </div>
       <div style={{ padding: '20px 16px 0', display: 'flex', flexDirection: 'column', gap: 22 }}>
         <div>
-          <Eyebrow style={{ marginBottom: 8 }}>About</Eyebrow>
+          <Eyebrow style={{ marginBottom: 8 }}>{t('speaker.about')}</Eyebrow>
           <p style={{ fontFamily: T.sig, fontSize: 15.5, lineHeight: 1.55, color: T.body }}>{p.bio}</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            {p.topics.map((t) => (
-              <span key={t} style={{ fontFamily: T.sig, fontSize: 12.5, fontWeight: 600, color: T.subtle, background: T.sunken, borderRadius: 999, padding: '5px 12px' }}>{t}</span>
+            {p.topics.map((topic) => (
+              <span key={topic} style={{ fontFamily: T.sig, fontSize: 12.5, fontWeight: 600, color: T.subtle, background: T.sunken, borderRadius: 999, padding: '5px 12px' }}>{topic}</span>
             ))}
           </div>
         </div>
         {sessions.length > 0 && (
           <div>
-            <Eyebrow style={{ marginBottom: 10 }}>Sessions ({sessions.length})</Eyebrow>
+            <Eyebrow style={{ marginBottom: 10 }}>{t('speaker.sessions').replace('{n}', String(sessions.length))}</Eyebrow>
             <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
               {sessions.map((s, i) => (
                 <div key={s.id} style={{ borderBottom: i === sessions.length - 1 ? 'none' : '1px solid ' + T.line }}>

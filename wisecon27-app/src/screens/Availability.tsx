@@ -9,6 +9,7 @@ import type { DayAvail, TimeWindow } from '../types'
 import { TICKS, DEFAULT_AVAIL, normalizeDayAvail, slotEnd } from '../meetingSlots'
 import { Icon } from '../components/Icon'
 import { AppHeader, Btn, Eyebrow, Press } from '../components/primitives'
+import { useT } from '../i18n'
 
 function Toggle({ on, onTap }: { on: boolean; onTap: () => void }) {
   return (
@@ -24,10 +25,11 @@ const selectStyle: React.CSSProperties = {
   boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)',
 }
 
-const describe = (a: DayAvail) =>
-  !a.available ? 'Not taking meetings' : 'Bookable ' + a.windows.map((w) => `${w.start}–${w.end}`).join(' and ')
+const describe = (a: DayAvail, tNotTaking: string, tBookable: string) =>
+  !a.available ? tNotTaking : tBookable + ' ' + a.windows.map((w) => `${w.start}–${w.end}`).join(' and ')
 
 export function Availability({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const [avail, setAvail] = useState<Record<string, DayAvail>>({})
   const [loaded, setLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -77,16 +79,16 @@ export function Availability({ ctx }: { ctx: AppCtx }) {
     const { error } = await supabase.from('profiles').update({ meeting_availability: avail }).eq('id', ctx.userId)
     setSaving(false)
     if (error) return ctx.toast(error.message)
-    ctx.toast('Availability saved')
+    ctx.toast(t('avail.toastSaved'))
     ctx.back()
   }
 
   return (
     <div>
-      <AppHeader title="Meeting availability" sub="When can people book you?" onBack={ctx.back} />
+      <AppHeader title={t('avail.title')} sub={t('avail.sub')} onBack={ctx.back} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
         <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, marginBottom: 14, lineHeight: 1.5 }}>
-          Delegates suggesting a 1:1 meeting can only pick times inside these windows. Add several windows to keep parts of a day free — for example 08:00–10:00 and 14:00–16:00.
+          {t('avail.description')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
           {ctx.days.map((d) => {
@@ -96,7 +98,7 @@ export function Availability({ ctx }: { ctx: AppCtx }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{d.long || `${d.dow} ${d.date}`}</div>
-                    <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 2 }}>{describe(a)}</div>
+                    <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, marginTop: 2 }}>{describe(a, t('avail.notTaking'), t('avail.bookable'))}</div>
                   </div>
                   <Toggle on={a.available} onTap={() => setDay(d.id, { ...a, available: !a.available })} />
                 </div>
@@ -104,11 +106,11 @@ export function Availability({ ctx }: { ctx: AppCtx }) {
                   <>
                     {a.windows.map((w, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
-                        <Eyebrow>From</Eyebrow>
+                        <Eyebrow>{t('avail.from')}</Eyebrow>
                         <select value={w.start} onChange={(e) => setWindow(d.id, i, { start: e.target.value })} style={selectStyle}>
                           {TICKS.slice(0, -1).map((t) => <option key={t} value={t}>{t}</option>)}
                         </select>
-                        <Eyebrow>Until</Eyebrow>
+                        <Eyebrow>{t('avail.until')}</Eyebrow>
                         <select value={w.end} onChange={(e) => setWindow(d.id, i, { end: e.target.value })} style={selectStyle}>
                           {TICKS.filter((t) => t > w.start).map((t) => <option key={t} value={t}>{t}</option>)}
                         </select>
@@ -121,7 +123,7 @@ export function Availability({ ctx }: { ctx: AppCtx }) {
                       </div>
                     ))}
                     <Press onClick={() => addWindow(d.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: T.green10, fontFamily: T.sig, fontWeight: 600, fontSize: 13, marginTop: 11 }}>
-                      <Icon name="plus" size={15} stroke={2.2} />Add another window
+                      <Icon name="plus" size={15} stroke={2.2} />{t('avail.addWindow')}
                     </Press>
                   </>
                 )}
@@ -129,7 +131,7 @@ export function Availability({ ctx }: { ctx: AppCtx }) {
             )
           })}
         </div>
-        <Btn kind="primary" full size="lg" onClick={save} disabled={!loaded || saving}>{saving ? 'Saving…' : 'Save availability'}</Btn>
+        <Btn kind="primary" full size="lg" onClick={save} disabled={!loaded || saving}>{saving ? t('avail.saving') : t('avail.save')}</Btn>
       </div>
     </div>
   )

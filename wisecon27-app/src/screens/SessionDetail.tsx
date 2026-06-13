@@ -11,8 +11,8 @@ import { Avatar, Btn, Eyebrow, IconBtn, Press, TYPE_META } from '../components/p
 import { useQA, usePoll, type QAItem } from '../sessionLive'
 import { slidesPublicUrl, uploadResource } from '../lib/storage'
 import { shareOrCopy } from '../lib/share'
-import { conflictsFor } from '../sessionTime'
-import { hasReminder, toggleReminder, REMINDER_LEAD_MIN } from '../reminders'
+import { conflictsFor, sessionStartMs } from '../sessionTime'
+import { hasReminder, toggleReminder, syncReminderToServer, REMINDER_LEAD_MIN } from '../reminders'
 import { getNote, setNote } from '../notes'
 import { useT } from '../i18n'
 
@@ -31,6 +31,7 @@ export function SessionDetail({ ctx }: { ctx: AppCtx }) {
 
   const toggleRemind = () => {
     const on = toggleReminder(ctx.userId, s.id)
+    syncReminderToServer(ctx.userId, s.id, on, sessionStartMs(ctx, s) - REMINDER_LEAD_MIN * 60000)
     setReminded(on)
     ctx.toast(on ? tr('session.reminderSet') + `${REMINDER_LEAD_MIN} min before` : tr('session.reminderOff'))
   }

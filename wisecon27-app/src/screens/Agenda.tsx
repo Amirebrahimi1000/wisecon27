@@ -2,6 +2,7 @@
 // Timeline (time grid, parallel sessions side by side), Linear (detailed
 // rows — the original view) and List (compact, scannable).
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '../i18n'
 import { TRACKS, trackOf } from '../data'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
@@ -170,6 +171,7 @@ function CompactList({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
 type FilterKey = TrackId | 'meetings' | 'breakout' | 'keynote' | 'foryou'
 
 export function Agenda({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const [day, setDay] = useState<string>(ctx.params.day || 'd1')
   // multi-select filters: empty set = everything ("All"); chips toggle on/off
   const [filters, setFilters] = useState<Set<FilterKey>>(new Set())
@@ -242,14 +244,14 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
     ...(showAll || filters.has('meetings') ? meetingItems.filter(matches) : []),
   ].sort((a, b) => a.start.localeCompare(b.start))
   const VIEWS: { id: AgendaView; label: string }[] = [
-    { id: 'timeline', label: 'Timeline' },
-    { id: 'linear', label: 'Linear' },
-    { id: 'list', label: 'List' },
+    { id: 'timeline', label: t('agenda.viewTimeline') },
+    { id: 'linear', label: t('agenda.viewLinear') },
+    { id: 'list', label: t('agenda.viewList') },
   ]
   return (
     <div>
       <AppHeader
-        title="Agenda"
+        title={t('agenda.title')}
         sub={[ctx.event.dateline, ctx.event.location].filter(Boolean).join(' · ')}
         right={<IconBtn name={searching ? 'close' : 'search'} onClick={() => (searching ? closeSearch() : setSearching(true))} />}
       />
@@ -261,13 +263,13 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search sessions, topics, speakers"
+              placeholder={t('agenda.searchPlaceholder')}
               style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 0', fontFamily: T.sig, fontSize: 15, color: T.ink, background: 'transparent' }}
             />
           </div>
         </div>
       )}
-      <FirstTimeHint id="agenda" text="Bookmark sessions to build your personal plan — it shows on Home, in My schedule, and exports to your calendar." />
+      <FirstTimeHint id="agenda" text={t('agenda.hint')} />
       {/* day selector */}
       <div style={{ display: 'flex', gap: 8, padding: '14px 16px 4px' }}>
         {ctx.days.map((d) => {
@@ -292,21 +294,21 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
         })}
       </div>
       <ChipRow style={{ paddingBottom: 4 }}>
-        <Chip active={showAll} onClick={() => setFilters(new Set())}>All</Chip>
+        <Chip active={showAll} onClick={() => setFilters(new Set())}>{t('agenda.filterAll')}</Chip>
         <Chip active={filters.has('foryou')} onClick={() => toggleFilter('foryou')}>
-          <Icon name="sparkles" size={13} />For you
+          <Icon name="sparkles" size={13} />{t('agenda.filterForYou')}
         </Chip>
         {(Object.entries(TRACKS) as [TrackId, (typeof TRACKS)[TrackId]][])
           .filter(([k]) => k !== 'plenary')
-          .map(([k, t]) => (
-            <Chip key={k} active={filters.has(k)} onClick={() => toggleFilter(k)} color={t.dot}>
-              {t.name}
+          .map(([k, tr]) => (
+            <Chip key={k} active={filters.has(k)} onClick={() => toggleFilter(k)} color={tr.dot}>
+              {tr.name}
             </Chip>
           ))}
-        <Chip active={filters.has('breakout')} onClick={() => toggleFilter('breakout')}>Breakout session</Chip>
-        <Chip active={filters.has('keynote')} onClick={() => toggleFilter('keynote')}>Keynote session</Chip>
+        <Chip active={filters.has('breakout')} onClick={() => toggleFilter('breakout')}>{t('agenda.filterBreakout')}</Chip>
+        <Chip active={filters.has('keynote')} onClick={() => toggleFilter('keynote')}>{t('agenda.filterKeynote')}</Chip>
         <Chip active={filters.has('meetings')} onClick={() => toggleFilter('meetings')} color={T.green9}>
-          1:1 meetings
+          {t('agenda.filterMeetings')}
         </Chip>
       </ChipRow>
       <div style={{ padding: '4px 12px ' + (TABBAR_H + 16) + 'px' }}>
@@ -334,10 +336,10 @@ export function Agenda({ ctx }: { ctx: AppCtx }) {
         {list.length === 0 && (
           <div style={{ textAlign: 'center', color: T.muted, padding: 40, fontFamily: T.sig }}>
             {q.trim()
-              ? `Nothing matches “${q.trim()}” on this day.`
+              ? t('agenda.emptySearch').replace('{q}', q.trim())
               : filters.size === 1 && filters.has('meetings')
-                ? 'No 1:1 meetings on this day yet — arrange one from a delegate’s profile in Connect.'
-                : 'Nothing matches your filters on this day.'}
+                ? t('agenda.emptyMeetings')
+                : t('agenda.emptyFilters')}
           </div>
         )}
       </div>

@@ -7,6 +7,7 @@ import type { AppCtx, PushScreen, TabId } from '../appState'
 import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
 import { Btn, Press } from '../components/primitives'
+import { useT } from '../i18n'
 
 const SEEN_KEY = 'wc27.tour.seen'
 export const tourSeen = () => {
@@ -33,73 +34,74 @@ const setTourResume = (step: number) => {
 }
 export const TOUR_STEPS = () => STEPS.length
 
-interface Step {
+interface StepDef {
   icon: IconName
-  title: string
-  body: string
-  hint?: string
+  titleKey: string
+  bodyKey: string
+  hintKey?: string
   // "Try it now": closes the tour and lands on the real screen
-  cta?: { label: string; tab?: TabId; push?: PushScreen }
+  cta?: { labelKey: string; tab?: TabId; push?: PushScreen }
 }
 
-const STEPS: Step[] = [
+const STEPS: StepDef[] = [
   {
     icon: 'sparkles',
-    title: 'Welcome to WISEcon27',
-    body: 'Your conference companion — the programme, the people, and everything in between. Here’s a quick tour of what it can do for you.',
-    hint: 'Takes under a minute.',
+    titleKey: 'tour.step0.title',
+    bodyKey: 'tour.step0.body',
+    hintKey: 'tour.step0.hint',
   },
   {
     icon: 'calendar',
-    title: 'Build your own plan',
-    body: 'Browse the Agenda in timeline, detailed or list view and bookmark what you like. Your day shows up on Home, and My schedule exports straight to your calendar.',
-    hint: 'Agenda tab · bookmark icon on any session',
-    cta: { label: 'Open the Agenda', tab: 'agenda' },
+    titleKey: 'tour.step1.title',
+    bodyKey: 'tour.step1.body',
+    hintKey: 'tour.step1.hint',
+    cta: { labelKey: 'tour.step1.cta', tab: 'agenda' },
   },
   {
     icon: 'connect',
-    title: 'Meet people, properly',
-    body: 'Discover delegates with shared interests, connect and chat — or suggest a 1:1 meeting with a time and meeting point. Set your availability so requests only land when it suits you.',
-    hint: 'Connect tab · My meetings on your profile',
-    cta: { label: 'Open Connect', tab: 'connect' },
+    titleKey: 'tour.step2.title',
+    bodyKey: 'tour.step2.body',
+    hintKey: 'tour.step2.hint',
+    cta: { labelKey: 'tour.step2.cta', tab: 'connect' },
   },
   {
     icon: 'sparkles',
-    title: 'Suggestions made for you',
-    body: 'Add a few interests to your profile and Home will recommend sessions and people that actually match them. No interests, no guessing.',
-    hint: 'Profile → Edit my profile → interests',
-    cta: { label: 'Add my interests', push: 'editprofile' },
+    titleKey: 'tour.step3.title',
+    bodyKey: 'tour.step3.body',
+    hintKey: 'tour.step3.hint',
+    cta: { labelKey: 'tour.step3.cta', push: 'editprofile' },
   },
   {
     icon: 'message',
-    title: 'The Community wall',
-    body: 'Share takeaways, questions and photos with fellow delegates. Photos stay inside the app — visible to signed-in delegates only — and any post can be removed at any time.',
-    hint: 'Home → Community',
-    cta: { label: 'Open the wall', push: 'community' },
+    titleKey: 'tour.step4.title',
+    bodyKey: 'tour.step4.body',
+    hintKey: 'tour.step4.hint',
+    cta: { labelKey: 'tour.step4.cta', push: 'community' },
   },
   {
     icon: 'map',
-    title: 'Find your way',
-    body: 'The venue map shows every room and booth — tap one to see what’s happening there. Session pages and exhibitor cards link straight to it.',
-    hint: 'Home → Venue map',
-    cta: { label: 'Open the map', push: 'venuemap' },
+    titleKey: 'tour.step5.title',
+    bodyKey: 'tour.step5.body',
+    hintKey: 'tour.step5.hint',
+    cta: { labelKey: 'tour.step5.cta', push: 'venuemap' },
   },
   {
     icon: 'mic',
-    title: 'Join the conversation',
-    body: 'On any session page: ask the speaker a question, vote in live polls, rate the session, and grab slides and resources the speakers share.',
-    hint: 'Open any session from the Agenda',
+    titleKey: 'tour.step6.title',
+    bodyKey: 'tour.step6.body',
+    hintKey: 'tour.step6.hint',
   },
   {
     icon: 'qr',
-    title: 'Your badge is your key',
-    body: 'Show your QR badge at the entrance, and scan other delegates’ badges to connect instantly. You’ll find it on Home and on your profile.',
-    hint: 'Home → Badge',
-    cta: { label: 'Show my badge', push: 'ticket' },
+    titleKey: 'tour.step7.title',
+    bodyKey: 'tour.step7.body',
+    hintKey: 'tour.step7.hint',
+    cta: { labelKey: 'tour.step7.cta', push: 'ticket' },
   },
 ]
 
 export function Tour({ ctx }: { ctx: AppCtx }) {
+  const { t } = useT()
   const [step, setStep] = useState(() => Math.min(Math.max(0, ctx.params.tourStep ?? 0), STEPS.length - 1))
   const [dontShow, setDontShow] = useState(true)
   const s = STEPS[step]
@@ -113,7 +115,7 @@ export function Tour({ ctx }: { ctx: AppCtx }) {
 
   // "Try it now" — leave the tour and land on the real screen; remember where
   // we were so the Resume pill can offer the remaining slides
-  const tryIt = (cta: NonNullable<Step['cta']>) => {
+  const tryIt = (cta: NonNullable<StepDef['cta']>) => {
     setTourSeen(dontShow)
     if (last) clearTourResume()
     else setTourResume(step + 1)
@@ -132,7 +134,7 @@ export function Tour({ ctx }: { ctx: AppCtx }) {
       {/* skip */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px 0' }}>
         <Press onClick={close} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: 'rgba(255,255,255,0.85)', padding: '6px 10px' }}>
-          {last ? '' : 'Skip tour'}
+          {last ? '' : t('tour.skip')}
         </Press>
       </div>
 
@@ -147,17 +149,17 @@ export function Tour({ ctx }: { ctx: AppCtx }) {
             <Icon name={s.icon} size={44} stroke={1.6} />
           </div>
         )}
-        <h2 style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 27, color: '#fff', lineHeight: 1.15, letterSpacing: '-0.01em', marginTop: 26 }}>{s.title}</h2>
-        <p style={{ fontFamily: T.sig, fontSize: 15.5, color: 'rgba(255,255,255,0.92)', lineHeight: 1.55, marginTop: 14, maxWidth: 320 }}>{s.body}</p>
-        {s.hint && (
+        <h2 style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 27, color: '#fff', lineHeight: 1.15, letterSpacing: '-0.01em', marginTop: 26 }}>{t(s.titleKey)}</h2>
+        <p style={{ fontFamily: T.sig, fontSize: 15.5, color: 'rgba(255,255,255,0.92)', lineHeight: 1.55, marginTop: 14, maxWidth: 320 }}>{t(s.bodyKey)}</p>
+        {s.hintKey && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 16, background: 'rgba(255,255,255,0.14)', borderRadius: 999, padding: '7px 14px', fontFamily: T.onest, fontSize: 12, color: 'rgba(255,255,255,0.88)' }}>
             <Icon name="info" size={14} />
-            {s.hint}
+            {t(s.hintKey)}
           </div>
         )}
         {s.cta && (
           <Press onClick={() => tryIt(s.cta!)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 18, height: 40, padding: '0 18px', borderRadius: 999, background: 'rgba(255,255,255,0.18)', boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,0.55)', color: '#fff', fontFamily: T.sig, fontWeight: 600, fontSize: 14 }}>
-            {s.cta.label}
+            {t(s.cta.labelKey)}
             <Icon name="arrowRight" size={16} stroke={2.2} />
           </Press>
         )}
@@ -177,18 +179,18 @@ export function Tour({ ctx }: { ctx: AppCtx }) {
         <span style={{ width: 21, height: 21, borderRadius: 6, background: dontShow ? '#fff' : 'rgba(255,255,255,0.18)', boxShadow: dontShow ? 'none' : 'inset 0 0 0 1.5px rgba(255,255,255,0.6)', display: 'grid', placeItems: 'center', color: T.green10, flexShrink: 0 }}>
           {dontShow && <Icon name="check" size={14} stroke={3} />}
         </span>
-        <span style={{ fontFamily: T.sig, fontSize: 13.5, color: 'rgba(255,255,255,0.9)' }}>Don't show this again when I sign in</span>
+        <span style={{ fontFamily: T.sig, fontSize: 13.5, color: 'rgba(255,255,255,0.9)' }}>{t('tour.dontShow')}</span>
       </Press>
 
       {/* nav buttons */}
       <div style={{ display: 'flex', gap: 10, padding: '0 20px' }}>
         {step > 0 && (
           <Btn kind="outline" size="lg" onClick={() => setStep(step - 1)} style={{ background: 'rgba(255,255,255,0.14)', color: '#fff', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.4)', flexShrink: 0 }}>
-            Back
+            {t('tour.back')}
           </Btn>
         )}
         <Btn kind="primary" full size="lg" icon={last ? 'check' : 'arrowRight'} onClick={() => (last ? close() : setStep(step + 1))} style={{ background: '#fff', color: T.green11 }}>
-          {last ? "Let's go" : step === 0 ? 'Show me around' : 'Next'}
+          {last ? t('tour.letsGo') : step === 0 ? t('tour.showMe') : t('tour.next')}
         </Btn>
       </div>
     </div>

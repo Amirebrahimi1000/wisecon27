@@ -5,6 +5,7 @@
 // spine (tab bar, More, Settings) and the newer screens; remaining body copy
 // is translated incrementally.
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
+import { EXTRA } from './i18nExtra'
 
 export type Lang = 'en' | 'da' | 'no' | 'de'
 
@@ -209,7 +210,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     document.documentElement.setAttribute('lang', l)
     setLangState(l)
   }, [])
-  const t = useCallback((key: string) => DICT[lang][key] ?? en[key] ?? key, [lang])
+  const t = useCallback((key: string) => DICT[lang][key] ?? EXTRA[key]?.[lang] ?? en[key] ?? EXTRA[key]?.en ?? key, [lang])
   return <I18nContext.Provider value={{ lang, setLang, t }}>{children}</I18nContext.Provider>
 }
 
