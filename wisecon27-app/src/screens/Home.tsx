@@ -415,7 +415,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
                 <Icon name={q.icon} size={22} style={{ color: i === 0 ? '#fff' : T.green10 }} />
                 <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>{q.label}</span>
                 {q.push === 'community' && communityUnread && (
-                  <span style={{ position: 'absolute', top: 10, right: 10, width: 9, height: 9, borderRadius: 999, background: 'var(--wf-tomato-9)', boxShadow: '0 0 0 2px ' + (i === 0 ? 'var(--wf-green-9)' : 'var(--wf-surface)') }} />
+                  <span style={{ position: 'absolute', top: 10, right: 10, width: 9, height: 9, borderRadius: 999, background: 'var(--wf-lime-9)', boxShadow: '0 0 0 2px ' + (i === 0 ? 'var(--wf-green-9)' : 'var(--wf-surface)') }} />
                 )}
               </Press>
             ))}

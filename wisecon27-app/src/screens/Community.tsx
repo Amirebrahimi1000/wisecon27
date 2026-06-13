@@ -3,7 +3,7 @@
 // remove posts. Photos are re-encoded on-device (EXIF/GPS stripped) and stored
 // in a private bucket — visible to signed-in delegates only.
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { T, TABBAR_H } from '../theme'
+import { STATUS_INSET, T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { FeedPost } from '../types'
 import { useFeed } from '../feed'
@@ -27,8 +27,12 @@ export function Community({ ctx }: { ctx: AppCtx }) {
   // seen (per-user, client-side) so we can flag what's new, mark a "last read"
   // divider, and offer a one-tap jump to the newest.
   const readKey = `wc27-feed-read-${ctx.userId}`
+  // boundary = where the delegate was when they opened (drives the "New" badges
+  // and the divider; fixed for the session). seenAt = what they've since caught
+  // up to (drives the pill; advances when they reach the top or tap it, so a
+  // later post re-shows the pill).
   const [boundary, setBoundary] = useState<string | null>(() => localStorage.getItem(readKey))
-  const [dismissed, setDismissed] = useState(false)
+  const [seenAt, setSeenAt] = useState<string | null>(() => localStorage.getItem(readKey))
   const topRef = useRef<HTMLDivElement>(null)
   const dividerRef = useRef<HTMLDivElement>(null)
   const didResume = useRef(false)
@@ -36,18 +40,20 @@ export function Community({ ctx }: { ctx: AppCtx }) {
   postsRef.current = feed.posts
 
   const isUnread = (p: FeedPost) => !!boundary && p.createdAt > boundary && p.userId !== ctx.userId
-  const unreadCount = feed.posts.reduce((n, p) => n + (isUnread(p) ? 1 : 0), 0)
+  const newSinceVisit = feed.posts.reduce((n, p) => n + (isUnread(p) ? 1 : 0), 0)
   const firstReadIdx = boundary ? feed.posts.findIndex((p) => p.createdAt <= boundary) : -1
-  const showPill = unreadCount > 0 && !dismissed
+  const pillCount = feed.posts.reduce((n, p) => n + (!!seenAt && p.createdAt > seenAt && p.userId !== ctx.userId ? 1 : 0), 0)
+  const showPill = pillCount > 0
 
-  const markRead = () => {
+  // "caught up" — advance the seen marker to the newest post (hides the pill and
+  // persists for next time). A post that arrives afterwards re-shows the pill.
+  const catchUp = () => {
     const newest = postsRef.current[0]?.createdAt
-    if (newest) localStorage.setItem(readKey, newest)
+    if (newest) { setSeenAt(newest); localStorage.setItem(readKey, newest) }
   }
   const jumpToNewest = () => {
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    setDismissed(true)
-    markRead()
+    catchUp()
   }
 
   // On open, resume at the last-read divider once (after the shell resets the
@@ -57,16 +63,38 @@ export function Community({ ctx }: { ctx: AppCtx }) {
     if (feed.loading || didResume.current) return
     didResume.current = true
     if (boundary === null) {
-      markRead()
-      setBoundary(postsRef.current[0]?.createdAt ?? null)
+      const newest = postsRef.current[0]?.createdAt ?? null
+      if (newest) localStorage.setItem(readKey, newest)
+      setBoundary(newest)
+      setSeenAt(newest)
       return
     }
-    if (unreadCount > 0 && dividerRef.current) {
+    if (newSinceVisit > 0 && dividerRef.current) {
       const el = dividerRef.current
       requestAnimationFrame(() => requestAnimationFrame(() => el.scrollIntoView({ block: 'center' })))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feed.loading])
+
+  // Clear the pill once the delegate reaches the top — by tapping it OR scrolling
+  // up themselves. We watch the nearest scrollable ancestor; armed shortly after
+  // mount so the resume scroll (which starts from the top) doesn't trip it.
+  useEffect(() => {
+    let sc = topRef.current?.parentElement ?? null
+    while (sc && sc !== document.body) {
+      const oy = getComputedStyle(sc).overflowY
+      if (oy === 'auto' || oy === 'scroll') break
+      sc = sc.parentElement
+    }
+    if (!sc || sc === document.body) return
+    const scroller = sc
+    let armed = false
+    const t = setTimeout(() => { armed = true }, 600)
+    const onScroll = () => { if (armed && scroller.scrollTop <= 4) catchUp() }
+    scroller.addEventListener('scroll', onScroll, { passive: true })
+    return () => { clearTimeout(t); scroller.removeEventListener('scroll', onScroll) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // catch-all: advance the marker to the newest post when leaving the screen
   useEffect(() => () => { const n = postsRef.current[0]?.createdAt; if (n) localStorage.setItem(readKey, n) }, [readKey])
@@ -157,10 +185,10 @@ export function Community({ ctx }: { ctx: AppCtx }) {
 
         {/* jump-to-newest pill — appears for unread posts (live or since last visit) */}
         {showPill && (
-          <div style={{ position: 'sticky', top: 8, zIndex: 20, display: 'flex', justifyContent: 'center', marginBottom: 12, pointerEvents: 'none' }}>
+          <div style={{ position: 'sticky', top: STATUS_INSET + 64, zIndex: 25, display: 'flex', justifyContent: 'center', marginBottom: 12, pointerEvents: 'none' }}>
             <Press onClick={jumpToNewest} style={{ pointerEvents: 'auto', display: 'inline-flex', alignItems: 'center', gap: 7, background: T.green9, color: '#fff', padding: '9px 16px', borderRadius: 999, boxShadow: 'var(--shadow-card)', fontFamily: T.sig, fontWeight: 600, fontSize: 13.5 }}>
               <Icon name="arrowUp" size={15} stroke={2.4} />
-              {unreadCount} new post{unreadCount === 1 ? '' : 's'}
+              {pillCount} new post{pillCount === 1 ? '' : 's'}
             </Press>
           </div>
         )}
