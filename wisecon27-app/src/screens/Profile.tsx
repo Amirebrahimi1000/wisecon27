@@ -5,7 +5,7 @@ import { T, TABBAR_H } from '../theme'
 import type { AppCtx, PushScreen, TabId } from '../appState'
 import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
-import { AppHeader, Btn, Eyebrow, Press } from '../components/primitives'
+import { AppHeader, Avatar, Btn, Eyebrow, Press } from '../components/primitives'
 import { QR } from '../components/QR'
 import { useAuth } from '../auth'
 
@@ -49,6 +49,24 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
     <div>
       <AppHeader title="More" />
       <div style={{ padding: '8px 16px', paddingBottom: 'calc(' + (TABBAR_H + 24) + 'px + env(safe-area-inset-bottom, 0px))' }}>
+        {/* my profile — tap through to edit; nudges a first-time fill-out */}
+        <Press onClick={() => ctx.push('editprofile', {})} style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 14 }}>
+          <Avatar initials={me.initials} color={me.color} size={48} src={me.avatarUrl} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Eyebrow color={T.subtle}>My profile</Eyebrow>
+            <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16.5, color: T.ink, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{me.name}</div>
+            {me.avatarUrl ? (
+              <div style={{ fontFamily: T.onest, fontSize: 12.5, color: T.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {[me.role, me.org].filter(Boolean).join(' · ') || 'View and edit your profile'}
+              </div>
+            ) : (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 3, fontFamily: T.sig, fontWeight: 600, fontSize: 12.5, color: T.green10 }}>
+                <Icon name="sparkles" size={13} /> Add a photo & interests
+              </div>
+            )}
+          </div>
+          <Icon name="chevronRight" size={18} stroke={2} style={{ color: T.line2 }} />
+        </Press>
         {/* badge */}
         <Press onClick={() => ctx.push('ticket', {})} style={{ display: 'flex', alignItems: 'center', gap: 14, background: '#111', borderRadius: 'var(--radius-5)', padding: 16, color: '#fff', marginBottom: 22 }}>
           <div style={{ background: '#fff', borderRadius: 'var(--radius-2)', padding: 6 }}>
