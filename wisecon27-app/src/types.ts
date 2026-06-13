@@ -42,6 +42,9 @@ export interface InfoSection {
   title: string
   body: string
   link: string | null
+  // auto-translations keyed by language code (en/da/no/de); empty until translated
+  titleI18n: Record<string, string>
+  bodyI18n: Record<string, string>
 }
 
 /** A file or link a speaker (or organiser) shares on a session. */

@@ -2,7 +2,7 @@
 // Broadcast announcements and manage sessions / speakers / sponsors. All writes
 // go through Supabase under the "admin write" RLS policy; realtime + refreshContent
 // propagate changes to every delegate.
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { supabase } from '../lib/supabase'
 import { TRACKS } from '../data'
 import { T, TABBAR_H } from '../theme'
@@ -590,28 +590,110 @@ function EventInfo({ ctx }: { ctx: AppCtx }) {
   )
 }
 
-// Add / edit / remove the "practical essentials" cards shown on the Info page.
+// Add / edit / remove / reorder the "practical essentials" cards on the Info page.
+// Reorder is pointer-based (works with mouse + touch): drag the handle; on drop
+// we persist each row's `sort`.
 function PracticalSections({ ctx }: { ctx: AppCtx }) {
   const [editing, setEditing] = useState<(Partial<InfoSection> & { id?: string }) | null>(null)
+  const [items, setItems] = useState(ctx.infoSections)
+  useEffect(() => setItems(ctx.infoSections), [ctx.infoSections])
+
+  const listRef = useRef<HTMLDivElement>(null)
+  const itemsRef = useRef(items)
+  itemsRef.current = items
+  const dropRef = useRef<number | null>(null)
+  const dragState = useRef<{ from: number; startY: number; mids: number[] } | null>(null)
+  const [fromIdx, setFromIdx] = useState<number | null>(null)
+  const [dy, setDy] = useState(0)
+  const [dropIdx, setDropIdx] = useState<number | null>(null)
+
+  const persist = async (arr: InfoSection[]) => {
+    await Promise.all(arr.map((s, i) => supabase.from('info_sections').update({ sort: i }).eq('id', s.id)))
+    await ctx.refreshContent()
+    ctx.toast('Order saved')
+  }
+  const onMove = (e: PointerEvent) => {
+    const d = dragState.current
+    if (!d) return
+    setDy(e.clientY - d.startY)
+    let t = d.mids.findIndex((m) => e.clientY < m)
+    if (t === -1) t = d.mids.length
+    const target = t > d.from ? t - 1 : t
+    dropRef.current = target
+    setDropIdx(target)
+  }
+  const onUp = () => {
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', onUp)
+    const d = dragState.current
+    const target = dropRef.current
+    dragState.current = null
+    setFromIdx(null); setDy(0); setDropIdx(null)
+    if (d && target != null && target !== d.from) {
+      const arr = [...itemsRef.current]
+      const [moved] = arr.splice(d.from, 1)
+      arr.splice(target, 0, moved)
+      setItems(arr)
+      persist(arr)
+    }
+  }
+  const startDrag = (e: React.PointerEvent, idx: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const rows = listRef.current ? ([...listRef.current.querySelectorAll('[data-row]')] as HTMLElement[]) : []
+    const mids = rows.map((r) => { const b = r.getBoundingClientRect(); return b.top + b.height / 2 })
+    dragState.current = { from: idx, startY: e.clientY, mids }
+    dropRef.current = idx
+    setFromIdx(idx); setDy(0); setDropIdx(idx)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
   if (editing) return <PracticalSectionEditor ctx={ctx} initial={editing} onDone={() => setEditing(null)} />
   return (
     <div>
       <Btn kind="outline" full icon="plus" onClick={() => setEditing({ icon: 'info', title: '', body: '', link: '' })} style={{ marginBottom: 14 }}>New section</Btn>
-      <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
-        {ctx.infoSections.length === 0 && (
+      <div ref={listRef} style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+        {items.length === 0 && (
           <div style={{ padding: '14px 16px', fontFamily: T.sig, fontSize: 13.5, color: T.muted }}>No sections yet — the Practical info block stays hidden on the Info page until you add one.</div>
         )}
-        {ctx.infoSections.map((s, i) => (
-          <Press key={s.id} onClick={() => setEditing(s)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: i === ctx.infoSections.length - 1 ? 'none' : '1px solid ' + T.line }}>
-            <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}><Icon name={s.icon as IconName} size={16} /></div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{s.title}</div>
-              {s.link && <div style={{ fontFamily: T.sig, fontSize: 12, color: T.green10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.link}</div>}
+        {items.map((s, i) => {
+          const dragging = fromIdx === i
+          return (
+            <div
+              key={s.id}
+              data-row=""
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px',
+                borderBottom: i === items.length - 1 ? 'none' : '1px solid ' + T.line,
+                borderTop: fromIdx !== null && !dragging && dropIdx === i ? '2px solid ' + T.green9 : undefined,
+                background: dragging ? 'var(--wf-grey-2)' : 'var(--wf-surface)',
+                transform: dragging ? `translateY(${dy}px)` : undefined,
+                position: dragging ? 'relative' : 'static', zIndex: dragging ? 5 : undefined,
+                boxShadow: dragging ? 'var(--shadow-card)' : undefined,
+                opacity: fromIdx !== null && !dragging ? 0.65 : 1,
+              }}
+            >
+              <div
+                onPointerDown={(e) => startDrag(e, i)}
+                aria-label="Drag to reorder"
+                style={{ flexShrink: 0, padding: '4px 2px', color: T.line2, cursor: 'grab', touchAction: 'none' }}
+              >
+                <Icon name="list" size={18} />
+              </div>
+              <Press onClick={() => setEditing(s)} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body, flexShrink: 0 }}><Icon name={s.icon as IconName} size={16} /></div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{s.title}</div>
+                  {s.link && <div style={{ fontFamily: T.sig, fontSize: 12, color: T.green10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.link}</div>}
+                </div>
+                <Icon name="chevronRight" size={16} stroke={2} style={{ color: T.line2 }} />
+              </Press>
             </div>
-            <Icon name="chevronRight" size={16} stroke={2} style={{ color: T.line2 }} />
-          </Press>
-        ))}
+          )
+        })}
       </div>
+      {items.length > 1 && <div style={{ fontFamily: T.sig, fontSize: 12, color: T.muted, marginTop: 8, paddingLeft: 2 }}>Drag the handle on the left to reorder.</div>}
     </div>
   )
 }
@@ -634,7 +716,9 @@ function PracticalSectionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial
     setSaving(false)
     if (error) return ctx.toast(error.message)
     await ctx.refreshContent()
-    ctx.toast('Section saved')
+    // auto-translate in the background (no-op if the function isn't deployed)
+    supabase.functions.invoke('translate-info', { body: { id: row.id } }).catch(() => {})
+    ctx.toast('Section saved — translating…')
     onDone()
   }
   const remove = async () => {

@@ -56,7 +56,9 @@ export function Info({ ctx }: { ctx: AppCtx }) {
 // A practical-info card. If `link` is set it's tappable: a full URL opens as-is,
 // anything else is treated as an address and opens in the device's map app.
 function InfoSectionCard({ s }: { s: InfoSection }) {
-  const { t } = useT()
+  const { t, lang } = useT()
+  const title = s.titleI18n?.[lang] || s.title
+  const body = s.bodyI18n?.[lang] || s.body
   const link = s.link?.trim() || ''
   const isUrl = /^https?:\/\//i.test(link)
   const href = link ? (isUrl ? link : 'https://maps.google.com/?q=' + encodeURIComponent(link)) : null
@@ -67,8 +69,8 @@ function InfoSectionCard({ s }: { s: InfoSection }) {
         <Icon name={s.icon as IconName} size={19} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{s.title}</div>
-        {s.body && <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, marginTop: 3, lineHeight: 1.5 }}>{s.body}</div>}
+        <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>{title}</div>
+        {body && <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, marginTop: 3, lineHeight: 1.5 }}>{body}</div>}
         {link && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 8, fontFamily: T.sig, fontWeight: 600, fontSize: 13, color: T.green10 }}>
             <Icon name={isUrl ? 'arrowRight' : 'pin'} size={14} />

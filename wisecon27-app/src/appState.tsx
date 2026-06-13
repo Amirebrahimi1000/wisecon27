@@ -276,7 +276,7 @@ export function useAppState(): AppCtx {
     if (se.data) setSessions((se.data as SessionRow[]).map(mapSession))
     if (so.data) setSponsors(so.data as Sponsor[])
     if (ei.data) setEventInfo(ei.data as EventInfoItem[])
-    if (is.data) setInfoSections((is.data as (InfoSection & { sort: number })[]).map((r) => ({ id: r.id, icon: r.icon, title: r.title, body: r.body, link: r.link ?? null })))
+    if (is.data) setInfoSections((is.data as (InfoSection & { sort: number; title_i18n?: Record<string, string>; body_i18n?: Record<string, string> })[]).map((r) => ({ id: r.id, icon: r.icon, title: r.title, body: r.body, link: r.link ?? null, titleI18n: r.title_i18n ?? {}, bodyI18n: r.body_i18n ?? {} })))
     if (act.data) setActivitiesRaw(act.data as ActivityRow[])
     if (sq.data) setSurveyQuestions(sq.data as SurveyQuestion[])
     if (mp.data) setMeetingPoints(mp.data as MeetingPoint[])
