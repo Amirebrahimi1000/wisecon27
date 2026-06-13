@@ -717,7 +717,7 @@ function PracticalSectionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial
     if (error) return ctx.toast(error.message)
     await ctx.refreshContent()
     // auto-translate in the background (no-op if the function isn't deployed)
-    supabase.functions.invoke('translate-info', { body: { id: row.id } }).catch(() => {})
+    supabase.functions.invoke('translation-info', { body: { id: row.id } }).catch(() => {})
     ctx.toast('Section saved — translating…')
     onDone()
   }

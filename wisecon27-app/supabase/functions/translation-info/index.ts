@@ -1,9 +1,9 @@
-// WISEcon27 — translate-info edge function (Deno).
+// WISEcon27 — translation-info edge function (Deno).
 // Auto-translates an info_sections card (title + body) into EN/DA/NO/DE with
 // Claude, and writes the result back to title_i18n / body_i18n. Invoked by the
 // admin after saving a section. Brand names, URLs and addresses are preserved.
 //
-// Deploy:  supabase functions deploy translate-info
+// Deploy:  supabase functions deploy translation-info
 // Secrets: supabase secrets set ANTHROPIC_API_KEY=sk-ant-…
 //          (optional) ANTHROPIC_MODEL — defaults to claude-opus-4-8.
 import Anthropic from 'npm:@anthropic-ai/sdk'
