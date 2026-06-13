@@ -68,7 +68,7 @@ const en: Dict = {
   'session.addSchedule': 'Add to schedule', 'session.inSchedule': 'In my schedule', 'session.remind': 'Remind', 'session.reminding': 'Reminding',
   'session.notes': 'Notes', 'session.clash': 'Clashes with another session in your schedule', 'session.reminderSet': 'Reminder set — ', 'session.reminderOff': 'Reminder removed',
 
-  'info.essentials': 'Practical essentials',
+  'info.eventInfo': 'Event info', 'info.essentials': 'Practical essentials',
   'profileNudge.title': 'Complete your profile', 'profileNudge.body': 'Add your interests to get session matches and let people find you.', 'profileNudge.cta': 'Add details',
 }
 
@@ -107,7 +107,7 @@ const da: Dict = {
   'session.addSchedule': 'Føj til program', 'session.inSchedule': 'I mit program', 'session.remind': 'Påmind', 'session.reminding': 'Påmindes',
   'session.notes': 'Noter', 'session.clash': 'Overlapper med en anden session i dit program', 'session.reminderSet': 'Påmindelse sat — ', 'session.reminderOff': 'Påmindelse fjernet',
 
-  'info.essentials': 'Praktisk information',
+  'info.eventInfo': 'Eventinfo', 'info.essentials': 'Praktisk information',
   'profileNudge.title': 'Færdiggør din profil', 'profileNudge.body': 'Tilføj dine interesser for at få sessionsforslag og blive fundet af andre.', 'profileNudge.cta': 'Tilføj detaljer',
 }
 
@@ -146,7 +146,7 @@ const no: Dict = {
   'session.addSchedule': 'Legg til i program', 'session.inSchedule': 'I mitt program', 'session.remind': 'Påminn', 'session.reminding': 'Påminnes',
   'session.notes': 'Notater', 'session.clash': 'Overlapper med en annen økt i programmet ditt', 'session.reminderSet': 'Påminnelse satt — ', 'session.reminderOff': 'Påminnelse fjernet',
 
-  'info.essentials': 'Praktisk informasjon',
+  'info.eventInfo': 'Eventinfo', 'info.essentials': 'Praktisk informasjon',
   'profileNudge.title': 'Fullfør profilen din', 'profileNudge.body': 'Legg til interessene dine for å få øktforslag og bli funnet av andre.', 'profileNudge.cta': 'Legg til detaljer',
 }
 
@@ -185,7 +185,7 @@ const de: Dict = {
   'session.addSchedule': 'Zum Programm', 'session.inSchedule': 'In meinem Programm', 'session.remind': 'Erinnern', 'session.reminding': 'Erinnerung an',
   'session.notes': 'Notizen', 'session.clash': 'Überschneidet sich mit einer anderen Session in deinem Programm', 'session.reminderSet': 'Erinnerung gesetzt — ', 'session.reminderOff': 'Erinnerung entfernt',
 
-  'info.essentials': 'Praktische Infos',
+  'info.eventInfo': 'Event-Infos', 'info.essentials': 'Praktische Infos',
   'profileNudge.title': 'Profil vervollständigen', 'profileNudge.body': 'Füge deine Interessen hinzu, um passende Sessions zu erhalten und gefunden zu werden.', 'profileNudge.cta': 'Details hinzufügen',
 }
 

@@ -15,16 +15,34 @@ export function Info({ ctx }: { ctx: AppCtx }) {
     <div>
       <AppHeader title="Event info" onBack={ctx.back} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
+        <Eyebrow style={{ marginBottom: 10, paddingLeft: 2 }}>{t('info.eventInfo')}</Eyebrow>
         <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
-          {items.map((it, i) => (
-            <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: i === items.length - 1 ? 'none' : '1px solid ' + T.line }}>
-              <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}>
-                <Icon name={it.icon as IconName} size={18} />
+          {items.map((it, i) => {
+            const label = it.labelI18n?.[lang] || it.label
+            const detail = it.detailI18n?.[lang] || it.detail
+            // Short values stay as a tidy key/value row; prose gets the stacked
+            // card layout (label as title, detail as body) so it can breathe.
+            const isLong = detail.length > 40
+            const border = i === items.length - 1 ? 'none' : '1px solid ' + T.line
+            return (
+              <div key={it.id} style={{ display: 'flex', alignItems: isLong ? 'flex-start' : 'center', gap: 13, padding: '14px 16px', borderBottom: border }}>
+                <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.green10, flexShrink: 0 }}>
+                  <Icon name={it.icon as IconName} size={19} />
+                </div>
+                {isLong ? (
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 15, color: T.ink }}>{label}</div>
+                    <div style={{ fontFamily: T.sig, fontSize: 13.5, color: T.muted, marginTop: 3, lineHeight: 1.5 }}>{detail}</div>
+                  </div>
+                ) : (
+                  <>
+                    <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 500, fontSize: 15, color: T.body }}>{label}</span>
+                    <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 15, color: T.ink }}>{detail}</span>
+                  </>
+                )}
               </div>
-              <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 500, fontSize: 15, color: T.body }}>{it.labelI18n?.[lang] || it.label}</span>
-              <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 15, color: T.ink }}>{it.detailI18n?.[lang] || it.detail}</span>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* practical essentials — admin-managed (Admin → Info) */}
