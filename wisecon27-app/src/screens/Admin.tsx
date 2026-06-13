@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 import { TRACKS } from '../data'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx, EventInfoItem } from '../appState'
-import type { Activity, Day, Session, Speaker, Sponsor, SponsorTier, TrackId, SessionType, NotificationType } from '../types'
+import type { Activity, Day, InfoSection, Session, Speaker, Sponsor, SponsorTier, TrackId, SessionType, NotificationType } from '../types'
 import { Icon, type IconName } from '../components/Icon'
 import { AppHeader, Avatar, Btn, Eyebrow, Press } from '../components/primitives'
 import { TagPicker, tagSuggestions } from '../components/TagPicker'
@@ -583,9 +583,86 @@ function EventInfo({ ctx }: { ctx: AppCtx }) {
           </Press>
         ))}
       </div>
+
+      <Eyebrow style={{ marginTop: 22, marginBottom: 10, paddingLeft: 2 }}>Practical sections (Info page)</Eyebrow>
+      <PracticalSections ctx={ctx} />
     </div>
   )
 }
+
+// Add / edit / remove the "practical essentials" cards shown on the Info page.
+function PracticalSections({ ctx }: { ctx: AppCtx }) {
+  const [editing, setEditing] = useState<(Partial<InfoSection> & { id?: string }) | null>(null)
+  if (editing) return <PracticalSectionEditor ctx={ctx} initial={editing} onDone={() => setEditing(null)} />
+  return (
+    <div>
+      <Btn kind="outline" full icon="plus" onClick={() => setEditing({ icon: 'info', title: '', body: '', link: '' })} style={{ marginBottom: 14 }}>New section</Btn>
+      <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+        {ctx.infoSections.length === 0 && (
+          <div style={{ padding: '14px 16px', fontFamily: T.sig, fontSize: 13.5, color: T.muted }}>No sections yet — the Practical info block stays hidden on the Info page until you add one.</div>
+        )}
+        {ctx.infoSections.map((s, i) => (
+          <Press key={s.id} onClick={() => setEditing(s)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: i === ctx.infoSections.length - 1 ? 'none' : '1px solid ' + T.line }}>
+            <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}><Icon name={s.icon as IconName} size={16} /></div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{s.title}</div>
+              {s.link && <div style={{ fontFamily: T.sig, fontSize: 12, color: T.green10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.link}</div>}
+            </div>
+            <Icon name="chevronRight" size={16} stroke={2} style={{ color: T.line2 }} />
+          </Press>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PracticalSectionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial<InfoSection> & { id?: string }; onDone: () => void }) {
+  const [it, setIt] = useState(initial)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const set = (patch: Partial<InfoSection>) => setIt((x) => ({ ...x, ...patch }))
+  const save = async () => {
+    if (!it.title?.trim() || saving) return
+    setSaving(true)
+    const row = {
+      id: it.id ?? 'is-' + Date.now(),
+      icon: it.icon || 'info', title: it.title.trim(), body: it.body ?? '',
+      link: it.link?.trim() || null,
+      sort: it.id ? ctx.infoSections.findIndex((s) => s.id === it.id) : ctx.infoSections.length,
+    }
+    const { error } = await supabase.from('info_sections').upsert(row)
+    setSaving(false)
+    if (error) return ctx.toast(error.message)
+    await ctx.refreshContent()
+    ctx.toast('Section saved')
+    onDone()
+  }
+  const remove = async () => {
+    if (!it.id || deleting) return
+    setDeleting(true)
+    const { error } = await supabase.from('info_sections').delete().eq('id', it.id)
+    setDeleting(false)
+    if (error) return ctx.toast(error.message)
+    await ctx.refreshContent()
+    ctx.toast('Section removed')
+    onDone()
+  }
+  return (
+    <div>
+      <Press onClick={onDone} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.green10, marginBottom: 12 }}>‹ Back to list</Press>
+      <Field label="Icon"><Select value={it.icon ?? 'info'} onChange={(v) => set({ icon: v })} options={INFO_ICONS.map((i) => [i, i])} /></Field>
+      <Field label="Title"><Text value={it.title ?? ''} onChange={(v) => set({ title: v })} placeholder="e.g. Getting here" /></Field>
+      <Field label="Body"><Text value={it.body ?? ''} onChange={(v) => set({ body: v })} placeholder="A short description" area /></Field>
+      <Field label="Link or address (optional)"><Text value={it.link ?? ''} onChange={(v) => set({ link: v })} placeholder="An address, or https://…" /></Field>
+      <div style={{ fontFamily: T.sig, fontSize: 12, color: T.muted, margin: '-4px 2px 14px', lineHeight: 1.45 }}>An address opens in the delegate's map app; a full URL (https://…) opens as a link.</div>
+      <Btn kind="primary" full size="lg" onClick={save} disabled={!it.title?.trim() || saving}>{saving ? 'Saving…' : 'Save'}</Btn>
+      {it.id && (
+        <Btn kind="danger" full icon="close" onClick={remove} disabled={deleting} style={{ marginTop: 10 }}>{deleting ? 'Removing…' : 'Remove section'}</Btn>
+      )}
+    </div>
+  )
+}
+
 function EventInfoEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial<EventInfoItem> & { id?: string }; onDone: () => void }) {
   const [it, setIt] = useState(initial)
   const [saving, setSaving] = useState(false)

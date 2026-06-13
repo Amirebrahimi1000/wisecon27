@@ -34,6 +34,16 @@ export interface Speaker {
   profileId?: string | null
 }
 
+/** An editable "practical info" card on the Info page (Getting here, etc.).
+ *  `link` is a URL or a plain address; an address opens the device's map app. */
+export interface InfoSection {
+  id: string
+  icon: string
+  title: string
+  body: string
+  link: string | null
+}
+
 /** A file or link a speaker (or organiser) shares on a session. */
 export interface SessionResource {
   id: string

@@ -8,7 +8,7 @@ import { supabase } from './lib/supabase'
 import { useAuth } from './auth'
 import { normalizeDayAvail } from './meetingSlots'
 import type {
-  Activity, AppNotification, Attendee, ConnectStatus, Conversation, Day, Me, Meeting, MeetingPoint, MeetingStatus, Message, Session, SessionResource, Speaker, Sponsor, SurveyQuestion,
+  Activity, AppNotification, Attendee, ConnectStatus, Conversation, Day, InfoSection, Me, Meeting, MeetingPoint, MeetingStatus, Message, Session, SessionResource, Speaker, Sponsor, SurveyQuestion,
 } from './types'
 
 export type TabId = 'home' | 'agenda' | 'activities' | 'speakers' | 'connect' | 'profile'
@@ -59,6 +59,7 @@ export interface AppCtx {
   sessions: Session[]
   sponsors: Sponsor[]
   eventInfo: EventInfoItem[]
+  infoSections: InfoSection[]
   event: EventMeta
   speakersOf: (s: Session) => Speaker[]
   // resources (files/links) shared on a session by its speakers or organisers
@@ -211,6 +212,7 @@ export function useAppState(): AppCtx {
   const [sessions, setSessions] = useState<Session[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
   const [eventInfo, setEventInfo] = useState<EventInfoItem[]>([])
+  const [infoSections, setInfoSections] = useState<InfoSection[]>([])
   const [event, setEvent] = useState<EventMeta>({ dateline: '', location: '', startISO: '', endISO: '' })
   const [meetingPoints, setMeetingPoints] = useState<MeetingPoint[]>([])
   const [meetings, setMeetings] = useState<Meeting[]>([])
@@ -247,7 +249,7 @@ export function useAppState(): AppCtx {
 
   /* ── load all content + user data ── */
   const loadContent = useCallback(async () => {
-    const [d, sp, se, so, ei, act, sq, st, mp, sr] = await Promise.all([
+    const [d, sp, se, so, ei, act, sq, st, mp, sr, is] = await Promise.all([
       supabase.from('days').select('*').order('sort'),
       supabase.from('speakers').select('*').order('sort'),
       supabase.from('sessions').select('*, session_speakers(speaker_id, ord)'),
@@ -258,6 +260,7 @@ export function useAppState(): AppCtx {
       supabase.from('settings').select('key, value'),
       supabase.from('meeting_points').select('id, label').order('sort'),
       supabase.from('session_resources').select('*').order('created_at'),
+      supabase.from('info_sections').select('*').order('sort'),
     ])
     if (st.data) {
       const m = new Map((st.data as { key: string; value: string }[]).map((r) => [r.key, r.value]))
@@ -273,6 +276,7 @@ export function useAppState(): AppCtx {
     if (se.data) setSessions((se.data as SessionRow[]).map(mapSession))
     if (so.data) setSponsors(so.data as Sponsor[])
     if (ei.data) setEventInfo(ei.data as EventInfoItem[])
+    if (is.data) setInfoSections((is.data as (InfoSection & { sort: number })[]).map((r) => ({ id: r.id, icon: r.icon, title: r.title, body: r.body, link: r.link ?? null })))
     if (act.data) setActivitiesRaw(act.data as ActivityRow[])
     if (sq.data) setSurveyQuestions(sq.data as SurveyQuestion[])
     if (mp.data) setMeetingPoints(mp.data as MeetingPoint[])
@@ -372,6 +376,7 @@ export function useAppState(): AppCtx {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'days' }, () => loadContent())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadContent())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'session_resources' }, () => loadContent())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'info_sections' }, () => loadContent())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => loadUserData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_signups' }, () => loadUserData())
       .subscribe()
@@ -728,6 +733,7 @@ export function useAppState(): AppCtx {
     sessions,
     sponsors,
     eventInfo,
+    infoSections,
     event,
     speakersOf,
     resourcesOf: (sessionId) => resources.filter((r) => r.sessionId === sessionId),

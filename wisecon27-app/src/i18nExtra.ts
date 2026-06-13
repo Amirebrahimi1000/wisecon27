@@ -366,6 +366,8 @@ const ROWS: ({ key: string } & ExtraEntry)[] = [
   {"key":"editprofile.toastPhotoUpdated","en":"Profile photo updated","da":"Profilfoto opdateret","no":"Profilbilde oppdatert","de":"Profilfoto aktualisiert"},
   {"key":"editprofile.toastProfileUpdated","en":"Profile updated","da":"Profil opdateret","no":"Profil oppdatert","de":"Profil aktualisiert"},
 
+  {"key":"info.openLink","en":"Open link","da":"Åbn link","no":"Åpne lenke","de":"Link öffnen"},
+
   // ── shared components ──
   {"key":"common.gotIt","en":"Got it","da":"Forstået","no":"Skjønner","de":"Verstanden"},
   {"key":"common.addAnother","en":"Add another…","da":"Tilføj endnu en…","no":"Legg til en til…","de":"Weitere hinzufügen…"},
