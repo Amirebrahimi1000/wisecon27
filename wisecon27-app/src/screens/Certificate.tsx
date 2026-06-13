@@ -1,7 +1,9 @@
-// WISEcon27 — Certificate of attendance / CPD. Lists the sessions the delegate
-// added to their schedule (our best proxy for "attended"), totals the contact
-// hours, and offers a print-to-PDF of a formal certificate. Everything is
-// derived on the device; nothing extra is stored.
+// WISEcon27 — Certificate / CPD. Lists the sessions in the delegate's plan:
+// the breakouts they bookmarked PLUS every keynote/plenary (single-track, no
+// choice to make, so delegates rarely bookmark them but everyone attends).
+// Totals the contact hours and prints a PDF. Derived on the device; until
+// per-session check-in exists this is a "planned", not verified-attendance,
+// record — see the wording ("in my plan"), which deliberately doesn't over-claim.
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { Session } from '../types'
@@ -25,8 +27,10 @@ const fmtHours = (mins: number) => {
 export function Certificate({ ctx }: { ctx: AppCtx }) {
   const { t } = useT()
   const me = ctx.me
+  // in plan = bookmarked breakouts + every keynote/plenary (auto-credited:
+  // single-track sessions everyone attends but few bother to bookmark)
   const attended = ctx.sessions
-    .filter((s) => ctx.isBookmarked(s.id) && s.type !== 'break' && s.type !== 'social')
+    .filter((s) => s.type !== 'break' && s.type !== 'social' && (ctx.isBookmarked(s.id) || s.type === 'plenary' || s.type === 'keynote'))
     .sort((a, b) => (a.day + a.start).localeCompare(b.day + b.start))
   const totalMin = attended.reduce((n, s) => n + minutesOf(s), 0)
   const dateLabel = ctx.event.dateline || ''
@@ -57,7 +61,7 @@ export function Certificate({ ctx }: { ctx: AppCtx }) {
         <div class="sub">${escapeHtml(t('cert.presented'))}</div>
         <div class="name">${escapeHtml(me.name)}</div>
         <div class="meta">${escapeHtml([me.role, me.org].filter(Boolean).join(' · '))}</div>
-        <div class="sub">${escapeHtml(t('cert.attended'))} WISEcon27${dateLabel ? ', ' + escapeHtml(dateLabel) : ''}${ctx.event.location ? ' · ' + escapeHtml(ctx.event.location) : ''}.</div>
+        <div class="sub">${escapeHtml(t('cert.planPrinted'))} WISEcon27${dateLabel ? ', ' + escapeHtml(dateLabel) : ''}${ctx.event.location ? ' · ' + escapeHtml(ctx.event.location) : ''}.</div>
         <div style="margin:8px 0 4px">
           <div class="stat"><b>${fmtHours(totalMin)}</b><span>${escapeHtml(t('cert.cpd'))}</span></div>
           <div class="stat"><b>${attended.length}</b><span>${escapeHtml(t('cert.sessions'))}</span></div>
@@ -92,10 +96,10 @@ export function Certificate({ ctx }: { ctx: AppCtx }) {
     <div>
       <AppHeader title={t('cert.title')} onBack={ctx.back} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
-        <p style={{ fontFamily: T.sig, fontSize: 14.5, color: T.muted, lineHeight: 1.5, marginBottom: 16 }}>{t('cert.subtitle')}</p>
+        <p style={{ fontFamily: T.sig, fontSize: 14.5, color: T.muted, lineHeight: 1.5, marginBottom: 16 }}>{t('cert.planSubtitle')}</p>
 
         {attended.length === 0 ? (
-          <Empty icon="shield" text={t('cert.none')} />
+          <Empty icon="shield" text={t('cert.planNone')} />
         ) : (
           <>
             {/* summary card */}
@@ -116,7 +120,7 @@ export function Certificate({ ctx }: { ctx: AppCtx }) {
             </div>
 
             {/* session list */}
-            <Eyebrow style={{ paddingLeft: 4, marginBottom: 8 }}>{t('cert.sessions')}</Eyebrow>
+            <Eyebrow style={{ paddingLeft: 4, marginBottom: 8 }}>{t('cert.sessionsInPlan')}</Eyebrow>
             <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden', marginBottom: 18 }}>
               {attended.map((s, i) => {
                 const day = ctx.days.find((d) => d.id === s.day)

@@ -34,7 +34,8 @@ const ROWS: ({ key: string } & ExtraEntry)[] = [
   {"key":"home.countingDown","en":"Counting down","da":"Nedtælling","no":"Nedtelling","de":"Countdown läuft"},
   {"key":"home.eventEnded","en":"Event ended","da":"Eventet er slut","no":"Arrangementet er over","de":"Event beendet"},
   {"key":"home.yourProfile","en":"Your profile","da":"Din profil","no":"Din profil","de":"Dein Profil"},
-  {"key":"home.heroHeadline","en":"Assessment, reimagined.","da":"Vurdering, genopfundet.","no":"Vurdering, nytenkt.","de":"Assessment, neu gedacht."},
+  // Brand slogan — kept in English across all languages (slogans/brand words are not translated).
+  {"key":"home.heroHeadline","en":"Assessment, reimagined.","da":"Assessment, reimagined.","no":"Assessment, reimagined.","de":"Assessment, reimagined."},
   {"key":"home.thanksForJoining","en":"Thanks for joining,","da":"Tak fordi du deltog,","no":"Takk for at du deltok,","de":"Danke für deine Teilnahme,"},
   {"key":"home.seeYouAtWisecon28","en":"See you at WISEcon28.","da":"Vi ses til WISEcon28.","no":"Vi sees på WISEcon28.","de":"Bis zur WISEcon28."},
   {"key":"home.greetingMorning","en":"Good morning,","da":"God morgen,","no":"God morgen,","de":"Guten Morgen,"},
@@ -369,6 +370,12 @@ const ROWS: ({ key: string } & ExtraEntry)[] = [
   {"key":"common.gotIt","en":"Got it","da":"Forstået","no":"Skjønner","de":"Verstanden"},
   {"key":"common.addAnother","en":"Add another…","da":"Tilføj endnu en…","no":"Legg til en til…","de":"Weitere hinzufügen…"},
   {"key":"common.maxAdded","en":"{max} of {max} added","da":"{max} af {max} tilføjet","no":"{max} av {max} lagt til","de":"{max} von {max} hinzugefügt"},
+
+  // ── Certificate: "in my plan" wording (bookmarked sessions + auto-included keynotes/plenaries) ──
+  {"key":"cert.sessionsInPlan","en":"Sessions in my plan","da":"Sessioner i mit program","no":"Økter i mitt program","de":"Sessions in meinem Plan"},
+  {"key":"cert.planSubtitle","en":"A summary of the sessions in your WISEcon27 plan. Keynotes and plenaries are included automatically.","da":"Et overblik over sessionerne i dit WISEcon27-program. Keynotes og plenarsessioner er inkluderet automatisk.","no":"En oversikt over øktene i ditt WISEcon27-program. Keynotes og plenumsøkter er inkludert automatisk.","de":"Eine Übersicht der Sessions in deinem WISEcon27-Plan. Keynotes und Plenarsitzungen sind automatisch enthalten."},
+  {"key":"cert.planNone","en":"No sessions in your plan yet — bookmark sessions in the Agenda and they'll appear here. Keynotes are included automatically.","da":"Ingen sessioner i dit program endnu — bogmærk sessioner under Program, så vises de her. Keynotes er inkluderet automatisk.","no":"Ingen økter i programmet ditt ennå — bokmerk økter under Program, så vises de her. Keynotes er inkludert automatisk.","de":"Noch keine Sessions in deinem Plan — markiere Sessions in der Agenda, dann erscheinen sie hier. Keynotes sind automatisch enthalten."},
+  {"key":"cert.planPrinted","en":"had the following sessions in their plan at","da":"havde følgende sessioner i sit program ved","no":"hadde følgende økter i programmet sitt ved","de":"hatte die folgenden Sessions im Plan bei"},
 ]
 
 export const EXTRA: Record<string, ExtraEntry> = Object.fromEntries(ROWS.map(({ key, ...v }) => [key, v]))
