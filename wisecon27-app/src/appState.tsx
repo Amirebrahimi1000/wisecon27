@@ -5,6 +5,7 @@
 // sessions and connections in sync across devices.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
+import { deepClean } from './lib/text'
 import { useAuth } from './auth'
 import { normalizeDayAvail } from './meetingSlots'
 import type {
@@ -262,8 +263,10 @@ export function useAppState(): AppCtx {
       supabase.from('session_resources').select('*').order('created_at'),
       supabase.from('info_sections').select('*').order('sort'),
     ])
+    // deepClean repairs any mojibake (mis-encoded em-dashes, accents, …) in
+    // imported content before it ever renders — see lib/text.ts.
     if (st.data) {
-      const m = new Map((st.data as { key: string; value: string }[]).map((r) => [r.key, r.value]))
+      const m = new Map((deepClean(st.data) as { key: string; value: string }[]).map((r) => [r.key, r.value]))
       setEvent({
         dateline: m.get('event_dateline') ?? '',
         location: m.get('event_location') ?? '',
@@ -271,16 +274,16 @@ export function useAppState(): AppCtx {
         endISO: m.get('event_end') ?? '',
       })
     }
-    if (d.data) setDays(d.data as Day[])
-    if (sp.data) setSpeakers((sp.data as (Speaker & { photo_url: string | null; profile_id?: string | null })[]).map((s) => ({ ...s, photoUrl: s.photo_url, profileId: s.profile_id ?? null })))
-    if (se.data) setSessions((se.data as SessionRow[]).map(mapSession))
-    if (so.data) setSponsors(so.data as Sponsor[])
-    if (ei.data) setEventInfo(ei.data as EventInfoItem[])
-    if (is.data) setInfoSections((is.data as (InfoSection & { sort: number; title_i18n?: Record<string, string>; body_i18n?: Record<string, string> })[]).map((r) => ({ id: r.id, icon: r.icon, title: r.title, body: r.body, link: r.link ?? null, titleI18n: r.title_i18n ?? {}, bodyI18n: r.body_i18n ?? {} })))
-    if (act.data) setActivitiesRaw(act.data as ActivityRow[])
-    if (sq.data) setSurveyQuestions(sq.data as SurveyQuestion[])
+    if (d.data) setDays(deepClean(d.data) as Day[])
+    if (sp.data) setSpeakers((deepClean(sp.data) as (Speaker & { photo_url: string | null; profile_id?: string | null })[]).map((s) => ({ ...s, photoUrl: s.photo_url, profileId: s.profile_id ?? null })))
+    if (se.data) setSessions((deepClean(se.data) as SessionRow[]).map(mapSession))
+    if (so.data) setSponsors(deepClean(so.data) as Sponsor[])
+    if (ei.data) setEventInfo(deepClean(ei.data) as EventInfoItem[])
+    if (is.data) setInfoSections((deepClean(is.data) as (InfoSection & { sort: number; title_i18n?: Record<string, string>; body_i18n?: Record<string, string> })[]).map((r) => ({ id: r.id, icon: r.icon, title: r.title, body: r.body, link: r.link ?? null, titleI18n: r.title_i18n ?? {}, bodyI18n: r.body_i18n ?? {} })))
+    if (act.data) setActivitiesRaw(deepClean(act.data) as ActivityRow[])
+    if (sq.data) setSurveyQuestions(deepClean(sq.data) as SurveyQuestion[])
     if (mp.data) setMeetingPoints(mp.data as MeetingPoint[])
-    if (sr.data) setResources((sr.data as ResourceRow[]).map(mapResource))
+    if (sr.data) setResources((deepClean(sr.data) as ResourceRow[]).map(mapResource))
   }, [])
 
   const loadUserData = useCallback(async () => {
@@ -297,7 +300,7 @@ export function useAppState(): AppCtx {
       supabase.from('session_feedback').select('session_id, stars, tags, comment').eq('user_id', userId),
     ])
     if (prof.data) {
-      const p = prof.data as ProfileRow
+      const p = deepClean(prof.data) as ProfileRow
       setMe(mapProfile(p))
       setIsAdmin(p.is_admin)
       setIsStaff(p.is_staff ?? false)
@@ -305,7 +308,7 @@ export function useAppState(): AppCtx {
     if (bm.data) setBookmarkSet(new Set((bm.data as { session_id: string }[]).map((x) => x.session_id)))
     if (ann.data)
       setAnnouncements(
-        (ann.data as { id: string; type: AppNotification['type']; title: string; body: string; created_at: string }[]).map(
+        (deepClean(ann.data) as { id: string; type: AppNotification['type']; title: string; body: string; created_at: string }[]).map(
           (a) => ({ id: a.id, type: a.type, title: a.title, body: a.body, time: shortTime(a.created_at), unread: true }),
         ),
       )
@@ -325,7 +328,7 @@ export function useAppState(): AppCtx {
         return row ? row.status : 'connect'
       }
       setAttendees(
-        (profs.data as ProfileRow[])
+        (deepClean(profs.data) as ProfileRow[])
           .filter((p) => p.id !== userId && p.name.trim() !== '')
           .map((p) => ({
             id: p.id, name: p.name, role: p.role, org: p.org, initials: p.initials || initialsFrom(p.name),
@@ -394,7 +397,7 @@ export function useAppState(): AppCtx {
       .select('*')
       .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
       .order('created_at')
-    if (data) setMessages((data as MessageRow[]).map(mapMessage))
+    if (data) setMessages((deepClean(data) as MessageRow[]).map(mapMessage))
   }, [userId])
 
   useEffect(() => {

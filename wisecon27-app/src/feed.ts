@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { removeWallPhoto, wallPhotoUrls } from './lib/storage'
+import { clean } from './lib/text'
 import type { FeedPost } from './types'
 
 interface PostRow { id: string; user_id: string | null; body: string; created_at: string; photo_path?: string | null }
@@ -29,7 +30,7 @@ export function useFeed(userId: string) {
       ((ps ?? []) as PostRow[]).map((p) => {
         const mine = likes.filter((l) => l.post_id === p.id)
         return {
-          id: p.id, userId: p.user_id, body: p.body, createdAt: p.created_at, photoPath: p.photo_path ?? null,
+          id: p.id, userId: p.user_id, body: clean(p.body), createdAt: p.created_at, photoPath: p.photo_path ?? null,
           likes: mine.length, liked: mine.some((l) => l.user_id === userId),
         }
       }),

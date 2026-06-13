@@ -5,7 +5,7 @@
 //
 // Deploy:  supabase functions deploy translation-info
 // Secrets: supabase secrets set ANTHROPIC_API_KEY=sk-ant-…
-//          (optional) ANTHROPIC_MODEL — defaults to claude-opus-4-8.
+//          (optional) ANTHROPIC_MODEL — defaults to claude-sonnet-4-6.
 import Anthropic from 'npm:@anthropic-ai/sdk'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
   let parsed: { title?: Record<string, string>; body?: Record<string, string> }
   try {
     const resp = await anthropic.messages.create({
-      model: Deno.env.get('ANTHROPIC_MODEL') ?? 'claude-opus-4-8',
+      model: Deno.env.get('ANTHROPIC_MODEL') ?? 'claude-sonnet-4-6',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }],
     })
