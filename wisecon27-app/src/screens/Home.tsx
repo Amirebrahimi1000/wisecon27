@@ -336,7 +336,9 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
     <div style={{ background: 'var(--wf-grey-2)', minHeight: '100%', paddingBottom: TABBAR_H + 16 }}>
       {/* hero */}
       <div style={{ position: 'relative', overflow: 'hidden', background: 'var(--wf-hero)', padding: STATUS_INSET + 'px 20px 56px' }}>
-        <img src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'} alt="" style={{ position: 'absolute', right: -24, top: 18, width: 260, opacity: 0.13, filter: 'brightness(0) invert(1)', transform: 'rotate(-8deg)' }} />
+        {clock.phase !== 'before' && (
+          <img src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'} alt="" style={{ position: 'absolute', right: -24, top: 18, width: 260, opacity: 0.13, filter: 'brightness(0) invert(1)', transform: 'rotate(-8deg)' }} />
+        )}
         <div style={{ position: 'relative' }}>
           {/* top bar: event status (left) · notifications + profile (right) */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
@@ -360,11 +362,14 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
           <div style={{ marginTop: clock.phase === 'before' ? 26 : 22 }}>
             {clock.phase === 'before' ? (
               <>
-                <h1 style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 40, color: '#fff', lineHeight: 1.0, letterSpacing: '-0.02em' }}>
-                  {t('home.heroHeadline')}
-                </h1>
+                {/* event identity leads; the brand slogan supports it as a tagline */}
+                <img
+                  src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'}
+                  alt="WISEcon27"
+                  style={{ display: 'block', width: 'min(80%, 290px)', filter: 'brightness(0) invert(1)' }}
+                />
                 {dateLine && (
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 12, fontFamily: T.sig, fontSize: 14, color: 'rgba(255,255,255,0.92)' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 16, fontFamily: T.sig, fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>
                     <Icon name="calendar" size={15} style={{ opacity: 0.9 }} />
                     {dateLine}
                   </div>
