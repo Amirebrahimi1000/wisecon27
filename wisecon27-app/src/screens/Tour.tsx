@@ -128,7 +128,7 @@ export function Tour({ ctx }: { ctx: AppCtx }) {
   return (
     // anchored to the app frame so the gradient and controls always fill the
     // screen exactly, whatever the device height
-    <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)', paddingTop: STATUS_INSET, paddingBottom: TABBAR_H + 12 }}>
+    <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', background: 'var(--wf-hero)', paddingTop: STATUS_INSET, paddingBottom: TABBAR_H + 12 }}>
       {/* skip */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px 0' }}>
         <Press onClick={close} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: 'rgba(255,255,255,0.85)', padding: '6px 10px' }}>

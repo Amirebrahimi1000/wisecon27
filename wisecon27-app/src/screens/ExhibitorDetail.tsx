@@ -8,7 +8,7 @@ export function ExhibitorDetail({ ctx }: { ctx: AppCtx }) {
   const sp = ctx.params.sponsor!
   return (
     <div style={{ paddingBottom: TABBAR_H + 16 }}>
-      <div style={{ padding: STATUS_INSET + 8 + 'px 18px 24px', background: `linear-gradient(150deg, color-mix(in srgb, ${sp.color} 88%, #fff), color-mix(in srgb, ${sp.color} 70%, #000))`, color: '#fff' }}>
+      <div style={{ padding: STATUS_INSET + 8 + 'px 18px 24px', background: `color-mix(in srgb, ${sp.color} 78%, #000)`, color: '#fff' }}>
         <div style={{ marginBottom: 18 }}>
           <IconBtn name="chevronLeft" onClick={ctx.back} stroke={2.2} color="#fff" bg="rgba(255,255,255,0.16)" />
         </div>
@@ -25,7 +25,7 @@ export function ExhibitorDetail({ ctx }: { ctx: AppCtx }) {
       <div style={{ padding: '20px 16px 0', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {sp.booth && (
           <Press onClick={() => ctx.push('venuemap', { booth: sp.booth })} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-3)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}><Icon name="pin" size={18} /></div>
+            <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}><Icon name="pin" size={18} /></div>
             <div style={{ flex: 1 }}>
               <Eyebrow>Find them at</Eyebrow>
               <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15.5, color: T.ink, marginTop: 2 }}>Booth {sp.booth} · Expo Hall</div>

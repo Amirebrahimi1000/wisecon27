@@ -294,7 +294,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
   return (
     <div style={{ background: 'var(--wf-grey-2)', minHeight: '100%', paddingBottom: TABBAR_H + 16 }}>
       {/* hero */}
-      <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)', padding: STATUS_INSET + 'px 20px 56px' }}>
+      <div style={{ position: 'relative', overflow: 'hidden', background: 'var(--wf-hero)', padding: STATUS_INSET + 'px 20px 56px' }}>
         <img src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'} alt="" style={{ position: 'absolute', right: -24, top: 18, width: 260, opacity: 0.13, filter: 'brightness(0) invert(1)', transform: 'rotate(-8deg)' }} />
         <div style={{ position: 'relative' }}>
           {/* top bar: event status (left) · notifications + profile (right) */}

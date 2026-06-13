@@ -117,7 +117,7 @@ export function MeetingRequest({ ctx }: { ctx: AppCtx }) {
                     disabled={blocked || off}
                     onClick={() => setSlot(s)}
                     style={{
-                      textAlign: 'center', padding: '10px 0', borderRadius: 'var(--radius-3)', position: 'relative',
+                      textAlign: 'center', padding: '10px 0', borderRadius: 'var(--radius-2)', position: 'relative',
                       fontFamily: T.onest, fontWeight: 600, fontSize: 13.5,
                       background: on ? T.green9 : blocked || off ? 'var(--wf-grey-3)' : 'var(--wf-surface)',
                       color: on ? '#fff' : blocked || off ? T.line2 : T.ink,

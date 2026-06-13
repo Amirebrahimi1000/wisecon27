@@ -36,8 +36,8 @@ export function SessionDetail({ ctx }: { ctx: AppCtx }) {
           position: 'relative',
           padding: STATUS_INSET + 8 + 'px 18px 22px',
           background: isBreak
-            ? 'linear-gradient(150deg, var(--wf-grey-11), var(--wf-grey-12))'
-            : `linear-gradient(150deg, ${t.dot}, color-mix(in srgb, ${t.dot} 62%, #000))`,
+            ? 'var(--wf-grey-12)'
+            : `color-mix(in srgb, ${t.dot} 78%, #000)`,
           color: '#fff',
         }}
       >
@@ -188,7 +188,7 @@ function SessionResources({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppC
 
   const inputStyle: React.CSSProperties = {
     width: '100%', boxSizing: 'border-box', border: 'none', outline: 'none', background: 'var(--wf-surface)',
-    borderRadius: 'var(--radius-3)', padding: '10px 12px', fontFamily: T.sig, fontSize: 14, color: T.ink,
+    borderRadius: 'var(--radius-2)', padding: '10px 12px', fontFamily: T.sig, fontSize: 14, color: T.ink,
     boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)', marginBottom: 8,
   }
 
@@ -204,7 +204,7 @@ function SessionResources({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppC
             rel="noreferrer"
             style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 14, boxShadow: 'var(--shadow-sm)', textDecoration: 'none' }}
           >
-            <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-3)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center' }}><Icon name="download" size={20} /></div>
+            <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-2)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center' }}><Icon name="download" size={20} /></div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>Download slides</div>
               <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.slidesName || 'Presentation'}</div>
@@ -220,7 +220,7 @@ function SessionResources({ s, sp, ctx }: { s: Session; sp: Speaker[]; ctx: AppC
               rel="noreferrer"
               style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, textDecoration: 'none' }}
             >
-              <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-3)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-2)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                 <Icon name={r.path ? 'download' : 'arrowRight'} size={18} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -348,7 +348,7 @@ function QATab({ ctx, qa }: { ctx: AppCtx; qa: ReturnType<typeof useQA> }) {
         <div key={it.id} style={{ display: 'flex', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: '13px 14px', boxShadow: 'var(--shadow-sm)' }}>
           <Press
             onClick={() => qa.toggleVote(it)}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: 38, flexShrink: 0, color: it.voted ? T.green9 : T.muted, background: it.voted ? T.green1 : T.sunken, borderRadius: 'var(--radius-3)', padding: '6px 0' }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: 38, flexShrink: 0, color: it.voted ? T.green9 : T.muted, background: it.voted ? T.green1 : T.sunken, borderRadius: 'var(--radius-2)', padding: '6px 0' }}
           >
             <Icon name="arrowUp" size={17} stroke={2.2} />
             <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 13 }}>{it.up}</span>

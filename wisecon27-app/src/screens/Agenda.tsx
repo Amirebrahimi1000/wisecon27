@@ -108,7 +108,7 @@ function Timeline({ list, ctx }: { list: Session[]; ctx: AppCtx }) {
                   width: full ? '100%' : COL_W - 3,
                   height: h,
                   boxSizing: 'border-box',
-                  borderRadius: 'var(--radius-3)',
+                  borderRadius: 'var(--radius-2)',
                   overflow: 'hidden',
                   textAlign: 'left',
                   background: isMeetingItem(s) ? T.green1 : isBreak ? 'var(--wf-grey-3)' : 'var(--wf-surface)',

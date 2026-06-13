@@ -50,8 +50,8 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
       <AppHeader title="More" />
       <div style={{ padding: '8px 16px', paddingBottom: 'calc(' + (TABBAR_H + 24) + 'px + env(safe-area-inset-bottom, 0px))' }}>
         {/* badge */}
-        <Press onClick={() => ctx.push('ticket', {})} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'linear-gradient(135deg, #111, #2a2a2a)', borderRadius: 'var(--radius-5)', padding: 16, color: '#fff', marginBottom: 22 }}>
-          <div style={{ background: '#fff', borderRadius: 'var(--radius-3)', padding: 6 }}>
+        <Press onClick={() => ctx.push('ticket', {})} style={{ display: 'flex', alignItems: 'center', gap: 14, background: '#111', borderRadius: 'var(--radius-5)', padding: 16, color: '#fff', marginBottom: 22 }}>
+          <div style={{ background: '#fff', borderRadius: 'var(--radius-2)', padding: 6 }}>
             <QR value={me.badgeId} size={56} />
           </div>
           <div style={{ flex: 1 }}>
@@ -68,7 +68,7 @@ export function Profile({ ctx }: { ctx: AppCtx }) {
             <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
               {sec.rows.map((r, i) => (
                 <Press key={r.label} onClick={r.to} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: i === sec.rows.length - 1 ? 'none' : '1px solid ' + T.line }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-3)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}>
                     <Icon name={r.icon} size={18} />
                   </div>
                   <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 500, fontSize: 15.5, color: T.ink }}>{r.label}</span>

@@ -19,7 +19,7 @@ function Toggle({ on, onTap }: { on: boolean; onTap: () => void }) {
 }
 
 const selectStyle: React.CSSProperties = {
-  border: 'none', outline: 'none', background: 'var(--wf-surface)', borderRadius: 'var(--radius-3)',
+  border: 'none', outline: 'none', background: 'var(--wf-surface)', borderRadius: 'var(--radius-2)',
   padding: '8px 10px', fontFamily: T.onest, fontWeight: 600, fontSize: 13.5, color: T.ink,
   boxShadow: 'inset 0 0 0 1px var(--wf-grey-6)',
 }

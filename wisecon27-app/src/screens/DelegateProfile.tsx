@@ -106,7 +106,7 @@ export function DelegateProfile({ ctx }: { ctx: AppCtx }) {
                 rel="noreferrer"
                 style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16, marginTop: 14, textDecoration: 'none' }}
               >
-                <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-3)', background: 'var(--wf-blue-1)', color: 'var(--wf-blue-9)', display: 'grid', placeItems: 'center' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-2)', background: 'var(--wf-blue-1)', color: 'var(--wf-blue-9)', display: 'grid', placeItems: 'center' }}>
                   <Icon name="connect" size={19} />
                 </div>
                 <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>LinkedIn profile</span>

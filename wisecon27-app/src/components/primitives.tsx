@@ -178,7 +178,7 @@ export function Btn({
     whiteSpace: 'nowrap',
   }
   const kinds: Record<BtnKind, CSSProperties> = {
-    primary: { background: T.green9, color: '#fff' },
+    primary: { background: T.green11, color: '#fff' },
     dark: { background: '#111', color: '#fff' },
     secondary: { background: 'var(--wf-blue-9)', color: '#fff' },
     default: { background: 'var(--wf-grey-4)', color: T.ink },

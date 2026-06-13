@@ -39,7 +39,7 @@ export function SpeakerProfile({ ctx }: { ctx: AppCtx }) {
         style={{
           position: 'relative',
           padding: STATUS_INSET + 8 + 'px 18px 24px',
-          background: `linear-gradient(150deg, color-mix(in srgb, ${p.color} 88%, #fff), color-mix(in srgb, ${p.color} 70%, #000))`,
+          background: `color-mix(in srgb, ${p.color} 78%, #000)`,
           color: '#fff',
         }}
       >

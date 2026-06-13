@@ -469,7 +469,7 @@ export function InstallBanner() {
         alignItems: 'center',
         gap: 10,
         background: T.green1,
-        borderRadius: 'var(--radius-3)',
+        borderRadius: 'var(--radius-2)',
         padding: '10px 12px',
         margin: '0 0 12px',
       }}

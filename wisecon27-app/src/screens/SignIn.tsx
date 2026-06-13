@@ -53,7 +53,7 @@ export function SignIn() {
   return (
     // full-bleed brand gradient (same family as the Home hero and the tour);
     // the form floats in a white card instead of hugging the green band
-    <div className="wc-noscroll" style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', position: 'relative', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)' }}>
+    <div className="wc-noscroll" style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', position: 'relative', background: 'var(--wf-hero)' }}>
       {/* faint rotated watermark (UNIwise bubble), echoing the Home hero */}
       <img src={import.meta.env.BASE_URL + 'logo-mark.svg'} alt="" style={{ position: 'absolute', right: -54, top: -18, width: 240, opacity: 0.1, filter: 'brightness(0) invert(1)', transform: 'rotate(-10deg)', pointerEvents: 'none' }} />
 

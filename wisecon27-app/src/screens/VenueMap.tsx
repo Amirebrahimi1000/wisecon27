@@ -140,7 +140,7 @@ export function VenueMap({ ctx }: { ctx: AppCtx }) {
         {selected && (
           <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-3)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center' }}><Icon name="pin" size={18} /></div>
+              <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-2)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center' }}><Icon name="pin" size={18} /></div>
               <div>
                 <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 17, color: T.ink }}>{selected.label}</div>
                 {selected.note && <div style={{ fontFamily: T.onest, fontSize: 12, color: T.muted }}>{selected.note}</div>}
@@ -154,7 +154,7 @@ export function VenueMap({ ctx }: { ctx: AppCtx }) {
                 {exhibitors.map((sp) => {
                   const here = booth && norm(sp.booth ?? '') === norm(booth)
                   return (
-                    <Press key={sp.name} onClick={() => ctx.push('exhibitor', { sponsor: sp })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--radius-3)', background: here ? T.green1 : 'transparent' }}>
+                    <Press key={sp.name} onClick={() => ctx.push('exhibitor', { sponsor: sp })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--radius-2)', background: here ? T.green1 : 'transparent' }}>
                       <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 12, color: here ? T.green10 : T.muted, width: 34 }}>{sp.booth}</span>
                       <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 14, color: T.ink }}>{sp.name}</span>
                       <Icon name="chevronRight" size={16} stroke={2} style={{ color: T.line2 }} />
@@ -172,7 +172,7 @@ export function VenueMap({ ctx }: { ctx: AppCtx }) {
                   {inRoom.map((s) => {
                     const d = ctx.days.find((x) => x.id === s.day)
                     return (
-                      <Press key={s.id} onClick={() => ctx.openSession(s)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--radius-3)' }}>
+                      <Press key={s.id} onClick={() => ctx.openSession(s)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--radius-2)' }}>
                         <div style={{ width: 58, flexShrink: 0 }}>
                           <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 13, color: T.ink }}>{s.start}</div>
                           <div style={{ fontFamily: T.onest, fontSize: 10.5, color: T.muted }}>{d?.dow} {d?.date}</div>

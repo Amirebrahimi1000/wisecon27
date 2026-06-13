@@ -53,13 +53,13 @@ export function Connect({ ctx }: { ctx: AppCtx }) {
 
       {/* your badge card */}
       <div style={{ padding: '12px 16px 0' }}>
-        <Press onClick={() => ctx.push('ticket', {})} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'linear-gradient(135deg, var(--wf-green-9), var(--wf-green-11))', borderRadius: 'var(--radius-5)', padding: 16, color: '#fff' }}>
+        <Press onClick={() => ctx.push('ticket', {})} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--wf-hero)', borderRadius: 'var(--radius-5)', padding: 16, color: '#fff' }}>
           <Avatar initials={ctx.me.initials} color="rgba(255,255,255,0.2)" size={48} src={ctx.me.avatarUrl} style={{ boxShadow: '0 0 0 2px rgba(255,255,255,0.4)' }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 16 }}>{ctx.me.name}</div>
             <div style={{ fontFamily: T.onest, fontSize: 12.5, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>Tap to share your badge</div>
           </div>
-          <div style={{ background: '#fff', borderRadius: 'var(--radius-3)', padding: 5 }}>
+          <div style={{ background: '#fff', borderRadius: 'var(--radius-2)', padding: 5 }}>
             <QR value={ctx.me.badgeId} size={44} />
           </div>
         </Press>

@@ -164,7 +164,7 @@ export function Community({ ctx }: { ctx: AppCtx }) {
           </div>
           {photo && (
             <div style={{ position: 'relative', marginTop: 10, display: 'inline-block' }}>
-              <img src={photo.preview} alt="" style={{ maxHeight: 140, maxWidth: '100%', borderRadius: 'var(--radius-3)', display: 'block' }} />
+              <img src={photo.preview} alt="" style={{ maxHeight: 140, maxWidth: '100%', borderRadius: 'var(--radius-2)', display: 'block' }} />
               <Press onClick={clearPhoto} style={{ position: 'absolute', top: 6, right: 6, width: 26, height: 26, borderRadius: '50%', background: 'rgba(17,17,17,0.7)', color: '#fff', display: 'grid', placeItems: 'center' }}>
                 <Icon name="close" size={14} stroke={2.2} />
               </Press>
@@ -231,7 +231,7 @@ export function Community({ ctx }: { ctx: AppCtx }) {
                   </div>
                   {p.body && <div style={{ fontFamily: T.sig, fontSize: 14.5, color: T.body, lineHeight: 1.5, marginTop: 10, whiteSpace: 'pre-wrap' }}>{p.body}</div>}
                   {p.photoPath && feed.photoUrls[p.photoPath] && (
-                    <img src={feed.photoUrls[p.photoPath]} alt="" style={{ width: '100%', maxHeight: 340, objectFit: 'cover', borderRadius: 'var(--radius-3)', marginTop: 10, display: 'block' }} />
+                    <img src={feed.photoUrls[p.photoPath]} alt="" style={{ width: '100%', maxHeight: 340, objectFit: 'cover', borderRadius: 'var(--radius-2)', marginTop: 10, display: 'block' }} />
                   )}
                   <Press onClick={() => feed.toggleLike(p)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '5px 11px', borderRadius: 999, background: p.liked ? 'var(--wf-tomato-2)' : T.sunken, color: p.liked ? 'var(--wf-tomato-9)' : T.muted }}>
                     <Icon name="heart" size={15} stroke={2} />

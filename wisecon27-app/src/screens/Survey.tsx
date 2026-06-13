@@ -67,7 +67,7 @@ export function Survey({ ctx }: { ctx: AppCtx }) {
             {q.kind === 'nps' && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {Array.from({ length: 11 }, (_, n) => (
-                  <Press key={n} onClick={() => set(q.id, n)} style={{ width: 40, height: 40, borderRadius: 'var(--radius-3)', display: 'grid', placeItems: 'center', fontFamily: T.onest, fontWeight: 700, fontSize: 14, background: answers[q.id] === n ? T.green9 : 'var(--wf-surface)', color: answers[q.id] === n ? '#fff' : T.body, boxShadow: answers[q.id] === n ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>{n}</Press>
+                  <Press key={n} onClick={() => set(q.id, n)} style={{ width: 40, height: 40, borderRadius: 'var(--radius-2)', display: 'grid', placeItems: 'center', fontFamily: T.onest, fontWeight: 700, fontSize: 14, background: answers[q.id] === n ? T.green9 : 'var(--wf-surface)', color: answers[q.id] === n ? '#fff' : T.body, boxShadow: answers[q.id] === n ? 'none' : 'inset 0 0 0 1px var(--wf-grey-6)' }}>{n}</Press>
                 ))}
               </div>
             )}

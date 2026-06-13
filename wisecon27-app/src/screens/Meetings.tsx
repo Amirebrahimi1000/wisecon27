@@ -77,7 +77,7 @@ export function Meetings({ ctx }: { ctx: AppCtx }) {
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
         {/* when can people book me? */}
         <Press onClick={() => ctx.push('availability', {})} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 18 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-3)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-2)', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
             <Icon name="clock" size={19} />
           </div>
           <div style={{ flex: 1 }}>

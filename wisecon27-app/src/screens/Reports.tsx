@@ -128,7 +128,7 @@ function SurveyResults({ ctx }: { ctx: AppCtx }) {
                     <span style={{ fontFamily: T.onest, fontSize: 12, color: T.muted }}>({nums.length} answers)</span>
                   </div>
                   {[5, 4, 3, 2, 1].map((s) => (
-                    <Bar key={s} label={s + ' ★'} n={nums.filter((n) => n === s).length} max={nums.length} />
+                    <Bar key={s} label={s + (s === 1 ? ' star' : ' stars')} n={nums.filter((n) => n === s).length} max={nums.length} />
                   ))}
                 </div>
               )
@@ -164,7 +164,7 @@ function SurveyResults({ ctx }: { ctx: AppCtx }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {vals.length === 0 && <span style={{ fontFamily: T.sig, fontSize: 13, color: T.muted }}>No written answers.</span>}
                 {(vals as string[]).map((v, i) => (
-                  <div key={i} style={{ fontFamily: T.sig, fontSize: 13.5, color: T.body, background: 'var(--wf-grey-3)', borderRadius: 'var(--radius-3)', padding: '8px 11px', lineHeight: 1.45 }}>
+                  <div key={i} style={{ fontFamily: T.sig, fontSize: 13.5, color: T.body, background: 'var(--wf-grey-3)', borderRadius: 'var(--radius-2)', padding: '8px 11px', lineHeight: 1.45 }}>
                     “{v}”
                   </div>
                 ))}
@@ -206,15 +206,15 @@ function EventFeedback() {
         <Btn kind="outline" size="sm" icon="download" onClick={exportCsv} disabled={rows.length === 0}>CSV</Btn>
       </div>
       <div style={{ fontFamily: T.onest, fontSize: 12, color: T.muted, marginBottom: 14 }}>
-        {rows.length} response{rows.length === 1 ? '' : 's'}{rows.length > 0 ? ` · ${avg.toFixed(1)} ★ average` : ''}
+        {rows.length} response{rows.length === 1 ? '' : 's'}{rows.length > 0 ? ` · ${avg.toFixed(1)} of 5 average` : ''}
       </div>
       {rows.length === 0 && <Eyebrow>No feedback yet.</Eyebrow>}
       {[5, 4, 3, 2, 1].map((s) => rows.length > 0 && (
-        <Bar key={s} label={s + ' ★'} n={rows.filter((r) => r.stars === s).length} max={rows.length} />
+        <Bar key={s} label={s + (s === 1 ? ' star' : ' stars')} n={rows.filter((r) => r.stars === s).length} max={rows.length} />
       ))}
       {rows.filter((r) => r.comment).slice(0, 8).map((r, i) => (
-        <div key={i} style={{ fontFamily: T.sig, fontSize: 13.5, color: T.body, background: 'var(--wf-grey-3)', borderRadius: 'var(--radius-3)', padding: '8px 11px', lineHeight: 1.45, marginTop: 8 }}>
-          “{r.comment}” <span style={{ fontFamily: T.onest, fontSize: 11, color: T.muted }}>· {r.stars} ★</span>
+        <div key={i} style={{ fontFamily: T.sig, fontSize: 13.5, color: T.body, background: 'var(--wf-grey-3)', borderRadius: 'var(--radius-2)', padding: '8px 11px', lineHeight: 1.45, marginTop: 8 }}>
+          “{r.comment}” <span style={{ fontFamily: T.onest, fontSize: 11, color: T.muted }}>· {r.stars} of 5</span>
         </div>
       ))}
     </div>

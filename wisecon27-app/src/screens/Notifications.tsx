@@ -56,7 +56,7 @@ export function Notifications({ ctx }: { ctx: AppCtx }) {
             }
           }
           return (
-            <Press key={n.id} onClick={onTap} style={{ display: 'flex', gap: 12, padding: '14px 10px', borderBottom: '1px solid ' + T.line, background: n.unread ? T.green1 + '55' : 'transparent', borderRadius: 'var(--radius-3)' }}>
+            <Press key={n.id} onClick={onTap} style={{ display: 'flex', gap: 12, padding: '14px 10px', borderBottom: '1px solid ' + T.line, background: n.unread ? T.green1 + '55' : 'transparent', borderRadius: 'var(--radius-2)' }}>
               <div style={{ width: 38, height: 38, borderRadius: '50%', background: m.bg, color: m.color, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                 <Icon name={m.icon} size={19} />
               </div>
