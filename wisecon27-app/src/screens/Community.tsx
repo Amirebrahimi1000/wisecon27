@@ -2,7 +2,7 @@
 // Post a thought or a photo, like others' posts; organisers (and authors) can
 // remove posts. Photos are re-encoded on-device (EXIF/GPS stripped) and stored
 // in a private bucket — visible to signed-in delegates only.
-import { useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import type { FeedPost } from '../types'
@@ -23,6 +23,54 @@ function relTime(iso: string) {
 
 export function Community({ ctx }: { ctx: AppCtx }) {
   const feed = useFeed(ctx.userId)
+  // "new posts" tracking: remember the newest post the delegate has already
+  // seen (per-user, client-side) so we can flag what's new, mark a "last read"
+  // divider, and offer a one-tap jump to the newest.
+  const readKey = `wc27-feed-read-${ctx.userId}`
+  const [boundary, setBoundary] = useState<string | null>(() => localStorage.getItem(readKey))
+  const [dismissed, setDismissed] = useState(false)
+  const topRef = useRef<HTMLDivElement>(null)
+  const dividerRef = useRef<HTMLDivElement>(null)
+  const didResume = useRef(false)
+  const postsRef = useRef(feed.posts)
+  postsRef.current = feed.posts
+
+  const isUnread = (p: FeedPost) => !!boundary && p.createdAt > boundary && p.userId !== ctx.userId
+  const unreadCount = feed.posts.reduce((n, p) => n + (isUnread(p) ? 1 : 0), 0)
+  const firstReadIdx = boundary ? feed.posts.findIndex((p) => p.createdAt <= boundary) : -1
+  const showPill = unreadCount > 0 && !dismissed
+
+  const markRead = () => {
+    const newest = postsRef.current[0]?.createdAt
+    if (newest) localStorage.setItem(readKey, newest)
+  }
+  const jumpToNewest = () => {
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setDismissed(true)
+    markRead()
+  }
+
+  // On open, resume at the last-read divider once (after the shell resets the
+  // scroll to the top) so the delegate keeps their place; a first-ever visit
+  // just records the newest post as seen, so nothing is wrongly flagged "new".
+  useEffect(() => {
+    if (feed.loading || didResume.current) return
+    didResume.current = true
+    if (boundary === null) {
+      markRead()
+      setBoundary(postsRef.current[0]?.createdAt ?? null)
+      return
+    }
+    if (unreadCount > 0 && dividerRef.current) {
+      const el = dividerRef.current
+      requestAnimationFrame(() => requestAnimationFrame(() => el.scrollIntoView({ block: 'center' })))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feed.loading])
+
+  // catch-all: advance the marker to the newest post when leaving the screen
+  useEffect(() => () => { const n = postsRef.current[0]?.createdAt; if (n) localStorage.setItem(readKey, n) }, [readKey])
+
   const [text, setText] = useState('')
   const [posting, setPosting] = useState(false)
   const [confirmId, setConfirmId] = useState<string | null>(null)
@@ -73,6 +121,7 @@ export function Community({ ctx }: { ctx: AppCtx }) {
     <div>
       <AppHeader title="Community" sub="The delegate wall" onBack={ctx.back} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
+        <div ref={topRef} />
         {/* composer */}
         <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14, marginBottom: 16 }}>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -106,42 +155,63 @@ export function Community({ ctx }: { ctx: AppCtx }) {
           </div>
         </div>
 
+        {/* jump-to-newest pill — appears for unread posts (live or since last visit) */}
+        {showPill && (
+          <div style={{ position: 'sticky', top: 8, zIndex: 20, display: 'flex', justifyContent: 'center', marginBottom: 12, pointerEvents: 'none' }}>
+            <Press onClick={jumpToNewest} style={{ pointerEvents: 'auto', display: 'inline-flex', alignItems: 'center', gap: 7, background: T.green9, color: '#fff', padding: '9px 16px', borderRadius: 999, boxShadow: 'var(--shadow-card)', fontFamily: T.sig, fontWeight: 600, fontSize: 13.5 }}>
+              <Icon name="arrowUp" size={15} stroke={2.4} />
+              {unreadCount} new post{unreadCount === 1 ? '' : 's'}
+            </Press>
+          </div>
+        )}
+
         {/* posts */}
         {!feed.loading && feed.posts.length === 0 && (
           <Empty icon="message" text="Nothing here yet — be the first to post." />
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {feed.posts.map((p) => {
+          {feed.posts.map((p, i) => {
             const a = authorOf(p)
             const canRemove = p.userId === ctx.userId || ctx.isAdmin
+            const unread = isUnread(p)
             return (
-              <div key={p.id} style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Press onClick={() => p.userId && p.userId !== ctx.userId && ctx.push('delegate', { peerId: p.userId })}>
-                    <Avatar initials={a.initials} color={a.color} size={38} src={a.avatarUrl} />
-                  </Press>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>{a.name}</div>
-                    <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {[a.sub, relTime(p.createdAt)].filter(Boolean).join(' · ')}
-                    </div>
+              <Fragment key={p.id}>
+                {i === firstReadIdx && firstReadIdx > 0 && (
+                  <div ref={dividerRef} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 2px' }}>
+                    <div style={{ flex: 1, height: 1, background: T.line2 }} />
+                    <span style={{ fontFamily: T.onest, fontWeight: 600, fontSize: 11, color: T.muted, whiteSpace: 'nowrap' }}>Last read · caught up below</span>
+                    <div style={{ flex: 1, height: 1, background: T.line2 }} />
                   </div>
-                  {canRemove && (
-                    <Press onClick={() => (confirmId === p.id ? (setConfirmId(null), feed.remove(p)) : setConfirmId(p.id))} style={{ color: confirmId === p.id ? 'var(--wf-negative-9)' : T.line2, padding: 4, fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>
-                      {confirmId === p.id ? 'Remove?' : <Icon name="close" size={16} />}
-                    </Press>
-                  )}
-                </div>
-                {p.body && <div style={{ fontFamily: T.sig, fontSize: 14.5, color: T.body, lineHeight: 1.5, marginTop: 10, whiteSpace: 'pre-wrap' }}>{p.body}</div>}
-                {p.photoPath && feed.photoUrls[p.photoPath] && (
-                  <img src={feed.photoUrls[p.photoPath]} alt="" style={{ width: '100%', maxHeight: 340, objectFit: 'cover', borderRadius: 'var(--radius-3)', marginTop: 10, display: 'block' }} />
                 )}
-                <Press onClick={() => feed.toggleLike(p)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '5px 11px', borderRadius: 999, background: p.liked ? 'var(--wf-tomato-2)' : T.sunken, color: p.liked ? 'var(--wf-tomato-9)' : T.muted }}>
-                  <Icon name="heart" size={15} stroke={2} />
-                  <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 12.5 }}>{p.likes || ''}</span>
-                  <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>{p.liked ? 'Liked' : 'Like'}</span>
-                </Press>
-              </div>
+                <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', padding: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Press onClick={() => p.userId && p.userId !== ctx.userId && ctx.push('delegate', { peerId: p.userId })}>
+                      <Avatar initials={a.initials} color={a.color} size={38} src={a.avatarUrl} />
+                    </Press>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5, color: T.ink }}>{a.name}</div>
+                      <div style={{ fontFamily: T.onest, fontSize: 11.5, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {[a.sub, relTime(p.createdAt)].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                    {unread && <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 10.5, color: T.green10, background: T.green1, borderRadius: 999, padding: '3px 9px', flexShrink: 0 }}>New</span>}
+                    {canRemove && (
+                      <Press onClick={() => (confirmId === p.id ? (setConfirmId(null), feed.remove(p)) : setConfirmId(p.id))} style={{ color: confirmId === p.id ? 'var(--wf-negative-9)' : T.line2, padding: 4, fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>
+                        {confirmId === p.id ? 'Remove?' : <Icon name="close" size={16} />}
+                      </Press>
+                    )}
+                  </div>
+                  {p.body && <div style={{ fontFamily: T.sig, fontSize: 14.5, color: T.body, lineHeight: 1.5, marginTop: 10, whiteSpace: 'pre-wrap' }}>{p.body}</div>}
+                  {p.photoPath && feed.photoUrls[p.photoPath] && (
+                    <img src={feed.photoUrls[p.photoPath]} alt="" style={{ width: '100%', maxHeight: 340, objectFit: 'cover', borderRadius: 'var(--radius-3)', marginTop: 10, display: 'block' }} />
+                  )}
+                  <Press onClick={() => feed.toggleLike(p)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '5px 11px', borderRadius: 999, background: p.liked ? 'var(--wf-tomato-2)' : T.sunken, color: p.liked ? 'var(--wf-tomato-9)' : T.muted }}>
+                    <Icon name="heart" size={15} stroke={2} />
+                    <span style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 12.5 }}>{p.likes || ''}</span>
+                    <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>{p.liked ? 'Liked' : 'Like'}</span>
+                  </Press>
+                </div>
+              </Fragment>
             )
           })}
         </div>

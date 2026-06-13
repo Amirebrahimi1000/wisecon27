@@ -8,6 +8,7 @@ import type { IconName } from '../components/Icon'
 import { Icon } from '../components/Icon'
 import { Avatar, BookmarkBtn, Btn, Eyebrow, IconBtn, Press, TrackTag } from '../components/primitives'
 import { InstallBanner } from '../install'
+import { useHasUnreadPosts } from '../feed'
 import { useEventClock, type EventClock } from '../eventClock'
 import { slidesPublicUrl } from '../lib/storage'
 import { downloadCsv } from '../lib/csv'
@@ -273,6 +274,7 @@ function HeroStat({ n, label }: { n: number; label: string }) {
 function HomeBold({ ctx }: { ctx: AppCtx }) {
   const clock = useEventClock(ctx.event.startISO, ctx.event.endISO, ctx.days.length)
   const me = ctx.me
+  const communityUnread = useHasUnreadPosts(ctx.userId)
   // show a "more tiles this way" hint until the quick-action row is scrolled to the end
   const quickRef = useRef<HTMLDivElement>(null)
   const [moreQuick, setMoreQuick] = useState(false)
@@ -409,9 +411,12 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
         <div style={{ position: 'relative' }}>
           <div ref={quickRef} onScroll={checkQuick} className="wc-noscroll" style={{ display: 'flex', gap: 10, padding: '18px 16px 0', overflowX: 'auto' }}>
             {QUICK.map((q, i) => (
-              <Press key={q.label} onClick={() => runQuick(ctx, q)} style={{ flex: '1 0 92px', display: 'flex', flexDirection: 'column', gap: 12, padding: 14, borderRadius: 'var(--radius-4)', background: i === 0 ? T.green9 : 'var(--wf-surface)', color: i === 0 ? '#fff' : T.ink, boxShadow: i === 0 ? 'none' : 'var(--shadow-sm)' }}>
+              <Press key={q.label} onClick={() => runQuick(ctx, q)} style={{ position: 'relative', flex: '1 0 92px', display: 'flex', flexDirection: 'column', gap: 12, padding: 14, borderRadius: 'var(--radius-4)', background: i === 0 ? T.green9 : 'var(--wf-surface)', color: i === 0 ? '#fff' : T.ink, boxShadow: i === 0 ? 'none' : 'var(--shadow-sm)' }}>
                 <Icon name={q.icon} size={22} style={{ color: i === 0 ? '#fff' : T.green10 }} />
                 <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 12.5 }}>{q.label}</span>
+                {q.push === 'community' && communityUnread && (
+                  <span style={{ position: 'absolute', top: 10, right: 10, width: 9, height: 9, borderRadius: 999, background: 'var(--wf-tomato-9)', boxShadow: '0 0 0 2px ' + (i === 0 ? 'var(--wf-green-9)' : 'var(--wf-surface)') }} />
+                )}
               </Press>
             ))}
           </div>

@@ -82,3 +82,35 @@ export function useFeed(userId: string) {
 
   return { posts, photoUrls, loading, submit, toggleLike, remove }
 }
+
+// Lightweight "is there a community post I haven't seen?" check for the Home
+// dot — reads the newest post that isn't my own and compares it to the same
+// per-user marker the feed screen advances. Updates live on new posts.
+export function useHasUnreadPosts(userId: string) {
+  const [hasUnread, setHasUnread] = useState(false)
+  useEffect(() => {
+    let alive = true
+    const key = `wc27-feed-read-${userId}`
+    const check = async () => {
+      const { data } = await supabase
+        .from('posts')
+        .select('created_at')
+        .neq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      const newest = (data?.[0] as { created_at: string } | undefined)?.created_at
+      const lastRead = localStorage.getItem(key)
+      if (alive) setHasUnread(!!newest && (!lastRead || newest > lastRead))
+    }
+    check()
+    const ch = supabase
+      .channel('wc27-feed-unread')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => check())
+      .subscribe()
+    return () => {
+      alive = false
+      supabase.removeChannel(ch)
+    }
+  }, [userId])
+  return hasUnread
+}
