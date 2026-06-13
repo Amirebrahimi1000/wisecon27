@@ -9,7 +9,7 @@ import { useT } from '../i18n'
 import type { InfoSection } from '../types'
 
 export function Info({ ctx }: { ctx: AppCtx }) {
-  const { t } = useT()
+  const { t, lang } = useT()
   const items = ctx.eventInfo
   return (
     <div>
@@ -21,8 +21,8 @@ export function Info({ ctx }: { ctx: AppCtx }) {
               <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}>
                 <Icon name={it.icon as IconName} size={18} />
               </div>
-              <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 500, fontSize: 15, color: T.body }}>{it.label}</span>
-              <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 15, color: T.ink }}>{it.detail}</span>
+              <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 500, fontSize: 15, color: T.body }}>{it.labelI18n?.[lang] || it.label}</span>
+              <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 15, color: T.ink }}>{it.detailI18n?.[lang] || it.detail}</span>
             </div>
           ))}
         </div>

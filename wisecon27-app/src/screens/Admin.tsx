@@ -570,19 +570,28 @@ function Announce({ ctx }: { ctx: AppCtx }) {
 const INFO_ICONS: IconName[] = ['wifi', 'shield', 'pin', 'clock', 'coffee', 'info', 'map', 'ticket', 'star', 'heart', 'camera']
 function EventInfo({ ctx }: { ctx: AppCtx }) {
   const [editing, setEditing] = useState<(Partial<EventInfoItem> & { id?: string }) | null>(null)
+  const persist = async (arr: EventInfoItem[]) => {
+    await Promise.all(arr.map((it, i) => supabase.from('event_info').update({ sort: i }).eq('id', it.id)))
+    await ctx.refreshContent()
+    ctx.toast('Order saved')
+  }
   if (editing) return <EventInfoEditor ctx={ctx} initial={editing} onDone={() => setEditing(null)} />
   return (
     <div>
       <Btn kind="primary" full icon="plus" onClick={() => setEditing({ icon: 'info', label: '', detail: '' })} style={{ marginBottom: 14 }}>New info item</Btn>
-      <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
-        {ctx.eventInfo.map((it, i) => (
-          <Press key={it.id} onClick={() => setEditing(it)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: i === ctx.eventInfo.length - 1 ? 'none' : '1px solid ' + T.line }}>
-            <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body }}><Icon name={it.icon as IconName} size={16} /></div>
-            <span style={{ flex: 1, fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{it.label}</span>
+      <ReorderableList
+        items={ctx.eventInfo}
+        onReorder={persist}
+        empty="No info items yet — add Wi-Fi, venue or hours."
+        renderRow={(it) => (
+          <Press onClick={() => setEditing(it)} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body, flexShrink: 0 }}><Icon name={it.icon as IconName} size={16} /></div>
+            <span style={{ flex: 1, minWidth: 0, fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</span>
             <span style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.detail}</span>
+            <Icon name="chevronRight" size={16} stroke={2} style={{ color: T.line2 }} />
           </Press>
-        ))}
-      </div>
+        )}
+      />
 
       <Eyebrow style={{ marginTop: 22, marginBottom: 10, paddingLeft: 2 }}>Practical sections (Info page)</Eyebrow>
       <PracticalSections ctx={ctx} />
@@ -591,12 +600,48 @@ function EventInfo({ ctx }: { ctx: AppCtx }) {
 }
 
 // Add / edit / remove / reorder the "practical essentials" cards on the Info page.
-// Reorder is pointer-based (works with mouse + touch): drag the handle; on drop
-// we persist each row's `sort`.
 function PracticalSections({ ctx }: { ctx: AppCtx }) {
   const [editing, setEditing] = useState<(Partial<InfoSection> & { id?: string }) | null>(null)
-  const [items, setItems] = useState(ctx.infoSections)
-  useEffect(() => setItems(ctx.infoSections), [ctx.infoSections])
+  const persist = async (arr: InfoSection[]) => {
+    await Promise.all(arr.map((s, i) => supabase.from('info_sections').update({ sort: i }).eq('id', s.id)))
+    await ctx.refreshContent()
+    ctx.toast('Order saved')
+  }
+  if (editing) return <PracticalSectionEditor ctx={ctx} initial={editing} onDone={() => setEditing(null)} />
+  return (
+    <div>
+      <Btn kind="outline" full icon="plus" onClick={() => setEditing({ icon: 'info', title: '', body: '', link: '' })} style={{ marginBottom: 14 }}>New section</Btn>
+      <ReorderableList
+        items={ctx.infoSections}
+        onReorder={persist}
+        empty="No sections yet — the Practical info block stays hidden on the Info page until you add one."
+        renderRow={(s) => (
+          <Press onClick={() => setEditing(s)} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body, flexShrink: 0 }}><Icon name={s.icon as IconName} size={16} /></div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{s.title}</div>
+              {s.link && <div style={{ fontFamily: T.sig, fontSize: 12, color: T.green10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.link}</div>}
+            </div>
+            <Icon name="chevronRight" size={16} stroke={2} style={{ color: T.line2 }} />
+          </Press>
+        )}
+      />
+    </div>
+  )
+}
+
+// Pointer-based reorderable list (mouse + touch): drag the handle on the left;
+// on drop we hand the reordered array to `onReorder`, which persists each row's
+// `sort`. Shared by Event-info items and Practical sections so both admin lists
+// behave identically. `renderRow` draws everything after the drag handle.
+function ReorderableList<T extends { id: string }>({ items: source, onReorder, renderRow, empty }: {
+  items: T[]
+  onReorder: (arr: T[]) => void
+  renderRow: (item: T) => React.ReactNode
+  empty: string
+}) {
+  const [items, setItems] = useState(source)
+  useEffect(() => setItems(source), [source])
 
   const listRef = useRef<HTMLDivElement>(null)
   const itemsRef = useRef(items)
@@ -607,11 +652,6 @@ function PracticalSections({ ctx }: { ctx: AppCtx }) {
   const [dy, setDy] = useState(0)
   const [dropIdx, setDropIdx] = useState<number | null>(null)
 
-  const persist = async (arr: InfoSection[]) => {
-    await Promise.all(arr.map((s, i) => supabase.from('info_sections').update({ sort: i }).eq('id', s.id)))
-    await ctx.refreshContent()
-    ctx.toast('Order saved')
-  }
   const onMove = (e: PointerEvent) => {
     const d = dragState.current
     if (!d) return
@@ -634,7 +674,7 @@ function PracticalSections({ ctx }: { ctx: AppCtx }) {
       const [moved] = arr.splice(d.from, 1)
       arr.splice(target, 0, moved)
       setItems(arr)
-      persist(arr)
+      onReorder(arr)
     }
   }
   const startDrag = (e: React.PointerEvent, idx: number) => {
@@ -649,19 +689,17 @@ function PracticalSections({ ctx }: { ctx: AppCtx }) {
     window.addEventListener('pointerup', onUp)
   }
 
-  if (editing) return <PracticalSectionEditor ctx={ctx} initial={editing} onDone={() => setEditing(null)} />
   return (
     <div>
-      <Btn kind="outline" full icon="plus" onClick={() => setEditing({ icon: 'info', title: '', body: '', link: '' })} style={{ marginBottom: 14 }}>New section</Btn>
       <div ref={listRef} style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
         {items.length === 0 && (
-          <div style={{ padding: '14px 16px', fontFamily: T.sig, fontSize: 13.5, color: T.muted }}>No sections yet — the Practical info block stays hidden on the Info page until you add one.</div>
+          <div style={{ padding: '14px 16px', fontFamily: T.sig, fontSize: 13.5, color: T.muted }}>{empty}</div>
         )}
-        {items.map((s, i) => {
+        {items.map((it, i) => {
           const dragging = fromIdx === i
           return (
             <div
-              key={s.id}
+              key={it.id}
               data-row=""
               style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px',
@@ -681,14 +719,7 @@ function PracticalSections({ ctx }: { ctx: AppCtx }) {
               >
                 <Icon name="list" size={18} />
               </div>
-              <Press onClick={() => setEditing(s)} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 'var(--radius-2)', background: T.sunken, display: 'grid', placeItems: 'center', color: T.body, flexShrink: 0 }}><Icon name={s.icon as IconName} size={16} /></div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 14.5, color: T.ink }}>{s.title}</div>
-                  {s.link && <div style={{ fontFamily: T.sig, fontSize: 12, color: T.green10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.link}</div>}
-                </div>
-                <Icon name="chevronRight" size={16} stroke={2} style={{ color: T.line2 }} />
-              </Press>
+              {renderRow(it)}
             </div>
           )
         })}
@@ -750,20 +781,33 @@ function PracticalSectionEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial
 function EventInfoEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Partial<EventInfoItem> & { id?: string }; onDone: () => void }) {
   const [it, setIt] = useState(initial)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const set = (patch: Partial<EventInfoItem>) => setIt((x) => ({ ...x, ...patch }))
   const save = async () => {
     if (!it.label?.trim() || saving) return
     setSaving(true)
     const row = {
       id: it.id ?? 'ei-' + Date.now(),
-      icon: it.icon || 'info', label: it.label?.trim(), detail: it.detail ?? '',
-      sort: ctx.eventInfo.length,
+      icon: it.icon || 'info', label: it.label.trim(), detail: it.detail ?? '',
+      sort: it.id ? ctx.eventInfo.findIndex((s) => s.id === it.id) : ctx.eventInfo.length,
     }
     const { error } = await supabase.from('event_info').upsert(row)
     setSaving(false)
     if (error) return ctx.toast(error.message)
     await ctx.refreshContent()
-    ctx.toast('Info saved')
+    // auto-translate in the background (no-op if the function isn't deployed)
+    supabase.functions.invoke('translation-info', { body: { id: row.id, table: 'event_info' } }).catch(() => {})
+    ctx.toast('Info saved — translating…')
+    onDone()
+  }
+  const remove = async () => {
+    if (!it.id || deleting) return
+    setDeleting(true)
+    const { error } = await supabase.from('event_info').delete().eq('id', it.id)
+    setDeleting(false)
+    if (error) return ctx.toast(error.message)
+    await ctx.refreshContent()
+    ctx.toast('Info item removed')
     onDone()
   }
   return (
@@ -773,6 +817,9 @@ function EventInfoEditor({ ctx, initial, onDone }: { ctx: AppCtx; initial: Parti
       <Field label="Label"><Text value={it.label ?? ''} onChange={(v) => set({ label: v })} placeholder="e.g. Wi-Fi password" /></Field>
       <Field label="Detail"><Text value={it.detail ?? ''} onChange={(v) => set({ detail: v })} placeholder="e.g. assessment27" /></Field>
       <Btn kind="primary" full size="lg" onClick={save} disabled={!it.label?.trim() || saving}>{saving ? 'Saving…' : 'Save'}</Btn>
+      {it.id && (
+        <Btn kind="danger" full icon="close" onClick={remove} disabled={deleting} style={{ marginTop: 10 }}>{deleting ? 'Removing…' : 'Remove info item'}</Btn>
+      )}
     </div>
   )
 }

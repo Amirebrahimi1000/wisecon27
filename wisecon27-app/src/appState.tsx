@@ -21,7 +21,7 @@ export type PushScreen =
   | 'meetings' | 'meetingrequest' | 'community' | 'venuemap' | 'availability' | 'tour'
   | 'certificate' | 'notes' | 'resources'
 
-export interface EventInfoItem { id: string; icon: string; label: string; detail: string }
+export interface EventInfoItem { id: string; icon: string; label: string; detail: string; labelI18n: Record<string, string>; detailI18n: Record<string, string> }
 export interface EventMeta { dateline: string; location: string; startISO: string; endISO: string }
 
 export interface NavParams {
@@ -278,7 +278,7 @@ export function useAppState(): AppCtx {
     if (sp.data) setSpeakers((deepClean(sp.data) as (Speaker & { photo_url: string | null; profile_id?: string | null })[]).map((s) => ({ ...s, photoUrl: s.photo_url, profileId: s.profile_id ?? null })))
     if (se.data) setSessions((deepClean(se.data) as SessionRow[]).map(mapSession))
     if (so.data) setSponsors(deepClean(so.data) as Sponsor[])
-    if (ei.data) setEventInfo(deepClean(ei.data) as EventInfoItem[])
+    if (ei.data) setEventInfo((deepClean(ei.data) as (EventInfoItem & { label_i18n?: Record<string, string>; detail_i18n?: Record<string, string> })[]).map((r) => ({ id: r.id, icon: r.icon, label: r.label, detail: r.detail, labelI18n: r.label_i18n ?? {}, detailI18n: r.detail_i18n ?? {} })))
     if (is.data) setInfoSections((deepClean(is.data) as (InfoSection & { sort: number; title_i18n?: Record<string, string>; body_i18n?: Record<string, string> })[]).map((r) => ({ id: r.id, icon: r.icon, title: r.title, body: r.body, link: r.link ?? null, titleI18n: r.title_i18n ?? {}, bodyI18n: r.body_i18n ?? {} })))
     if (act.data) setActivitiesRaw(deepClean(act.data) as ActivityRow[])
     if (sq.data) setSurveyQuestions(deepClean(sq.data) as SurveyQuestion[])

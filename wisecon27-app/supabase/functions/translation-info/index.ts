@@ -1,7 +1,11 @@
 // WISEcon27 — translation-info edge function (Deno).
-// Auto-translates an info_sections card (title + body) into EN/DA/NO/DE with
-// Claude, and writes the result back to title_i18n / body_i18n. Invoked by the
-// admin after saving a section. Brand names, URLs and addresses are preserved.
+// Auto-translates an Info-page card into EN/DA/NO/DE with Claude and writes the
+// result back into the row's *_i18n columns. Invoked by the admin after saving.
+// Brand names, URLs, addresses, passwords, codes, times and dates are preserved.
+//
+// Handles two tables (pass `table` in the body; defaults to info_sections):
+//   info_sections — title  → title_i18n,  body   → body_i18n
+//   event_info    — label  → label_i18n,  detail → detail_i18n
 //
 // Deploy:  supabase functions deploy translation-info
 // Secrets: supabase secrets set ANTHROPIC_API_KEY=sk-ant-…
@@ -17,6 +21,13 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 
 const LANGS = ['en', 'da', 'no', 'de'] as const
 const LANG_NAMES: Record<string, string> = { en: 'English', da: 'Danish', no: 'Norwegian (Bokmål)', de: 'German' }
+
+// Per-table field map: [source column, translation column]. The first field is
+// the one we fall back to as a label when reporting "(none)".
+const TABLES: Record<string, [string, string][]> = {
+  info_sections: [['title', 'title_i18n'], ['body', 'body_i18n']],
+  event_info: [['label', 'label_i18n'], ['detail', 'detail_i18n']],
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
@@ -34,22 +45,26 @@ Deno.serve(async (req) => {
   const { data: prof } = await admin.from('profiles').select('is_admin').eq('id', who.user.id).maybeSingle()
   if (!prof?.is_admin) return json({ error: 'Admins only' }, 403)
 
-  const { id } = await req.json().catch(() => ({}))
+  const { id, table = 'info_sections' } = await req.json().catch(() => ({}))
   if (!id) return json({ error: 'Missing id' }, 400)
+  const fields = TABLES[table]
+  if (!fields) return json({ error: `Unknown table "${table}"` }, 400)
 
-  const { data: row, error } = await admin.from('info_sections').select('title, body').eq('id', id).maybeSingle()
-  if (error || !row) return json({ error: 'Section not found' }, 404)
+  const srcCols = fields.map(([src]) => src)
+  const { data: row, error } = await admin.from(table).select(srcCols.join(', ')).eq('id', id).maybeSingle()
+  if (error || !row) return json({ error: 'Row not found' }, 404)
 
   const anthropic = new Anthropic({ apiKey })
+  const fieldLines = fields.map(([src]) => `${src.toUpperCase()}: ${(row as Record<string, string>)[src] || '(none)'}`).join('\n')
+  const shape = '{' + fields.map(([src]) => `"${src}":{"en":"…","da":"…","no":"…","de":"…"}`).join(',') + '}'
   const prompt =
-    `Translate the following event-app "info card" into these languages: ${LANGS.map((l) => LANG_NAMES[l]).join(', ')}.\n` +
-    `Rules: keep brand names (WISEcon27, WISEflow, UNIwise), URLs, email addresses and street addresses EXACTLY as written; ` +
-    `keep the tone short and practical; sentence case. If the body is empty, return an empty string for it in every language.\n\n` +
-    `TITLE: ${row.title}\nBODY: ${row.body || '(none)'}\n\n` +
-    `Respond with ONLY a JSON object, no markdown, no commentary, in exactly this shape:\n` +
-    `{"title":{"en":"…","da":"…","no":"…","de":"…"},"body":{"en":"…","da":"…","no":"…","de":"…"}}`
+    `Translate the following event-app "info card" fields into these languages: ${LANGS.map((l) => LANG_NAMES[l]).join(', ')}.\n` +
+    `Rules: keep brand names (WISEcon27, WISEflow, UNIwise), URLs, email addresses, street addresses, passwords, access codes, numbers, times and dates EXACTLY as written; ` +
+    `keep the tone short and practical; sentence case. If a field is empty, return an empty string for it in every language.\n\n` +
+    `${fieldLines}\n\n` +
+    `Respond with ONLY a JSON object, no markdown, no commentary, in exactly this shape:\n${shape}`
 
-  let parsed: { title?: Record<string, string>; body?: Record<string, string> }
+  let parsed: Record<string, Record<string, string>>
   try {
     const resp = await anthropic.messages.create({
       model: Deno.env.get('ANTHROPIC_MODEL') ?? 'claude-sonnet-4-6',
@@ -67,10 +82,10 @@ Deno.serve(async (req) => {
   const pick = (o: Record<string, string> | undefined, fallback: string) =>
     Object.fromEntries(LANGS.map((l) => [l, (o?.[l] ?? fallback) || fallback]))
 
-  const { error: upErr } = await admin
-    .from('info_sections')
-    .update({ title_i18n: pick(parsed.title, row.title), body_i18n: pick(parsed.body, row.body || '') })
-    .eq('id', id)
+  const update: Record<string, unknown> = {}
+  for (const [src, dst] of fields) update[dst] = pick(parsed[src], (row as Record<string, string>)[src] || '')
+
+  const { error: upErr } = await admin.from(table).update(update).eq('id', id)
   if (upErr) return json({ error: upErr.message }, 500)
 
   return json({ ok: true })
