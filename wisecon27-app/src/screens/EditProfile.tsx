@@ -1,13 +1,14 @@
 // WISEcon27 — edit my profile. Name, email, role and organisation come from
 // registration (HubSpot) and are locked; everything else is optional, with a
 // per-field choice of what other delegates may see.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { T, TABBAR_H } from '../theme'
 import type { AppCtx } from '../appState'
 import { Icon } from '../components/Icon'
-import { AppHeader, Btn, Eyebrow, Press } from '../components/primitives'
+import { AppHeader, Avatar, Btn, Eyebrow, Press } from '../components/primitives'
 import { TagPicker, tagSuggestions } from '../components/TagPicker'
+import { uploadAvatar } from '../lib/storage'
 
 const MAX_INTERESTS = 8
 
@@ -33,6 +34,17 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
   const [share, setShare] = useState<Record<string, boolean>>({})
   const [loaded, setLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const pickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    const { url, error } = await uploadAvatar(ctx.userId, file)
+    setUploading(false)
+    if (error) ctx.toast(error)
+    else if (url) { ctx.setAvatar(url); ctx.toast('Profile photo updated') }
+  }
 
   useEffect(() => {
     supabase
@@ -81,6 +93,20 @@ export function EditProfile({ ctx }: { ctx: AppCtx }) {
     <div style={{ minHeight: '100%', background: 'var(--wf-grey-2)' }}>
       <AppHeader title="Edit profile" onBack={ctx.back} />
       <div style={{ padding: '14px 16px ' + (TABBAR_H + 16) + 'px' }}>
+        {/* profile photo */}
+        <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto} style={{ display: 'none' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, marginBottom: 22 }}>
+          <Press onClick={() => fileRef.current?.click()} style={{ position: 'relative' }}>
+            <Avatar initials={ctx.me.initials} color={ctx.me.color} size={80} src={ctx.me.avatarUrl} style={{ opacity: uploading ? 0.5 : 1 }} />
+            <div style={{ position: 'absolute', right: -2, bottom: -2, width: 28, height: 28, borderRadius: '50%', background: T.green9, color: '#fff', display: 'grid', placeItems: 'center', boxShadow: '0 0 0 2px var(--wf-surface)' }}>
+              <Icon name="camera" size={15} stroke={2.2} />
+            </div>
+          </Press>
+          <Press onClick={() => fileRef.current?.click()} style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, color: T.green10 }}>
+            {uploading ? 'Uploading…' : 'Change photo'}
+          </Press>
+        </div>
+
         {/* registration data — locked */}
         <Eyebrow style={{ marginBottom: 8, paddingLeft: 2 }}>From your registration</Eyebrow>
         <div style={{ background: 'var(--wf-surface)', borderRadius: 'var(--radius-5)', boxShadow: 'var(--shadow-card)', overflow: 'hidden', marginBottom: 8 }}>

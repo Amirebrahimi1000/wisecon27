@@ -67,12 +67,12 @@ interface QuickAction {
   tab?: 'agenda' | 'speakers' | 'connect' | 'activities'
   push?: 'ticket' | 'info' | 'activities' | 'community' | 'venuemap'
 }
-// only destinations the tab bar does NOT already offer — no duplicates
+// only destinations the tab bar does NOT already offer — no duplicates.
+// My badge is omitted here: it has its own always-visible QR button in the hero.
 const QUICK: QuickAction[] = [
   { icon: 'message', label: 'Community', push: 'community' },
   { icon: 'map', label: 'Venue map', push: 'venuemap' },
   { icon: 'speakers', label: 'Speakers', tab: 'speakers' },
-  { icon: 'qr', label: 'My badge', push: 'ticket' },
   { icon: 'info', label: 'Info', push: 'info' },
 ]
 const runQuick = (ctx: AppCtx, q: QuickAction) => (q.tab ? ctx.setTab(q.tab) : ctx.push(q.push!, {}))
@@ -199,19 +199,9 @@ function PostEventSection({ ctx }: { ctx: AppCtx }) {
     <div style={{ padding: '20px 16px 0' }}>
       <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 19, color: T.ink, marginBottom: 4 }}>After the event</div>
       <div style={{ fontFamily: T.sig, fontSize: 13, color: T.muted, marginBottom: 12, lineHeight: 1.4 }}>
-        Slides, your survey, and the people you met — all in one place.
+        Slides and the people you met — all in one place.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {!ctx.surveyDone && (
-          <Press onClick={() => ctx.push('survey', {})} style={{ display: 'flex', alignItems: 'center', gap: 12, background: T.green9, borderRadius: 'var(--radius-4)', padding: 16, color: '#fff' }}>
-            <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name="poll" size={19} /></div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 14.5 }}>Tell us how it went</div>
-              <div style={{ fontFamily: T.sig, fontSize: 12.5, opacity: 0.85, marginTop: 1 }}>The post-conference survey takes two minutes.</div>
-            </div>
-            <Icon name="chevronRight" size={18} stroke={2} />
-          </Press>
-        )}
         <Press onClick={exportConnections} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--wf-surface)', borderRadius: 'var(--radius-4)', padding: 16, boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ width: 38, height: 38, borderRadius: '50%', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name="download" size={19} /></div>
           <div style={{ flex: 1 }}>
@@ -282,6 +272,7 @@ function HeroStat({ n, label }: { n: number; label: string }) {
 /* ════════ Home (Bold) ════════ */
 function HomeBold({ ctx }: { ctx: AppCtx }) {
   const clock = useEventClock(ctx.event.startISO, ctx.event.endISO, ctx.days.length)
+  const me = ctx.me
   // show a "more tiles this way" hint until the quick-action row is scrolled to the end
   const quickRef = useRef<HTMLDivElement>(null)
   const [moreQuick, setMoreQuick] = useState(false)
@@ -304,6 +295,7 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
       <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg, var(--wf-green-8) 0%, var(--wf-green-10) 55%, var(--wf-green-12) 130%)', padding: STATUS_INSET + 'px 20px 56px' }}>
         <img src={import.meta.env.BASE_URL + 'wisecon27-logo.svg'} alt="" style={{ position: 'absolute', right: -24, top: 18, width: 260, opacity: 0.13, filter: 'brightness(0) invert(1)', transform: 'rotate(-8deg)' }} />
         <div style={{ position: 'relative' }}>
+          {/* top bar: event status (left) · notifications + profile (right) */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: T.onest, fontWeight: 600, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap' }}>
               {live && <span className="wc-pulse" style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--wf-lime-9)' }} />}
@@ -312,32 +304,40 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
                 : clock.phase === 'ended' ? 'Event ended'
                 : ctx.event.dateline}
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Press onClick={() => ctx.push('ticket', {})} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 14px', borderRadius: 999, background: 'rgba(255,255,255,0.16)', color: '#fff' }}>
-                <Icon name="qr" size={18} />
-                <span style={{ fontFamily: T.sig, fontWeight: 600, fontSize: 13.5, letterSpacing: '0.01em' }}>Badge</span>
-              </Press>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <IconBtn name="qr" onClick={() => ctx.push('ticket', {})} color="#fff" bg="rgba(255,255,255,0.16)" />
               <IconBtn name="bell" badge={ctx.unread > 0} onClick={() => ctx.push('notifications', {})} color="#fff" bg="rgba(255,255,255,0.16)" />
+              <Press onClick={() => ctx.push('editprofile', {})} aria-label="Your profile" style={{ flexShrink: 0 }}>
+                <Avatar initials={me.initials} color={me.color} size={38} src={me.avatarUrl} style={{ boxShadow: '0 0 0 2px rgba(255,255,255,0.45)' }} />
+              </Press>
             </div>
           </div>
-          <div style={{ marginTop: 26 }}>
-            <div style={{ fontFamily: T.onest, fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>
-              {clock.phase === 'ended' ? `Thanks for joining, ${ctx.me.name.split(' ')[0]}` : `Good morning, ${ctx.me.name.split(' ')[0]}`}
-            </div>
-            <h1 style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 40, color: '#fff', lineHeight: 1.0, letterSpacing: '-0.02em', marginTop: 8 }}>
-              {clock.phase === 'ended' ? (
-                <>See you at<br />WISEcon28.</>
-              ) : (
-                <>Assessment,<br />reimagined.</>
-              )}
-            </h1>
-            {dateLine && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 12, fontFamily: T.sig, fontSize: 14, color: 'rgba(255,255,255,0.92)' }}>
-                <Icon name="calendar" size={15} style={{ opacity: 0.9 }} />
-                {dateLine}
-              </div>
+
+          {/* headline — only what's relevant to the current phase */}
+          <div style={{ marginTop: clock.phase === 'before' ? 26 : 22 }}>
+            {clock.phase === 'before' ? (
+              <>
+                <h1 style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 40, color: '#fff', lineHeight: 1.0, letterSpacing: '-0.02em' }}>
+                  Assessment,<br />reimagined.
+                </h1>
+                {dateLine && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 12, fontFamily: T.sig, fontSize: 14, color: 'rgba(255,255,255,0.92)' }}>
+                    <Icon name="calendar" size={15} style={{ opacity: 0.9 }} />
+                    {dateLine}
+                  </div>
+                )}
+              </>
+            ) : clock.phase === 'ended' ? (
+              <>
+                <div style={{ fontFamily: T.onest, fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>Thanks for joining, {me.name.split(' ')[0]}</div>
+                <h1 style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 32, color: '#fff', lineHeight: 1.05, letterSpacing: '-0.02em', marginTop: 6 }}>See you at WISEcon28.</h1>
+              </>
+            ) : (
+              <div style={{ fontFamily: T.onest, fontWeight: 700, fontSize: 26, color: '#fff', letterSpacing: '-0.01em' }}>Good morning, {me.name.split(' ')[0]}</div>
             )}
           </div>
+
+          {/* phase focus: countdown before · today's numbers while live · the survey after */}
           {clock.phase === 'before' && clock.countdown ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 13, marginTop: 20, background: 'rgba(255,255,255,0.15)', borderRadius: 'var(--radius-4)', padding: '14px 16px', backdropFilter: 'blur(4px)' }}>
               <Icon name="clock" size={26} style={{ color: '#fff', flexShrink: 0 }} />
@@ -346,8 +346,23 @@ function HomeBold({ ctx }: { ctx: AppCtx }) {
                 <div style={{ fontFamily: T.sig, fontSize: 12.5, color: 'rgba(255,255,255,0.82)', marginTop: 3 }}>until WISEcon27 begins</div>
               </div>
             </div>
+          ) : clock.phase === 'ended' ? (
+            ctx.surveyDone ? (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 18, fontFamily: T.sig, fontSize: 13.5, color: 'rgba(255,255,255,0.92)' }}>
+                <Icon name="checkCircle" size={16} /> Thanks for sharing your feedback
+              </div>
+            ) : (
+              <Press onClick={() => ctx.push('survey', {})} style={{ display: 'flex', alignItems: 'center', gap: 13, marginTop: 20, background: '#fff', borderRadius: 'var(--radius-4)', padding: '14px 16px', boxShadow: 'var(--shadow-card)' }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: T.green1, color: T.green10, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name="poll" size={20} /></div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: T.sig, fontWeight: 700, fontSize: 15, color: T.ink }}>How was WISEcon27?</div>
+                  <div style={{ fontFamily: T.sig, fontSize: 12.5, color: T.muted, marginTop: 1 }}>Take the 2-minute post-conference survey.</div>
+                </div>
+                <Icon name="chevronRight" size={18} stroke={2} style={{ color: T.muted }} />
+              </Press>
+            )
           ) : (
-            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <HeroStat n={ctx.sessions.filter((s) => s.day === ctx.days[clock.dayIndex - 1]?.id && s.type !== 'break').length} label="sessions today" />
               <HeroStat n={mine.length} label="in your plan" />
               <HeroStat n={ctx.speakers.length} label="speakers" />

@@ -48,7 +48,7 @@ const TABS: { id: TabId; icon: IconName; label: string }[] = [
   { id: 'agenda', icon: 'calendar', label: 'Agenda' },
   { id: 'activities', icon: 'sparkles', label: 'Activities' },
   { id: 'connect', icon: 'connect', label: 'Connect' },
-  { id: 'profile', icon: 'user', label: 'Profile' },
+  { id: 'profile', icon: 'grid', label: 'More' },
 ]
 
 const PUSH_SCREENS: Record<PushScreen, (p: { ctx: AppCtx }) => JSX.Element> = {
